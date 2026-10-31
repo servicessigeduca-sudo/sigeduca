@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-src https://www.youtube-nocookie.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trabajar con shapefiles en Google Earth Engine · SIG EDUCA</title>
+<meta name="description" content="Aprende a filtrar y visualizar correctamente shapefiles en Google Earth Engine con filter y filterMetadata.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/style.css?v=44a2ff0b">
+<script src="../assets/theme.js?v=45ee55f4"></script>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <button class="menu-btn" id="menuBtn" aria-label="Abrir menú" aria-expanded="false">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <a class="brand" href="../index.html"><img src="../assets/img/logo-sig-educa.png" alt="SIG EDUCA" width="171" height="95"></a>
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Buscar" aria-label="Buscar">
+    </div>
+    <button class="theme-btn" id="themeBtn" type="button" role="switch" aria-checked="false" aria-label="Modo oscuro"><span class="knob"><svg class="sun" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></span></button>
+    <a class="btn ghost" href="https://www.youtube.com/@SIG_EDUCA" target="_blank" rel="noopener">YouTube</a>
+    <a class="btn" href="../index.html#ruta">Tutoriales</a>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="side" id="side" aria-label="Secciones">
+    <h4>Inicio</h4>
+    <ul>
+      <li><a href="../index.html#inicio">Bienvenida</a></li>
+      <li><a href="../index.html#primeros-pasos">Primeros pasos</a></li>
+      <li><a href="../index.html#ruta">Ruta de aprendizaje</a></li>
+    </ul>
+    <h4>Google Earth Engine</h4>
+    <ul>
+      <li><a href="../tutoriales/registro-earth-engine.html">Creación y registro en Earth Engine</a></li>
+      <li><a href="../tutoriales/importar-shapefile.html">Importar shapefile en Earth Engine</a></li>
+      <li><a href="../tutoriales/filtrar-shapefiles.html" class="on" aria-current="page">Trabajar con shapefiles en Earth Engine</a></li>
+    </ul>
+    <h4>Más</h4>
+    <ul>
+      <li><a href="../index.html#contacto">Contacto</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <div class="crumb">tutoriales / google earth engine</div>
+    <h1>Trabajar con shapefiles en Google Earth Engine</h1>
+    <div class="meta-row"><span class="lvl b">básico</span><span>10 min</span><span>Google Earth Engine</span></div>
+    <p class="lead">Aprende a filtrar y visualizar correctamente shapefiles en Google Earth Engine con filter y filterMetadata.</p>
+    <div class="video"><iframe src="https://www.youtube-nocookie.com/embed/pusJLWYqUx4" title="Trabajar con shapefiles en Google Earth Engine" loading="lazy" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion">¶</a></h2>
+    <p>En este taller aprenderemos a trabajar con shapefiles en Google Earth Engine (GEE). Los shapefiles son conjuntos de entidades geoespaciales que pueden usarse para análisis y visualización en GEE. Exploraremos cómo filtrarlos, visualizarlos en un mapa y realizar análisis espaciales básicos.</p>
+
+    <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos">¶</a></h2>
+    <ul class="check">
+      <li>Aprender a filtrar shapefiles utilizando <code>filter</code> y <code>filterMetadata</code>.</li>
+      <li>Visualizar shapefiles en un mapa interactivo.</li>
+      <li>Comprender cómo realizar análisis espaciales básicos utilizando las Feature Collections.</li>
+    </ul>
+
+    <h2 id="definiciones">Shapefiles en Google Earth Engine <a class="anchor" href="#definiciones">¶</a></h2>
+    <p>Los shapefiles en GEE son conjuntos de entidades geoespaciales que representan objetos del mundo real, como países, ciudades, cuerpos de agua o parcelas agrícolas. Estas colecciones están compuestas por características geométricas y atributos asociados que describen cada entidad de manera única.</p>
+    <ul class="check">
+      <li><strong>Entidades geoespaciales:</strong> cada elemento de una Feature Collection representa una entidad, como un punto, una línea o un polígono, con una localización geográfica específica.</li>
+      <li><strong>Atributos asociados:</strong> además de su geometría, cada entidad puede tener atributos numéricos, categóricos o de texto, desde la población de una ciudad hasta el nombre de un país.</li>
+      <li><strong>Flexibilidad y escalabilidad:</strong> pueden contener desde unas pocas hasta millones de entidades, lo que permite analizar datos geoespaciales a gran escala.</li>
+    </ul>
+
+    <h2 id="filter">Función filter <a class="anchor" href="#filter">¶</a></h2>
+    <p>La función <code>filter</code> permite filtrar una Feature Collection utilizando una condición específica. Su sintaxis general es:</p>
+    <div class="codebox"><pre><span class="k">var</span> nuevaColeccion = featureCollection.filter(ee.Filter.operador(atributo, valor));</pre></div>
+    <ul class="check">
+      <li><strong>featureCollection:</strong> la Feature Collection que queremos filtrar.</li>
+      <li><strong>atributo:</strong> el nombre del atributo sobre el cual aplicaremos la condición.</li>
+      <li><strong>operador:</strong> el operador que queremos aplicar al atributo.</li>
+      <li><strong>valor:</strong> el valor con el que queremos comparar el atributo.</li>
+    </ul>
+    <p>Operadores comunes:</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Operador</th><th>Selecciona entidades donde el atributo…</th></tr></thead>
+        <tbody>
+          <tr><td class="n">ee.Filter.eq</td><td>es igual a un valor</td></tr>
+          <tr><td class="n">ee.Filter.gt</td><td>es mayor que un valor</td></tr>
+          <tr><td class="n">ee.Filter.lt</td><td>es menor que un valor</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="filtermetadata">Función filterMetadata <a class="anchor" href="#filtermetadata">¶</a></h2>
+    <p>La función <code>filterMetadata</code> permite filtrar una Feature Collection usando los metadatos asociados a las entidades. Su sintaxis general es:</p>
+    <div class="codebox"><pre><span class="k">var</span> nuevaColeccion = featureCollection.filterMetadata(nombreMetadato, operador, valor);</pre></div>
+    <ul class="check">
+      <li><strong>featureCollection:</strong> la Feature Collection que queremos filtrar.</li>
+      <li><strong>nombreMetadato:</strong> el nombre del metadato que usaremos para filtrar.</li>
+      <li><strong>operador:</strong> el operador que queremos aplicar al metadato.</li>
+      <li><strong>valor:</strong> el valor con el que queremos comparar el metadato.</li>
+    </ul>
+    <p>Operadores comunes:</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Operador</th><th>Selecciona entidades donde el metadato…</th></tr></thead>
+        <tbody>
+          <tr><td class="n">"equals"</td><td>es igual a un valor</td></tr>
+          <tr><td class="n">"greater_than"</td><td>es mayor que un valor</td></tr>
+          <tr><td class="n">"less_than"</td><td>es menor que un valor</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos">¶</a></h2>
+    <ul class="check">
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_2015_level0" target="_blank" rel="noopener">Shapefiles de países (FAO GAUL nivel 0)</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_2015_level2" target="_blank" rel="noopener">Shapefiles de ciudades (FAO GAUL nivel 2)</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/tags/borders" target="_blank" rel="noopener">Más límites administrativos en el catálogo de Earth Engine</a></li>
+    </ul>
+
+    <h2 id="paso-1">Paso 1: Filtrar con filter <a class="anchor" href="#paso-1">¶</a></h2>
+    <p>Con <code>filter</code> filtramos una colección de países para obtener únicamente Colombia:</p>
+    <div class="codebox"><pre><span class="c">// Cargar la Feature Collection de países</span>
+<span class="k">var</span> Countries = ee.FeatureCollection("FAO/GAUL/2015/level0");
+
+<span class="c">// Filtrar la Feature Collection para obtener solo Colombia</span>
+<span class="k">var</span> Colombia = Countries.filter(ee.Filter.eq("ADM0_NAME", "Colombia"));</pre></div>
+    <p>La condición de igualdad se aplica al atributo <code>ADM0_NAME</code> (nombre del país): su valor debe ser igual a "Colombia". El resultado es una nueva colección que contiene solo Colombia.</p>
+
+    <h2 id="paso-2">Paso 2: Filtrar con filterMetadata <a class="anchor" href="#paso-2">¶</a></h2>
+    <p>Con <code>filterMetadata</code> filtramos una colección de ciudades para obtener únicamente Bogotá:</p>
+    <div class="codebox"><pre><span class="c">// Cargar la Feature Collection de ciudades</span>
+<span class="k">var</span> cities = ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level2");
+
+<span class="c">// Filtrar la Feature Collection para obtener solo Bogotá</span>
+<span class="k">var</span> Bogota = cities.filterMetadata("ADM2_NAME", "equals", "Santafe De Bogota D.c.");</pre></div>
+    <p>La condición se aplica al metadato <code>ADM2_NAME</code> (nombre de la ciudad): su valor debe ser igual a "Santafe De Bogota D.c.". El resultado contiene solo Bogotá.</p>
+
+    <h2 id="paso-3">Paso 3: Visualizar en el mapa <a class="anchor" href="#paso-3">¶</a></h2>
+    <p>Una vez filtrados, mostramos los shapefiles en el mapa con <code>Map.addLayer</code>, que tiene esta sintaxis general:</p>
+    <div class="codebox"><pre>Map.addLayer(eeObject, visParams, name, shown);</pre></div>
+    <ul class="check">
+      <li><strong>eeObject:</strong> el objeto de Earth Engine que se va a visualizar: Image, FeatureCollection, Geometry, entre otros.</li>
+      <li><strong>visParams:</strong> parámetros de visualización como el color, la opacidad o la escala.</li>
+      <li><strong>name:</strong> el nombre que aparece en el panel de capas.</li>
+      <li><strong>shown:</strong> <code>true</code> o <code>false</code>, indica si la capa se ve al cargar el mapa.</li>
+    </ul>
+    <p>Aplicado a nuestras capas:</p>
+    <div class="codebox"><pre><span class="c">// Centrar el mapa en Colombia</span>
+Map.centerObject(Colombia, 5);
+
+<span class="c">// Añadir los shapefiles al mapa</span>
+Map.addLayer(Colombia, {color: "red"}, "Colombia", <span class="k">true</span>);
+
+<span class="c">// Añadir Bogotá al mapa</span>
+Map.addLayer(Bogota, {color: "white"}, "Bogotá", <span class="k">true</span>);</pre></div>
+    <figure class="shot"><img src="../assets/img/filtrar-shapefiles/resultado.jpg" alt="Colombia en rojo y Bogotá en blanco en el mapa de Earth Engine" loading="lazy" width="826" height="565"><figcaption>Resultado: Colombia en rojo y Bogotá en blanco.</figcaption></figure>
+
+    <h2 id="codigo">Código completo del video <a class="anchor" href="#codigo">¶</a></h2>
+    <p>Este es el script completo que se usa en el video. Cópialo, pégalo en el Code Editor y presiona <kbd>Run</kbd>.</p>
+    <div class="codebox"><pre><span class="c">// see this web link for countries --&gt; https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_2015_level0</span>
+<span class="c">// see this web link for cities  --&gt; https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_2015_level2</span>
+<span class="c">
+// More shapefiles: https://developers.google.com/earth-engine/datasets/tags/borders </span>
+<span class="c">
+///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// PROCESS</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">
+// 1 --&gt; Filter Feature collections with filter</span>
+<span class="c">// 1.1 --&gt; Visualization of feauture collections on map</span>
+<span class="c">// 2 --&gt; Filter Feature collections with filterMetadata</span>
+<span class="c">// 2.1 --&gt; Visualization of feauture collections on map</span>
+<span class="c">//throw("stop");</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 1 --&gt; Filter Feature collections with filter</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">//// Load countries  feature collections </span>
+<span class="k">var</span> Countries = ee.FeatureCollection("FAO/GAUL/2015/level0");
+print("paises: ", Countries.limit(10));
+
+<span class="k">var</span> Colombia=Countries.filter(ee.Filter.eq("ADM0_NAME","Colombia"));
+<span class="c">
+///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 2 --&gt; Visualization of feature collections on map</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+Map.centerObject(Colombia,5);
+Map.addLayer(Colombia,{color:"red"},"Colombia", true);
+<span class="c">
+///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 1 --&gt; Filter Feature collections with filterMetadata</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">//// Load cities feature collections </span>
+<span class="k">var</span> cities =ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level2");
+print("Ciudades: ", cities.limit(10));
+
+
+<span class="k">var</span> Bogota=cities.filterMetadata("ADM2_NAME", "equals", "Santafe De Bogota D.c.");
+<span class="c">
+///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 2 --&gt; Visualization of feature collections on map</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+Map.addLayer(Bogota,{color:"white"},"Bogotá", true);</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion">¶</a></h2>
+    <p>En este taller aprendimos a trabajar con shapefiles en Google Earth Engine: filtrarlos, visualizarlos en un mapa interactivo y realizar análisis básicos. Estas habilidades son fundamentales para cualquier proyecto de análisis espacial en GEE.</p>
+
+    <h2 id="material">Material de apoyo <a class="anchor" href="#material">¶</a></h2>
+    <div class="descarga">
+      <div><strong>Guía en PDF</strong><span>4.0 Trabajar con Feature Collections · 6 páginas</span></div>
+      <a class="btn" href="../assets/pdf/4.0-trabajar-con-feature-collections.pdf" target="_blank" rel="noopener">Descargar PDF</a>
+    </div>
+    <div class="descarga">
+      <div><strong>Código en GEE</strong><span>Abre el script del video en el Code Editor</span></div>
+      <a class="btn ghost" href="https://code.earthengine.google.com/04857d1c56baa5953b8f2c2945c3c1d6" target="_blank" rel="noopener">Abrir código</a>
+    </div>
+
+    <div class="pager two">
+      <a href="../index.html#ruta"><small>Volver</small>← Ruta de aprendizaje</a>
+      <a href="../index.html#ruta"><small>Siguiente</small>Ruta de aprendizaje →</a>
+    </div>
+    <footer class="foot"><span>© 2026 SIG EDUCA</span><span class="redes"><a href="https://www.youtube.com/@SIG_EDUCA" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .6 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .4-4.8 31 31 0 0 0-.4-4.8ZM9.7 15.1V8.9l5.8 3.1Z"/></svg></a><a href="https://www.instagram.com/sig_educa" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a><a href="https://www.linkedin.com/in/sig-educa" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9.5h4V21H3Zm7 0h3.8v1.6h.1c.5-1 1.8-2 3.8-2 4 0 4.8 2.6 4.8 6V21h-4v-5.2c0-1.2 0-2.8-1.7-2.8s-2 1.3-2 2.7V21h-4Z"/></svg></a></span></footer>
+  </main>
+
+  <aside class="toc" aria-label="En esta página">
+    <h4>En esta página</h4>
+    <ul id="toc"></ul>
+  </aside>
+</div>
+<script src="../assets/tutorial.js?v=6a73de2a"></script>
+</body>
+</html>

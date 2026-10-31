@@ -1,0 +1,164 @@
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion">¶</a></h2>
+    <p>En este taller aprenderemos a trabajar con shapefiles en Google Earth Engine (GEE). Los shapefiles son conjuntos de entidades geoespaciales que pueden usarse para análisis y visualización en GEE. Exploraremos cómo filtrarlos, visualizarlos en un mapa y realizar análisis espaciales básicos.</p>
+
+    <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos">¶</a></h2>
+    <ul class="check">
+      <li>Aprender a filtrar shapefiles utilizando <code>filter</code> y <code>filterMetadata</code>.</li>
+      <li>Visualizar shapefiles en un mapa interactivo.</li>
+      <li>Comprender cómo realizar análisis espaciales básicos utilizando las Feature Collections.</li>
+    </ul>
+
+    <h2 id="definiciones">Shapefiles en Google Earth Engine <a class="anchor" href="#definiciones">¶</a></h2>
+    <p>Los shapefiles en GEE son conjuntos de entidades geoespaciales que representan objetos del mundo real, como países, ciudades, cuerpos de agua o parcelas agrícolas. Estas colecciones están compuestas por características geométricas y atributos asociados que describen cada entidad de manera única.</p>
+    <ul class="check">
+      <li><strong>Entidades geoespaciales:</strong> cada elemento de una Feature Collection representa una entidad, como un punto, una línea o un polígono, con una localización geográfica específica.</li>
+      <li><strong>Atributos asociados:</strong> además de su geometría, cada entidad puede tener atributos numéricos, categóricos o de texto, desde la población de una ciudad hasta el nombre de un país.</li>
+      <li><strong>Flexibilidad y escalabilidad:</strong> pueden contener desde unas pocas hasta millones de entidades, lo que permite analizar datos geoespaciales a gran escala.</li>
+    </ul>
+
+    <h2 id="filter">Función filter <a class="anchor" href="#filter">¶</a></h2>
+    <p>La función <code>filter</code> permite filtrar una Feature Collection utilizando una condición específica. Su sintaxis general es:</p>
+    <div class="codebox"><pre><span class="k">var</span> nuevaColeccion = featureCollection.filter(ee.Filter.operador(atributo, valor));</pre></div>
+    <ul class="check">
+      <li><strong>featureCollection:</strong> la Feature Collection que queremos filtrar.</li>
+      <li><strong>atributo:</strong> el nombre del atributo sobre el cual aplicaremos la condición.</li>
+      <li><strong>operador:</strong> el operador que queremos aplicar al atributo.</li>
+      <li><strong>valor:</strong> el valor con el que queremos comparar el atributo.</li>
+    </ul>
+    <p>Operadores comunes:</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Operador</th><th>Selecciona entidades donde el atributo…</th></tr></thead>
+        <tbody>
+          <tr><td class="n">ee.Filter.eq</td><td>es igual a un valor</td></tr>
+          <tr><td class="n">ee.Filter.gt</td><td>es mayor que un valor</td></tr>
+          <tr><td class="n">ee.Filter.lt</td><td>es menor que un valor</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="filtermetadata">Función filterMetadata <a class="anchor" href="#filtermetadata">¶</a></h2>
+    <p>La función <code>filterMetadata</code> permite filtrar una Feature Collection usando los metadatos asociados a las entidades. Su sintaxis general es:</p>
+    <div class="codebox"><pre><span class="k">var</span> nuevaColeccion = featureCollection.filterMetadata(nombreMetadato, operador, valor);</pre></div>
+    <ul class="check">
+      <li><strong>featureCollection:</strong> la Feature Collection que queremos filtrar.</li>
+      <li><strong>nombreMetadato:</strong> el nombre del metadato que usaremos para filtrar.</li>
+      <li><strong>operador:</strong> el operador que queremos aplicar al metadato.</li>
+      <li><strong>valor:</strong> el valor con el que queremos comparar el metadato.</li>
+    </ul>
+    <p>Operadores comunes:</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Operador</th><th>Selecciona entidades donde el metadato…</th></tr></thead>
+        <tbody>
+          <tr><td class="n">"equals"</td><td>es igual a un valor</td></tr>
+          <tr><td class="n">"greater_than"</td><td>es mayor que un valor</td></tr>
+          <tr><td class="n">"less_than"</td><td>es menor que un valor</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos">¶</a></h2>
+    <ul class="check">
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_2015_level0" target="_blank" rel="noopener">Shapefiles de países (FAO GAUL nivel 0)</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_2015_level2" target="_blank" rel="noopener">Shapefiles de ciudades (FAO GAUL nivel 2)</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/tags/borders" target="_blank" rel="noopener">Más límites administrativos en el catálogo de Earth Engine</a></li>
+    </ul>
+
+    <h2 id="paso-1">Paso 1: Filtrar con filter <a class="anchor" href="#paso-1">¶</a></h2>
+    <p>Con <code>filter</code> filtramos una colección de países para obtener únicamente Colombia:</p>
+    <div class="codebox"><pre><span class="c">// Cargar la Feature Collection de países</span>
+<span class="k">var</span> Countries = ee.FeatureCollection("FAO/GAUL/2015/level0");
+
+<span class="c">// Filtrar la Feature Collection para obtener solo Colombia</span>
+<span class="k">var</span> Colombia = Countries.filter(ee.Filter.eq("ADM0_NAME", "Colombia"));</pre></div>
+    <p>La condición de igualdad se aplica al atributo <code>ADM0_NAME</code> (nombre del país): su valor debe ser igual a "Colombia". El resultado es una nueva colección que contiene solo Colombia.</p>
+
+    <h2 id="paso-2">Paso 2: Filtrar con filterMetadata <a class="anchor" href="#paso-2">¶</a></h2>
+    <p>Con <code>filterMetadata</code> filtramos una colección de ciudades para obtener únicamente Bogotá:</p>
+    <div class="codebox"><pre><span class="c">// Cargar la Feature Collection de ciudades</span>
+<span class="k">var</span> cities = ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level2");
+
+<span class="c">// Filtrar la Feature Collection para obtener solo Bogotá</span>
+<span class="k">var</span> Bogota = cities.filterMetadata("ADM2_NAME", "equals", "Santafe De Bogota D.c.");</pre></div>
+    <p>La condición se aplica al metadato <code>ADM2_NAME</code> (nombre de la ciudad): su valor debe ser igual a "Santafe De Bogota D.c.". El resultado contiene solo Bogotá.</p>
+
+    <h2 id="paso-3">Paso 3: Visualizar en el mapa <a class="anchor" href="#paso-3">¶</a></h2>
+    <p>Una vez filtrados, mostramos los shapefiles en el mapa con <code>Map.addLayer</code>, que tiene esta sintaxis general:</p>
+    <div class="codebox"><pre>Map.addLayer(eeObject, visParams, name, shown);</pre></div>
+    <ul class="check">
+      <li><strong>eeObject:</strong> el objeto de Earth Engine que se va a visualizar: Image, FeatureCollection, Geometry, entre otros.</li>
+      <li><strong>visParams:</strong> parámetros de visualización como el color, la opacidad o la escala.</li>
+      <li><strong>name:</strong> el nombre que aparece en el panel de capas.</li>
+      <li><strong>shown:</strong> <code>true</code> o <code>false</code>, indica si la capa se ve al cargar el mapa.</li>
+    </ul>
+    <p>Aplicado a nuestras capas:</p>
+    <div class="codebox"><pre><span class="c">// Centrar el mapa en Colombia</span>
+Map.centerObject(Colombia, 5);
+
+<span class="c">// Añadir los shapefiles al mapa</span>
+Map.addLayer(Colombia, {color: "red"}, "Colombia", <span class="k">true</span>);
+
+<span class="c">// Añadir Bogotá al mapa</span>
+Map.addLayer(Bogota, {color: "white"}, "Bogotá", <span class="k">true</span>);</pre></div>
+    <figure class="shot"><img src="../assets/img/filtrar-shapefiles/resultado.jpg" alt="Colombia en rojo y Bogotá en blanco en el mapa de Earth Engine" loading="lazy" width="826" height="565"><figcaption>Resultado: Colombia en rojo y Bogotá en blanco.</figcaption></figure>
+
+    <h2 id="codigo">Código completo del video <a class="anchor" href="#codigo">¶</a></h2>
+    <p>Este es el script completo que se usa en el video. Cópialo, pégalo en el Code Editor y presiona <kbd>Run</kbd>.</p>
+    <div class="codebox"><pre><span class="c">// see this web link for countries --&gt; https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_2015_level0</span>
+<span class="c">// see this web link for cities  --&gt; https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_2015_level2</span>
+<span class="c">
+// More shapefiles: https://developers.google.com/earth-engine/datasets/tags/borders </span>
+<span class="c">
+///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// PROCESS</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">
+// 1 --&gt; Filter Feature collections with filter</span>
+<span class="c">// 1.1 --&gt; Visualization of feauture collections on map</span>
+<span class="c">// 2 --&gt; Filter Feature collections with filterMetadata</span>
+<span class="c">// 2.1 --&gt; Visualization of feauture collections on map</span>
+<span class="c">//throw("stop");</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 1 --&gt; Filter Feature collections with filter</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">//// Load countries  feature collections </span>
+<span class="k">var</span> Countries = ee.FeatureCollection("FAO/GAUL/2015/level0");
+print("paises: ", Countries.limit(10));
+
+<span class="k">var</span> Colombia=Countries.filter(ee.Filter.eq("ADM0_NAME","Colombia"));
+<span class="c">
+///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 2 --&gt; Visualization of feature collections on map</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+Map.centerObject(Colombia,5);
+Map.addLayer(Colombia,{color:"red"},"Colombia", true);
+<span class="c">
+///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 1 --&gt; Filter Feature collections with filterMetadata</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">//// Load cities feature collections </span>
+<span class="k">var</span> cities =ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level2");
+print("Ciudades: ", cities.limit(10));
+
+
+<span class="k">var</span> Bogota=cities.filterMetadata("ADM2_NAME", "equals", "Santafe De Bogota D.c.");
+<span class="c">
+///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 2 --&gt; Visualization of feature collections on map</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+Map.addLayer(Bogota,{color:"white"},"Bogotá", true);</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion">¶</a></h2>
+    <p>En este taller aprendimos a trabajar con shapefiles en Google Earth Engine: filtrarlos, visualizarlos en un mapa interactivo y realizar análisis básicos. Estas habilidades son fundamentales para cualquier proyecto de análisis espacial en GEE.</p>
+
+    <h2 id="material">Material de apoyo <a class="anchor" href="#material">¶</a></h2>
+    <div class="descarga">
+      <div><strong>Guía en PDF</strong><span>4.0 Trabajar con Feature Collections · 6 páginas</span></div>
+      <a class="btn" href="../assets/pdf/4.0-trabajar-con-feature-collections.pdf" target="_blank" rel="noopener">Descargar PDF</a>
+    </div>
+    <div class="descarga">
+      <div><strong>Código en GEE</strong><span>Abre el script del video en el Code Editor</span></div>
+      <a class="btn ghost" href="https://code.earthengine.google.com/04857d1c56baa5953b8f2c2945c3c1d6" target="_blank" rel="noopener">Abrir código</a>
+    </div>
