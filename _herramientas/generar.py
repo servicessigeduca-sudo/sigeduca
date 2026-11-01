@@ -8,6 +8,7 @@ import hashlib, html, pathlib, re
 
 RAIZ = pathlib.Path(__file__).resolve().parent.parent
 CANAL = "https://www.youtube.com/@SIG_EDUCA"
+SITIO = "https://servicessigeduca-sudo.github.io/sigeduca/"
 
 YT_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .6 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .4-4.8 31 31 0 0 0-.4-4.8ZM9.7 15.1V8.9l5.8 3.1Z"/></svg>'
 IG_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>'
@@ -40,6 +41,9 @@ MENU = [
     ]),
 ]
 
+INICIO_TITULO = "SIG EDUCA · Tutoriales de ArcGIS Pro, QGIS y Google Earth Engine"
+INICIO_DESCRIPCION = "Tutoriales prácticos en español sobre ArcGIS Pro, QGIS, Google Earth Pro y Google Earth Engine, con video, guía en PDF y código."
+
 TUTORIALES = {
     "registro-earth-engine": {
         "titulo": "Creación y registro en Google Earth Engine",
@@ -69,6 +73,31 @@ TUTORIALES = {
         "siguiente": ("Ruta de aprendizaje", "index.html#ruta"),
     },
 }
+
+def seo(titulo, descripcion, ruta, prefijo):
+    """Etiquetas para buscadores y para la vista previa al compartir en redes."""
+    url = SITIO + ruta
+    tipo = "article" if ruta else "website"
+    t, d = html.escape(titulo), html.escape(descripcion)
+    return f'''<!-- seo:inicio -->
+<link rel="canonical" href="{url}">
+<link rel="icon" type="image/png" href="{prefijo}assets/img/favicon.png">
+<link rel="apple-touch-icon" href="{prefijo}assets/img/apple-touch-icon.png">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="{tipo}">
+<meta property="og:site_name" content="SIG EDUCA">
+<meta property="og:locale" content="es_ES">
+<meta property="og:title" content="{t}">
+<meta property="og:description" content="{d}">
+<meta property="og:url" content="{url}">
+<meta property="og:image" content="{SITIO}assets/img/compartir.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{t}">
+<meta name="twitter:description" content="{d}">
+<meta name="twitter:image" content="{SITIO}assets/img/compartir.png">
+<!-- seo:fin -->'''
 
 def menu(prefijo, actual=None):
     base = f"{prefijo}index.html" if prefijo else ""
@@ -125,6 +154,7 @@ def pagina(slug, t):
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{html.escape(t["titulo"])} · SIG EDUCA</title>
 <meta name="description" content="{html.escape(t["descripcion"])}">
+{seo(t["titulo"] + " · SIG EDUCA", t["descripcion"], f"tutoriales/{slug}.html", "../")}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -176,7 +206,12 @@ def main():
     s = re.sub(r'<nav class="side" id="side".*?</nav>', lambda m: menu(""), s, count=1, flags=re.S)
     s = re.sub(r'<footer class="foot">.*?</footer>', lambda m: pie(), s, count=1, flags=re.S)
     s = re.sub(r'<!-- contacto:inicio -->.*?<!-- contacto:fin -->', lambda m: contacto(), s, count=1, flags=re.S)
+    s = re.sub(r'<!-- seo:inicio -->.*?<!-- seo:fin -->', lambda m: seo(INICIO_TITULO, INICIO_DESCRIPCION, "", ""), s, count=1, flags=re.S)
     idx.write_text(version(s))
+    # Mapa del sitio para Google y Bing
+    urls = [SITIO] + [f"{SITIO}tutoriales/{slug}.html" for slug in TUTORIALES]
+    (RAIZ / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        + "".join(f"  <url><loc>{u}</loc></url>\n" for u in urls) + "</urlset>\n")
     print("Generados:", ", ".join(TUTORIALES))
 
 if __name__ == "__main__":
