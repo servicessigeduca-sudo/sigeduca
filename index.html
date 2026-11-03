@@ -30,7 +30,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/style.css?v=417096c9">
+<link rel="stylesheet" href="assets/style.css?v=5f3f8245">
 <script src="assets/theme.js?v=45ee55f4"></script>
 
 
@@ -113,6 +113,13 @@
         <summary>Apps</summary>
         <ul>
           <li><a href="apps/easy-download-dems.html">Easy Download DEMs</a></li>
+        </ul>
+      </details></li>
+      <li class="grupo"><details>
+        <summary>Módulos</summary>
+        <ul>
+          <li><a href="modulos/jones-2019r.html">Jones_2019R</a></li>
+          <li><a href="modulos/zou-2018.html">Zou_2018</a></li>
         </ul>
       </details></li>
       <li><a href="#contacto">Contacto</a></li>
@@ -254,6 +261,33 @@
       </article>
     </div>
     <!-- apps:fin -->
+
+    <h2 id="modulos">Módulos de Earth Engine <a class="anchor" href="#modulos" aria-label="Enlace a esta sección">#</a></h2>
+    <p class="lead">Funciones públicas de SIG EDUCA que puedes cargar en tus scripts con <code>require()</code>, sin copiar código.</p>
+    <!-- modulos:inicio -->
+    <div class="apps">
+      <article class="app">
+        <div class="app-body">
+          <span class="app-tipo">Módulo de Earth Engine · Agua</span>
+          <h3><a class="stretch" href="modulos/jones-2019r.html">Jones_2019R</a></h3>
+          <code class="mod-ruta">users/sigeduca/routines:Indexes/Jones_2019R</code>
+          <p>Clasifica el agua superficial con las cinco pruebas de DSWE en imágenes Landsat de Colección 2, nivel 2.</p>
+          <ul class="app-chips" aria-label="Funciones"><li>ClassifyWaterJones2019()</li></ul>
+          <span class="btn app-cta">Ver módulo →</span>
+        </div>
+      </article>
+      <article class="app">
+        <div class="app-body">
+          <span class="app-tipo">Módulo de Earth Engine · Agua</span>
+          <h3><a class="stretch" href="modulos/zou-2018.html">Zou_2018</a></h3>
+          <code class="mod-ruta">users/sigeduca/routines:Indexes/Zou_2018</code>
+          <p>Detecta agua abierta comparando el MNDWI con el NDVI y el EVI, con la regla de Zou et al. (2018).</p>
+          <ul class="app-chips" aria-label="Funciones"><li>ClassifyWaterZou2018()</li></ul>
+          <span class="btn app-cta">Ver módulo →</span>
+        </div>
+      </article>
+    </div>
+    <!-- modulos:fin -->
 
     <h2 id="comunidad">Únete a la comunidad <a class="anchor" href="#comunidad" aria-label="Enlace a esta sección">#</a></h2>
     <div class="canal">

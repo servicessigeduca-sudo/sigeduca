@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=417096c9">
+<link rel="stylesheet" href="../assets/style.css?v=5f3f8245">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -110,6 +110,13 @@
         <summary>Apps</summary>
         <ul>
           <li><a href="../apps/easy-download-dems.html">Easy Download DEMs</a></li>
+        </ul>
+      </details></li>
+      <li class="grupo"><details>
+        <summary>Módulos</summary>
+        <ul>
+          <li><a href="../modulos/jones-2019r.html">Jones_2019R</a></li>
+          <li><a href="../modulos/zou-2018.html">Zou_2018</a></li>
         </ul>
       </details></li>
       <li><a href="../index.html#contacto">Contacto</a></li>
@@ -290,8 +297,8 @@ img_medians = img_medians.<span class="f">removeAll</span>([<span class="n">0</s
 <span class="g">print</span>(<span class="s">"Mediana de imágenes por año"</span>, colmeans);
 <span class="g">print</span>(<span class="s">"Lista de años"</span>, años);</pre></div>
 
-    <h2 id="modulo">El módulo de Jones (2019) <a class="anchor" href="#modulo" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Las pruebas y la tabla de clases están en el módulo público <code>users/sigeduca/routines:Indexes/Jones_2019</code>, que el script carga con <code>require()</code>. No tienes que copiarlo; lo mostramos para que veas cómo funciona. Cada prueba devuelve una imagen de ceros y unos. Al multiplicarlas por 1, 10, 100, 1000 y 10 000 y sumarlas obtenemos el código de cinco cifras de cada píxel; los ceros a la izquierda desaparecen, así que 00111 queda como 111. Después, cada grupo de códigos se convierte en su clase.</p>
+    <h2 id="modulo">El módulo Jones_2019R <a class="anchor" href="#modulo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Las pruebas y la tabla de clases están en el módulo público <code>users/sigeduca/routines:Indexes/Jones_2019R</code>, que el script carga con <code>require()</code>. No tienes que copiarlo; lo mostramos para que veas cómo funciona, y también está en la página <a href="../modulos/jones-2019r.html">Jones_2019R</a>. La R indica la versión revisada para Landsat Colección 2, nivel 2. Cada prueba devuelve una imagen de ceros y unos. Al multiplicarlas por 1, 10, 100, 1000 y 10 000 y sumarlas obtenemos el código de cinco cifras de cada píxel; los ceros a la izquierda desaparecen, así que 00111 queda como 111. Después, cada grupo de códigos se convierte en su clase.</p>
     <div class="callout"><p><strong>Agua oscura y valores negativos.</strong> El factor de escala de la Colección 2 resta 0,2, así que en el mar o en lagos profundos algunas bandas quedan un poco por debajo de 0. <code>normalizedDifference()</code> enmascara cualquier píxel con un valor negativo, y sin corrección esas zonas quedarían sin clasificar, sobre todo en las costas. Por eso, al inicio de <code>Dswe()</code>, llevamos a 0 las bandas negativas con <code>max(0)</code>.</p></div>
     <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">//// Main references </span>
@@ -422,7 +429,7 @@ exports.ClassifyWaterJones2019 = <span class="k">function</span>(img) {
 <span class="c">// 6 → APLICAR DSWE JONES (2019)</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="k">var</span> x = <span class="g">require</span>(<span class="s">'users/sigeduca/routines:Indexes/Jones_2019'</span>); <span class="c">// MÓDULO DE JONES</span>
+<span class="k">var</span> x = <span class="g">require</span>(<span class="s">'users/sigeduca/routines:Indexes/Jones_2019R'</span>); <span class="c">// MÓDULO DE JONES</span>
 
 <span class="c">// Crear función Jones (DSWE)</span>
 <span class="k">function</span> <span class="f">Jones</span> (image){
@@ -721,7 +728,7 @@ img_medians = img_medians.<span class="f">removeAll</span>([<span class="n">0</s
 <span class="c">// 6 → APLICAR DSWE JONES (2019)</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="k">var</span> x = <span class="g">require</span>(<span class="s">'users/sigeduca/routines:Indexes/Jones_2019'</span>); <span class="c">// MÓDULO DE JONES</span>
+<span class="k">var</span> x = <span class="g">require</span>(<span class="s">'users/sigeduca/routines:Indexes/Jones_2019R'</span>); <span class="c">// MÓDULO DE JONES</span>
 
 <span class="c">// Crear función Jones (DSWE)</span>
 <span class="k">function</span> <span class="f">Jones</span> (image){

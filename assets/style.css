@@ -354,3 +354,5 @@ p code,li code,td code{overflow-wrap:anywhere}
 main>.app-tipo{display:block;margin-bottom:6px}
 .pasos-app{padding-left:1.3em;max-width:68ch}
 .pasos-app li{margin:0 0 10px;line-height:1.6}
+.mod-ruta{font:500 .74rem var(--mono);color:var(--muted);overflow-wrap:anywhere;background:none;padding:0}
+.app-body .mod-ruta + p{margin-top:2px}

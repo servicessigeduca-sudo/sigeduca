@@ -117,6 +117,143 @@ APPS = [
                "ALOS DSM es un modelo de superficie: incluye la altura de árboles y edificios. SRTM y NASADEM se acercan más al terreno, aunque en bosques densos también registran parte del dosel."]},
 ]
 
+# Módulos públicos de Earth Engine (users/sigeduca/routines). El código vive en _herramientas/modulos/.
+MODULOS = [
+    {"id": "jones-2019r",
+     "var": "jones",
+     "nombre": "Jones_2019R",
+     "ruta": "users/sigeduca/routines:Indexes/Jones_2019R",
+     "archivo": "Jones_2019R.js",
+     "tema": "Agua",
+     "tarjeta": "Clasifica el agua superficial con las cinco pruebas de DSWE en imágenes Landsat de Colección 2, nivel 2.",
+     "descripcion": "Módulo de Google Earth Engine que aplica el método DSWE (Jones, 2019) a imágenes Landsat de Colección 2, nivel 2, y devuelve una máscara de agua.",
+     "presentacion": "Implementa las cinco pruebas espectrales de DSWE (<em>Dynamic Surface Water Extent</em>), el método del USGS desarrollado por John W. Jones, con la revisión de las pruebas de agua parcial publicada en 2019. Parte del código de RivWidthCloud (Yang et al., 2020), escrito para Landsat Colección 1, y lo adapta a la reflectancia de superficie de la Colección 2: los umbrales están en reflectancia de 0 a 1 y las bandas negativas se llevan a 0 para no perder el agua oscura de las costas.",
+     "funciones": [["ClassifyWaterJones2019(image)",
+                    "Imagen Landsat con las bandas <code>Blue</code>, <code>Green</code>, <code>Red</code>, <code>Nir</code>, <code>Swir1</code> y <code>Swir2</code>, en reflectancia de 0 a 1.",
+                    "Imagen de una banda, <code>waterMask</code>: 1 donde hay agua (clases 1 y 2 de DSWE) y 0 donde no."]],
+     "notas": ["<strong>Primero escala y renombra.</strong> Aplica el factor de escala de la Colección 2 (<code>× 0.0000275 − 0.2</code>) y renombra las bandas con los nombres comunes antes de llamar a la función. Con los valores digitales sin escalar, las pruebas dan resultados incorrectos.",
+               "<strong>Solo devuelve la máscara.</strong> Internamente, <code>Dswe()</code> calcula las cinco clases (0 a 4), pero el módulo solo exporta la máscara de agua de confianza alta y moderada. Si necesitas las clases de agua parcial, exporta también esa función.",
+               "<strong>¿Y Jones_2019, sin R?</strong> Es la versión original, con los umbrales de la Colección 1, que guardaba la reflectancia multiplicada por 10 000. Con imágenes de la Colección 2 escaladas de 0 a 1, sus pruebas 4 y 5 se cumplen siempre y marcan más agua de la real. Para imágenes actuales usa siempre Jones_2019R."],
+     "ejemplo": """// Cargar el módulo
+var jones = require('users/sigeduca/routines:Indexes/Jones_2019R');
+
+// Una imagen de Landsat 9 con poca nubosidad sobre el AOI
+var img = ee.ImageCollection('LANDSAT/LC09/C02/T1_L2')
+  .filterBounds(AOI)
+  .filter(ee.Filter.lte('CLOUD_COVER', 10))
+  .first();
+
+// Escalar a reflectancia y usar los nombres comunes de las bandas
+var bands = img.select('SR_B.').multiply(0.0000275).add(-0.2)
+  .select(['SR_B2', 'SR_B3', 'SR_B4', 'SR_B5', 'SR_B6', 'SR_B7'],
+          ['Blue', 'Green', 'Red', 'Nir', 'Swir1', 'Swir2']);
+
+// Máscara de agua
+var water = jones.ClassifyWaterJones2019(bands);
+
+Map.centerObject(AOI, 11);
+Map.addLayer(bands, {bands: ['Red', 'Green', 'Blue'], min: 0, max: 0.25}, 'Color verdadero');
+Map.addLayer(water.selfMask(), {palette: ['0000ff']}, 'Agua (DSWE)');""",
+     "lecciones": ["agua-dswe"],
+     "referencias": ["Jones, J. W. (2019). Improved automated detection of subpixel-scale inundation—Revised Dynamic Surface Water Extent (DSWE) partial surface water tests. <em>Remote Sensing</em>, 11(4), 374.",
+                     "Yang, X., Pavelsky, T. M., Allen, G. H. y Donchyts, G. (2020). RivWidthCloud: An automated Google Earth Engine algorithm for river width extraction from remotely sensed imagery. <em>IEEE Geoscience and Remote Sensing Letters</em>, 17(2), 217–221."]},
+    {"id": "list-educaindex",
+     "pendiente": True,  # se publica cuando MBSRV quede corregido en el repositorio
+     "nombre": "LIST_EDUCAINDEX",
+     "ruta": "users/sigeduca/routines:Indexes/LIST_EDUCAINDEX",
+     "archivo": "LIST_EDUCAINDEX.js",
+     "tema": "Índices espectrales",
+     "tarjeta": "Trece índices de vegetación, agua y fuego para Landsat 4 a 9, con una función que los calcula todos a la vez.",
+     "descripcion": "Módulo de Google Earth Engine con trece índices espectrales para Landsat 4 a 9 (NDVI, EVI, SAVI, MSAVI, NDMI, NBR, NBR2, NDWI, MNDWI, AWEI, AWEsh, MBSRV y MBSRN) y una función que los calcula todos.",
+     "presentacion": "Reúne en un solo lugar los índices que usamos en el curso: de vegetación (NDVI, EVI, SAVI y MSAVI), de humedad y fuego (NDMI, NBR y NBR2) y de agua (NDWI, MNDWI, AWEI, AWEsh, MBSRV y MBSRN). Cada índice es una función que recibe una imagen y devuelve una banda con el nombre del índice en minúsculas. <code>calcAllIndices()</code> devuelve una sola imagen con las trece bandas. Funciona con cualquier Landsat de la Colección 2, nivel 2, siempre que las bandas tengan los nombres comunes.",
+     "funciones": [
+        ["NDVI(image)", "Imagen con <code>Nir</code> y <code>Red</code>.", "Banda <code>ndvi</code>: vigor de la vegetación."],
+        ["EVI(image)", "Imagen con <code>Nir</code>, <code>Red</code> y <code>Blue</code>.", "Banda <code>evi</code>: vigor en vegetación densa."],
+        ["SAVI(image)", "Imagen con <code>Nir</code> y <code>Red</code>.", "Banda <code>savi</code>: vegetación con corrección del suelo."],
+        ["MSAVI(image)", "Imagen con <code>Nir</code> y <code>Red</code>.", "Banda <code>msavi</code>: SAVI sin factor de suelo fijo."],
+        ["NDMI(image)", "Imagen con <code>Nir</code> y <code>Swir1</code>.", "Banda <code>ndmi</code>: humedad de la vegetación."],
+        ["NBR(image)", "Imagen con <code>Nir</code> y <code>Swir2</code>.", "Banda <code>nbr</code>: áreas quemadas."],
+        ["NBR2(image)", "Imagen con <code>Swir1</code> y <code>Swir2</code>.", "Banda <code>nbr2</code>: severidad del fuego y humedad del suelo."],
+        ["NDWI(image)", "Imagen con <code>Green</code> y <code>Nir</code>.", "Banda <code>ndwi</code>: agua abierta."],
+        ["MNDWI(image)", "Imagen con <code>Green</code> y <code>Swir1</code>.", "Banda <code>mndwi</code>: agua, separada mejor de lo construido."],
+        ["AWEI(image)", "Imagen con <code>Green</code>, <code>Nir</code>, <code>Swir1</code> y <code>Swir2</code>.", "Banda <code>awei</code>: agua sin sombras (AWEInsh)."],
+        ["AWESH(image)", "Imagen con <code>Blue</code>, <code>Green</code>, <code>Nir</code>, <code>Swir1</code> y <code>Swir2</code>.", "Banda <code>awesh</code>: agua en zonas con sombras."],
+        ["MBSRV(image)", "Imagen con <code>Green</code> y <code>Red</code>.", "Banda <code>mbsrv</code>: suma del visible (verde + rojo), usada por DSWE."],
+        ["MBSRN(image)", "Imagen con <code>Nir</code> y <code>Swir1</code>.", "Banda <code>mbsrn</code>: suma del infrarrojo (NIR + SWIR1), usada por DSWE."],
+        ["calcAllIndices(image)", "Imagen con <code>Blue</code>, <code>Green</code>, <code>Red</code>, <code>Nir</code>, <code>Swir1</code> y <code>Swir2</code>.", "Imagen con las trece bandas anteriores."]],
+     "notas": ["<strong>Escala antes de calcular.</strong> EVI, SAVI y MSAVI tienen constantes (+1, +0,5) pensadas para reflectancia de 0 a 1. Con los valores digitales de la Colección 2 sin escalar, dan resultados sin sentido. Aplica primero <code>× 0.0000275 − 0.2</code>.",
+               "<strong>Nombres de bandas.</strong> Las funciones buscan las bandas por nombre común. En Landsat 8 y 9 el azul es <code>SR_B2</code>; en Landsat 4, 5 y 7 es <code>SR_B1</code>. Renombra con <code>select()</code> según el satélite, como en el ejemplo."],
+     "ejemplo": """// Cargar el módulo
+var x = require('users/sigeduca/routines:Indexes/LIST_EDUCAINDEX');
+
+// Una imagen de Landsat 9 con poca nubosidad sobre el AOI
+var img = ee.ImageCollection('LANDSAT/LC09/C02/T1_L2')
+  .filterBounds(AOI)
+  .filter(ee.Filter.lte('CLOUD_COVER', 10))
+  .first();
+
+// Escalar a reflectancia y usar los nombres comunes de las bandas
+var bands = img.select('SR_B.').multiply(0.0000275).add(-0.2)
+  .select(['SR_B2', 'SR_B3', 'SR_B4', 'SR_B5', 'SR_B6', 'SR_B7'],
+          ['Blue', 'Green', 'Red', 'Nir', 'Swir1', 'Swir2']);
+
+// Un índice o todos a la vez
+var evi = x.EVI(bands);
+var indices = x.calcAllIndices(bands);
+print('Índices', indices);
+
+Map.centerObject(AOI, 11);
+Map.addLayer(evi, {min: 0, max: 0.8, palette: ['DF923D', 'FCD163', '74A901', '056201', '004C00']}, 'EVI');
+Map.addLayer(indices.select('mndwi'), {min: -0.5, max: 0.5, palette: ['d7191c', 'ffffbf', '2c7bb6']}, 'MNDWI');""",
+     "lecciones": ["indices-serie-tiempo"],
+     "referencias": ["Rouse, J. W., Haas, R. H., Schell, J. A. y Deering, D. W. (1974). Monitoring vegetation systems in the Great Plains with ERTS. <em>Third ERTS Symposium</em>, NASA SP-351, 309–317.",
+                     "Huete, A., Didan, K., Miura, T., Rodriguez, E. P., Gao, X. y Ferreira, L. G. (2002). Overview of the radiometric and biophysical performance of the MODIS vegetation indices. <em>Remote Sensing of Environment</em>, 83(1–2), 195–213.",
+                     "Huete, A. R. (1988). A soil-adjusted vegetation index (SAVI). <em>Remote Sensing of Environment</em>, 25(3), 295–309.",
+                     "Qi, J., Chehbouni, A., Huete, A. R., Kerr, Y. H. y Sorooshian, S. (1994). A modified soil adjusted vegetation index. <em>Remote Sensing of Environment</em>, 48(2), 119–126.",
+                     "McFeeters, S. K. (1996). The use of the Normalized Difference Water Index (NDWI) in the delineation of open water features. <em>International Journal of Remote Sensing</em>, 17(7), 1425–1432.",
+                     "Xu, H. (2006). Modification of normalised difference water index (NDWI) to enhance open water features in remotely sensed imagery. <em>International Journal of Remote Sensing</em>, 27(14), 3025–3033.",
+                     "Feyisa, G. L., Meilby, H., Fensholt, R. y Proud, S. R. (2014). Automated Water Extraction Index: A new technique for surface water mapping using Landsat imagery. <em>Remote Sensing of Environment</em>, 140, 23–35.",
+                     "Key, C. H. y Benson, N. C. (2006). Landscape assessment (LA): Sampling and analysis methods. En <em>FIREMON: Fire effects monitoring and inventory system</em>. USDA Forest Service, RMRS-GTR-164-CD."]},
+    {"id": "zou-2018",
+     "var": "zou",
+     "nombre": "Zou_2018",
+     "ruta": "users/sigeduca/routines:Indexes/Zou_2018",
+     "archivo": "Zou_2018.js",
+     "tema": "Agua",
+     "tarjeta": "Detecta agua abierta comparando el MNDWI con el NDVI y el EVI, con la regla de Zou et al. (2018).",
+     "descripcion": "Módulo de Google Earth Engine que clasifica el agua abierta con la regla de Zou et al. (2018): MNDWI mayor que NDVI o que EVI, y EVI menor que 0,1.",
+     "presentacion": "Zou y sus colaboradores (2018) usaron esta regla para mapear los cuerpos de agua de Estados Unidos entre 1984 y 2016 con todo el archivo de Landsat. La idea es simple: en el agua, el MNDWI supera a los índices de vegetación, y el EVI casi no tiene señal. Un píxel es agua si su MNDWI es mayor que su NDVI o que su EVI, y además su EVI es menor que 0,1. Esa última condición evita confundir el agua con vegetación inundada o muy húmeda. Es más sencilla que DSWE y funciona bien en lagos, embalses y ríos anchos.",
+     "funciones": [["ClassifyWaterZou2018(image)",
+                    "Imagen con las bandas <code>Blue</code>, <code>Green</code>, <code>Red</code>, <code>Nir</code> y <code>Swir1</code>, en reflectancia de 0 a 1.",
+                    "Imagen de una banda, <code>waterMask</code>: 1 donde hay agua y 0 donde no."]],
+     "notas": ["<strong>Escala antes de clasificar.</strong> El EVI usa una constante de 1 pensada para reflectancia de 0 a 1, y el umbral de 0,1 también. Con los valores digitales sin escalar, la regla no funciona.",
+               "<strong>Agua oscura en las costas.</strong> <code>normalizedDifference()</code> enmascara los píxeles con valores negativos, y en el mar o en lagos profundos la reflectancia escalada de la Colección 2 puede quedar un poco por debajo de 0. Si esas zonas te salen vacías, lleva las bandas a 0 antes con <code>image.max(0)</code>, como hace Jones_2019R."],
+     "ejemplo": """// Cargar el módulo
+var zou = require('users/sigeduca/routines:Indexes/Zou_2018');
+
+// Una imagen de Landsat 9 con poca nubosidad sobre el AOI
+var img = ee.ImageCollection('LANDSAT/LC09/C02/T1_L2')
+  .filterBounds(AOI)
+  .filter(ee.Filter.lte('CLOUD_COVER', 10))
+  .first();
+
+// Escalar a reflectancia y usar los nombres comunes de las bandas
+var bands = img.select('SR_B.').multiply(0.0000275).add(-0.2)
+  .select(['SR_B2', 'SR_B3', 'SR_B4', 'SR_B5', 'SR_B6', 'SR_B7'],
+          ['Blue', 'Green', 'Red', 'Nir', 'Swir1', 'Swir2']);
+
+// Máscara de agua
+var water = zou.ClassifyWaterZou2018(bands);
+
+Map.centerObject(AOI, 11);
+Map.addLayer(bands, {bands: ['Red', 'Green', 'Blue'], min: 0, max: 0.25}, 'Color verdadero');
+Map.addLayer(water.selfMask(), {palette: ['00ffff']}, 'Agua (Zou, 2018)');""",
+     "lecciones": [],
+     "referencias": ["Zou, Z., Xiao, X., Dong, J., Qin, Y., Doughty, R. B., Menarguez, M. A., Zhang, G. y Wang, J. (2018). Divergent trends of open-surface water body area in the contiguous United States from 1984 to 2016. <em>Proceedings of the National Academy of Sciences</em>, 115(15), 3810–3815.",
+                     "Yang, X., Pavelsky, T. M., Allen, G. H. y Donchyts, G. (2020). RivWidthCloud: An automated Google Earth Engine algorithm for river width extraction from remotely sensed imagery. <em>IEEE Geoscience and Remote Sensing Letters</em>, 17(2), 217–221."]},
+]
+MODULOS = [m for m in MODULOS if not m.get("pendiente")]
+
 def bloque_apps():
     """Portada: galería de apps, cada una con una vista previa en un marco de navegador."""
     out = ["<!-- apps:inicio -->", '    <div class="apps">']
@@ -137,6 +274,24 @@ def bloque_apps():
     if not APPS:
         out.append('''      <article class="app prox"><div class="app-body"><h3>Muy pronto</h3><p>Estamos preparando las primeras apps.</p></div></article>''')
     out += ["    </div>", "    <!-- apps:fin -->"]
+    return "\n".join(out)
+
+def bloque_modulos():
+    """Portada: tarjetas de los módulos públicos de Earth Engine."""
+    out = ["<!-- modulos:inicio -->", '    <div class="apps">']
+    for m in MODULOS:
+        chips = "".join(f"<li>{html.escape(f[0].split('(')[0])}()</li>" for f in m["funciones"])
+        out.append(f'''      <article class="app">
+        <div class="app-body">
+          <span class="app-tipo">Módulo de Earth Engine · {html.escape(m["tema"])}</span>
+          <h3><a class="stretch" href="modulos/{m["id"]}.html">{html.escape(m["nombre"])}</a></h3>
+          <code class="mod-ruta">{html.escape(m["ruta"])}</code>
+          <p>{html.escape(m["tarjeta"])}</p>
+          <ul class="app-chips" aria-label="Funciones">{chips}</ul>
+          <span class="btn app-cta">Ver módulo →</span>
+        </div>
+      </article>''')
+    out += ["    </div>", "    <!-- modulos:fin -->"]
     return "\n".join(out)
 
 NIVEL_NUM = {"básico": 1, "intermedio": 2, "avanzado": 3}
@@ -651,7 +806,86 @@ def pagina_app(a):
 '''
 
 
-def menu(prefijo, actual=None, curso=None, app=None):
+def pagina_modulo(m):
+    titulo = f"{m['nombre']} · Módulo de Earth Engine · SIG EDUCA"
+    codigo = (RAIZ / "_herramientas/modulos" / m["archivo"]).read_text().strip()
+    v = m.get("var", "x")
+    req = f"var {v} = require('{m['ruta']}');"
+    filas = "".join(f'          <tr><td class="n"><code>{html.escape(f[0])}</code></td><td>{f[1]}</td><td>{f[2]}</td></tr>\n' for f in m["funciones"])
+    notas = "\n".join(f'    <div class="callout"><p>{n}</p></div>' for n in m.get("notas", []))
+    lecs = "".join(f'      <li><a href="../tutoriales/{s}.html">{html.escape(TUTORIALES[s]["titulo"])}</a></li>\n' for s in m.get("lecciones", []))
+    refs = "".join(f"      <li>{r}</li>\n" for r in m.get("referencias", []))
+    h = lambda i, t: f'\n    <h2 id="{i}">{t} <a class="anchor" href="#{i}" aria-label="Enlace a esta sección">#</a></h2>'
+    cuerpo = f'''{h("que-hace", "Qué hace")}
+    <p>{m["presentacion"]}</p>
+{h("cargar", "Cómo cargarlo")}
+    <p>El módulo es público. Pega esta línea al inicio de tu script en el Code Editor y usa sus funciones con <code>{v}.</code> delante, por ejemplo <code>{v}.{m["funciones"][0][0]}</code>.</p>
+    <div class="codebox"><pre>{html.escape(req)}</pre></div>
+{h("funciones", "Funciones")}
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Función</th><th>Recibe</th><th>Devuelve</th></tr></thead>
+        <tbody>
+{filas}        </tbody>
+      </table>
+    </div>
+{notas}
+{h("ejemplo", "Ejemplo de uso")}
+    <p>Dibuja una geometría llamada <code>AOI</code> en el mapa y ejecuta este script.</p>
+    <div class="codebox"><pre>{html.escape(m["ejemplo"])}</pre></div>
+{h("codigo", "Código del módulo")}
+    <p>No necesitas copiarlo para usarlo. Si quieres modificarlo, créalo en tu propio repositorio y cambia la ruta de <code>require()</code>.</p>
+    <div class="codebox"><pre>{html.escape(codigo)}</pre></div>'''
+    if lecs:
+        cuerpo += h("lecciones", "Lecciones que lo usan") + f'\n    <ul class="refs">\n{lecs}    </ul>'
+    if refs:
+        cuerpo += h("referencias", "Referencias") + f'\n    <ul class="refs">\n{refs}    </ul>'
+    cuerpo = resaltar_codigo(cuerpo)
+    return f'''<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-src https://www.youtube-nocookie.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{html.escape(titulo)}</title>
+<meta name="description" content="{html.escape(m["descripcion"])}">
+{seo(titulo, m["descripcion"], f"modulos/{m['id']}.html", "../")}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/theme.js"></script>
+</head>
+<body>
+{cabecera("../")}
+
+<div class="shell">
+  {menu("../", modulo=m["id"])}
+
+  <main>
+    <div class="crumb"><a href="../index.html#modulos">módulos</a> / {html.escape(m["nombre"].lower())}</div>
+    <span class="app-tipo">Módulo de Google Earth Engine · {html.escape(m["tema"])} · público</span>
+    <h1>{html.escape(m["nombre"])}</h1>
+    <p class="lead">{html.escape(m["descripcion"])}</p>
+{cuerpo}
+
+    <div class="pager"><a href="../index.html#modulos"><small>Volver</small>← Todos los módulos</a></div>
+    {pie()}
+  </main>
+
+  <aside class="toc" aria-label="En esta página">
+    <h4>En esta página</h4>
+    <ul id="toc"></ul>
+  </aside>
+</div>
+<script src="../assets/tutorial.js"></script>
+</body>
+</html>
+'''
+
+
+def menu(prefijo, actual=None, curso=None, app=None, modulo=None):
     base = f"{prefijo}index.html" if prefijo else ""
     if actual and not curso:
         curso = (curso_de(actual)[0] or {}).get("id")
@@ -684,6 +918,13 @@ def menu(prefijo, actual=None, curso=None, app=None):
     for a in APPS:
         on = ' class="on" aria-current="page"' if a["id"] == app else ''
         partes.append(f'          <li><a href="{prefijo}apps/{a["id"]}.html"{on}>{html.escape(a["nombre"])}</a></li>')
+    partes += ['        </ul>', '      </details></li>']
+    m_abierta = " open" if modulo else ""
+    partes += [f'      <li class="grupo"><details{m_abierta}>',
+               '        <summary>Módulos</summary>', '        <ul>']
+    for m in MODULOS:
+        on = ' class="on" aria-current="page"' if m["id"] == modulo else ''
+        partes.append(f'          <li><a href="{prefijo}modulos/{m["id"]}.html"{on}>{html.escape(m["nombre"])}</a></li>')
     partes += ['        </ul>', '      </details></li>']
     partes.append(f'      <li><a href="{base}#contacto">Contacto</a></li>')
     partes += ['    </ul>', '  </nav>']
@@ -846,19 +1087,24 @@ def main():
     (RAIZ / "apps").mkdir(exist_ok=True)
     for a in APPS:
         (RAIZ / "apps" / f"{a['id']}.html").write_text(version(pagina_app(a)))
+    (RAIZ / "modulos").mkdir(exist_ok=True)
+    for m in MODULOS:
+        (RAIZ / "modulos" / f"{m['id']}.html").write_text(version(pagina_modulo(m)))
     idx = RAIZ / "index.html"
     s = idx.read_text()
     s = re.sub(r'<nav class="side" id="side".*?</nav>', lambda m: menu(""), s, count=1, flags=re.S)
     s = re.sub(r'<footer class="foot">.*?</footer>', lambda m: pie(), s, count=1, flags=re.S)
     s = re.sub(r'<!-- cursos:inicio -->.*?<!-- cursos:fin -->', lambda m: bloque_cursos(), s, count=1, flags=re.S)
     s = re.sub(r'<!-- apps:inicio -->.*?<!-- apps:fin -->', lambda m: bloque_apps(), s, count=1, flags=re.S)
+    s = re.sub(r'<!-- modulos:inicio -->.*?<!-- modulos:fin -->', lambda m: bloque_modulos(), s, count=1, flags=re.S)
     s = re.sub(r'<!-- contacto:inicio -->.*?<!-- contacto:fin -->', lambda m: contacto(), s, count=1, flags=re.S)
     s = re.sub(r'<!-- seo:inicio -->.*?<!-- seo:fin -->', lambda m: seo(INICIO_TITULO, INICIO_DESCRIPCION, "", ""), s, count=1, flags=re.S)
     idx.write_text(version(s))
     # Mapa del sitio para Google y Bing
     urls = ([SITIO] + [f"{SITIO}cursos/{c['id']}.html" for c in CURSOS]
             + [f"{SITIO}tutoriales/{slug}.html" for slug in TUTORIALES]
-            + [f"{SITIO}apps/{a['id']}.html" for a in APPS])
+            + [f"{SITIO}apps/{a['id']}.html" for a in APPS]
+            + [f"{SITIO}modulos/{m['id']}.html" for m in MODULOS])
     (RAIZ / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         + "".join(f"  <url><loc>{u}</loc></url>\n" for u in urls) + "</urlset>\n")
     print("Generados:", ", ".join(TUTORIALES))
