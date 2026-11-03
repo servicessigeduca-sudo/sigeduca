@@ -381,7 +381,7 @@ NOMBRE_CORTO = {
     "filtrar-shapefiles": "Filtrar shapefiles",
     "exportar-shapefile": "Descargar shapefiles",
     "descargar-dem": "Descargar un DEM",
-    "analisis-terreno": "Pendiente, aspecto y sombreado",
+    "analisis-terreno": "Análisis de terreno",
     "descargar-landsat-9": "Descargar una imagen de Landsat 9",
     "descargar-sentinel-2": "Descargar una imagen de Sentinel-2",
     "composicion-landsat": "Composición sin nubes con Landsat 9",
