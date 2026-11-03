@@ -6,7 +6,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Easy Download DEMs · App de SIG EDUCA</title>
-<meta name="description" content="Descarga un modelo digital de elevación de cualquier lugar del mundo sin registrarte ni programar. Dibuja tu área, elige el conjunto de datos y obtén un GeoTIFF ligero en pocos clics.">
+<meta name="description" content="Descarga modelos digitales de elevación de todo el mundo en formato GeoTIFF, sin registrarte ni programar. Dibuja tu área, compara los modelos con su ficha técnica y revisa la elevación y la pendiente antes de descargar.">
 <!-- seo:inicio -->
 <link rel="canonical" href="https://servicessigeduca-sudo.github.io/sigeduca/apps/easy-download-dems.html">
 <link rel="icon" type="image/png" href="../assets/img/favicon.png">
@@ -16,14 +16,14 @@
 <meta property="og:site_name" content="SIG EDUCA">
 <meta property="og:locale" content="es_ES">
 <meta property="og:title" content="Easy Download DEMs · App de SIG EDUCA">
-<meta property="og:description" content="Descarga un modelo digital de elevación de cualquier lugar del mundo sin registrarte ni programar. Dibuja tu área, elige el conjunto de datos y obtén un GeoTIFF ligero en pocos clics.">
+<meta property="og:description" content="Descarga modelos digitales de elevación de todo el mundo en formato GeoTIFF, sin registrarte ni programar. Dibuja tu área, compara los modelos con su ficha técnica y revisa la elevación y la pendiente antes de descargar.">
 <meta property="og:url" content="https://servicessigeduca-sudo.github.io/sigeduca/apps/easy-download-dems.html">
 <meta property="og:image" content="https://servicessigeduca-sudo.github.io/sigeduca/assets/img/compartir.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Easy Download DEMs · App de SIG EDUCA">
-<meta name="twitter:description" content="Descarga un modelo digital de elevación de cualquier lugar del mundo sin registrarte ni programar. Dibuja tu área, elige el conjunto de datos y obtén un GeoTIFF ligero en pocos clics.">
+<meta name="twitter:description" content="Descarga modelos digitales de elevación de todo el mundo en formato GeoTIFF, sin registrarte ni programar. Dibuja tu área, compara los modelos con su ficha técnica y revisa la elevación y la pendiente antes de descargar.">
 <meta name="twitter:image" content="https://servicessigeduca-sudo.github.io/sigeduca/assets/img/compartir.png">
 <!-- seo:fin -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -128,22 +128,21 @@
     <div class="crumb"><a href="../index.html#apps">apps</a> / easy download dems</div>
     <span class="app-tipo">App de Google Earth Engine · gratis · sin registro</span>
     <h1>Easy Download DEMs</h1>
-    <p class="lead">Descarga un modelo digital de elevación de cualquier lugar del mundo sin registrarte ni programar. Dibuja tu área, elige el conjunto de datos y obtén un GeoTIFF ligero en pocos clics.</p>
+    <p class="lead">Descarga modelos digitales de elevación de todo el mundo en formato GeoTIFF, sin registrarte ni programar. Dibuja tu área, compara los modelos con su ficha técnica y revisa la elevación y la pendiente antes de descargar.</p>
     <div class="app-hero">
-      <div class="app-shot"><img src="../assets/img/apps/easy-download-dems.jpg" alt="Captura de Easy Download DEMs" width="960" height="540"></div>
+      <div class="app-shot"><img src="../assets/img/apps/easy-dem-v2.jpg" alt="Captura de Easy Download DEMs" width="960" height="540"></div>
     </div>
-    <div class="app-acciones"><a class="btn" href="https://ee-sigeduca.projects.earthengine.app/view/easy-download-dems" target="_blank" rel="noopener">Abrir la app ↗</a></div>
+    <div class="app-acciones"><a class="btn" href="https://ee-sigeduca.projects.earthengine.app/view/easy-dem-v2" target="_blank" rel="noopener">Abrir la app ↗</a></div>
 
     <h2 id="que-es">Qué es <a class="anchor" href="#que-es" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Conseguir un modelo digital de elevación suele exigir crear una cuenta en un portal, buscar las teselas de tu zona y unirlas a mano. Easy Download DEMs resuelve todo eso en el navegador: dibujas tu área sobre el mapa, eliges el conjunto de datos y obtienes un GeoTIFF recortado, listo para abrir en QGIS o ArcGIS Pro. No necesitas registrarte ni saber programar.</p>
+    <p>Conseguir un modelo digital de elevación suele exigir crear una cuenta en un portal, buscar las teselas de tu zona y unirlas a mano. Easy Download DEMs resuelve todo eso en el navegador, a partir del catálogo de Google Earth Engine. Dibujas tu área sobre el mapa y eliges el modelo. Antes de descargar, ves su ficha técnica, el relieve con sombreado y las estadísticas de tu área. Obtienes un GeoTIFF recortado, listo para abrir en QGIS o ArcGIS Pro. No necesitas registrarte ni saber programar.</p>
 
     <h2 id="como-usarla">Cómo usarla <a class="anchor" href="#como-usarla" aria-label="Enlace a esta sección">#</a></h2>
     <ol class="pasos-app">
-      <li>Elige un modo de dibujo en el panel de la izquierda: Rectángulo o Polígono.</li>
-      <li>Dibuja tu área de interés sobre el mapa. Puedes editarla o moverla antes de continuar.</li>
-      <li>En el panel de la derecha, selecciona el modelo de elevación. El predeterminado es SRTM de 30 m.</li>
-      <li>Revisa el modelo y el sombreado que aparecen en el mapa, pulsa <strong>Descargar MDE</strong> y luego el enlace <strong>Descargar</strong>.</li>
-      <li>Recibirás un GeoTIFF en coordenadas geográficas (EPSG:4326). Según el modelo elegido, el resultado tarda de 1 a 3 minutos.</li>
+      <li><strong>Paso 1, dibuja el área de interés.</strong> Elige <strong>Rectángulo</strong> o <strong>Polígono</strong> y dibuja sobre el mapa. Con <strong>Editar área</strong> la ajustas y con <strong>Limpiar</strong> empiezas de nuevo.</li>
+      <li><strong>Paso 2, elige el modelo de elevación.</strong> El predeterminado es SRTM de 30 m. Debajo de la lista aparece la ficha del modelo: resolución, tipo, origen, cobertura, precisión, para qué se recomienda y su ID en Earth Engine. Si no sabes cuál usar, pulsa <strong>Ver guía para elegir el modelo</strong>.</li>
+      <li><strong>Paso 3, revisa el resultado.</strong> El mapa muestra el modelo con sombreado, una leyenda con la elevación mínima y máxima, y las estadísticas de tu área: elevación media y pendiente media y máxima.</li>
+      <li><strong>Descarga el GeoTIFF</strong> desde el final del panel. Lo abres directamente en QGIS o ArcGIS Pro.</li>
     </ol>
     <h2 id="datos">Datos disponibles <a class="anchor" href="#datos" aria-label="Enlace a esta sección">#</a></h2>
     <div class="tbl">
@@ -163,7 +162,7 @@
     <div class="callout"><p>Para áreas muy grandes con modelos de 30 m, el archivo puede superar el límite de descarga directa de Earth Engine. Si pasa, divide el área o elige un modelo de menor resolución.</p></div>
     <div class="callout"><p>ALOS DSM es un modelo de superficie: incluye la altura de árboles y edificios. SRTM y NASADEM se acercan más al terreno, aunque en bosques densos también registran parte del dosel.</p></div>
 
-    <div class="app-acciones fin"><a class="btn" href="https://ee-sigeduca.projects.earthengine.app/view/easy-download-dems" target="_blank" rel="noopener">Abrir la app ↗</a></div>
+    <div class="app-acciones fin"><a class="btn" href="https://ee-sigeduca.projects.earthengine.app/view/easy-dem-v2" target="_blank" rel="noopener">Abrir la app ↗</a></div>
     <div class="pager"><a href="../index.html#apps"><small>Volver</small>← Todas las apps</a></div>
     <footer class="foot"><span>© 2026 SIG EDUCA</span><span class="redes"><a href="https://www.youtube.com/@SIG_EDUCA" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .6 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .4-4.8 31 31 0 0 0-.4-4.8ZM9.7 15.1V8.9l5.8 3.1Z"/></svg></a><a href="https://www.instagram.com/sig_educa" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a><a href="https://www.linkedin.com/in/sig-educa" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9.5h4V21H3Zm7 0h3.8v1.6h.1c.5-1 1.8-2 3.8-2 4 0 4.8 2.6 4.8 6V21h-4v-5.2c0-1.2 0-2.8-1.7-2.8s-2 1.3-2 2.7V21h-4Z"/></svg></a></span></footer>
   </main>
