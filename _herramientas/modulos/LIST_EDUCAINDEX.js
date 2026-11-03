@@ -7,7 +7,7 @@
 // --- BASE INDEX FUNCTIONS ------------------------------------------------------
 
 exports.MBSRV = function (image){
-  return image.select(['Nir']).add(image.select(['Swir1']))
+  return image.select(['Green']).add(image.select(['Red']))
     .rename('mbsrv').toFloat();
 };
 
@@ -123,9 +123,11 @@ exports.calcAllIndices = function(image){
 
 ///////////////////////////////////////////////////////////////////////////////////
 // USO DE EJEMPLO:
-// var img = ee.Image('LANDSAT/LC08/C02/T1_L2/LC08_008058_20210115')
+// var x = require('users/sigeduca/routines:Indexes/LIST_EDUCAINDEX');
+// var img = ee.Image('LANDSAT/LC08/C02/T1_L2/LC08_008058_20210115');
+// var bands = img.select('SR_B.').multiply(0.0000275).add(-0.2)   // reflectancia (0 a 1)
 //   .select(['SR_B2','SR_B3','SR_B4','SR_B5','SR_B6','SR_B7'],
 //           ['Blue','Green','Red','Nir','Swir1','Swir2']);
-// var indices = calcAllIndices(img);
+// var indices = x.calcAllIndices(bands);
 // Map.addLayer(indices.select('ndvi'), {min:0, max:1, palette:['white','green']}, 'NDVI');
 ///////////////////////////////////////////////////////////////////////////////////
