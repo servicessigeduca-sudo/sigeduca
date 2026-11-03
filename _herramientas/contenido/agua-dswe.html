@@ -1,13 +1,14 @@
     <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
     <p>En el curso básico detectamos agua con un índice y un umbral. Eso funciona bien en lagos y ríos abiertos, pero falla en las orillas, en los humedales con vegetación y en los píxeles que solo están cubiertos de agua en parte. DSWE (<em>Dynamic Surface Water Extent</em>) aborda ese problema combinando cinco pruebas espectrales en lugar de una.</p>
-    <p>En esta lección aplicaremos DSWE a cada año de la serie de Landsat para obtener una máscara anual de agua.</p>
+    <p>En esta lección aplicaremos DSWE a cada año de la serie de Landsat. Con la máscara de agua de cada año mediremos cuántos kilómetros cuadrados de agua hay, graficaremos cómo cambian y crearemos una animación GIF de la serie. Es un solo script, de la sección 0 a la 11.</p>
 
     <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
     <ul class="check">
       <li>Entender las cinco pruebas de DSWE y las clases que producen.</li>
-      <li>Cargar la función DSWE desde un módulo.</li>
-      <li>Aplicarla a una serie anual de Landsat.</li>
-      <li>Visualizar y exportar la máscara de agua de cada año.</li>
+      <li>Cargar la función DSWE desde un módulo y aplicarla a una serie anual de Landsat.</li>
+      <li>Calcular y graficar el área de agua de cada año.</li>
+      <li>Crear un GIF de la serie con el año escrito en cada cuadro.</li>
+      <li>Exportar la máscara de agua de cada año.</li>
     </ul>
 
     <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
@@ -15,6 +16,8 @@
       <li><a href="https://www.usgs.gov/landsat-missions/landsat-collection-2-level-3-dynamic-surface-water-extent-science-product" target="_blank" rel="noopener">Producto DSWE de Landsat Colección 2 (USGS)</a></li>
       <li><a href="https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/media/files/LSDS-2084_LandsatC2_L3_DSWE_ADD-v1.pdf" target="_blank" rel="noopener">Descripción del algoritmo DSWE, LSDS-2084 (USGS, PDF)</a></li>
       <li><a href="https://doi.org/10.3390/rs11040374" target="_blank" rel="noopener">Jones (2019), revisión de las pruebas de agua parcial de DSWE</a></li>
+      <li><a href="https://developers.google.com/earth-engine/apidocs/ee-image-pixelarea" target="_blank" rel="noopener">ee.Image.pixelArea()</a></li>
+      <li><a href="https://developers.google.com/earth-engine/apidocs/ee-imagecollection-getvideothumburl" target="_blank" rel="noopener">ee.ImageCollection.getVideoThumbURL()</a></li>
     </ul>
 
     <h2 id="origen">De dónde viene DSWE <a class="anchor" href="#origen" aria-label="Enlace a esta sección">#</a></h2>
@@ -56,7 +59,7 @@
 
     <h2 id="paso-1">Secciones 0 a 5: Construir la serie anual <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
     <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
-    <p>Las secciones 0 a 5 son las mismas de <a href="serie-tiempo-landsat.html">Series de tiempo con Landsat</a>: funciones, bandas, unión de Landsat 4 a 9, parámetros, filtros y medianas anuales. Esta vez la serie empieza en 2010.</p>
+    <p>Las secciones 0 a 5 son las mismas de <a href="serie-tiempo-landsat.html">Series de tiempo con Landsat</a>: funciones, bandas, unión de Landsat 4 a 9, parámetros, filtros y medianas anuales. Esta vez la serie empieza en 2000.</p>
     <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">// 0 → CREAR FUNCIONES PRINCIPALES</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
@@ -113,7 +116,7 @@
 <span class="c">// 3 → DEFINIR PARÁMETROS DE BÚSQUEDA</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="k">var</span> startYear = 2010;<span class="c">  // Año inicio</span>
+<span class="k">var</span> startYear = 2000;<span class="c">  // Año inicio</span>
 <span class="k">var</span> endYear = 2025;<span class="c">    // Año final</span>
 <span class="k">var</span> startMonth = 1;<span class="c">    // Mes inicial</span>
 <span class="k">var</span> endMonth = 12;<span class="c">     // Mes final</span>
@@ -164,7 +167,7 @@ print("Mediana de imágenes por año", colmeans);
 print("Lista de años", años);</pre></div>
 
     <h2 id="modulo">El módulo de Jones (2019) <a class="anchor" href="#modulo" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Las pruebas y la tabla de clases están en el módulo <code>Jones_2019</code>. Cada prueba devuelve una imagen de ceros y unos. Al multiplicarlas por 1, 10, 100, 1000 y 10 000 y sumarlas obtenemos el código de cinco cifras de cada píxel; los ceros a la izquierda desaparecen, así que 00111 queda como 111. Después, cada grupo de códigos se convierte en su clase.</p>
+    <p>Las pruebas y la tabla de clases están en el módulo público <code>users/sigeduca/routines:Indexes/Jones_2019</code>, que el script carga con <code>require()</code>. No tienes que copiarlo; lo mostramos para que veas cómo funciona. Cada prueba devuelve una imagen de ceros y unos. Al multiplicarlas por 1, 10, 100, 1000 y 10 000 y sumarlas obtenemos el código de cinco cifras de cada píxel; los ceros a la izquierda desaparecen, así que 00111 queda como 111. Después, cada grupo de códigos se convierte en su clase.</p>
     <div class="callout"><p><strong>Agua oscura y valores negativos.</strong> El factor de escala de la Colección 2 resta 0,2, así que en el mar o en lagos profundos algunas bandas quedan un poco por debajo de 0. <code>normalizedDifference()</code> enmascara cualquier píxel con un valor negativo, y sin corrección esas zonas quedarían sin clasificar, sobre todo en las costas. Por eso, al inicio de <code>Dswe()</code>, llevamos a 0 las bandas negativas con <code>max(0)</code>.</p></div>
     <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">//// Main references </span>
@@ -288,7 +291,6 @@ exports.ClassifyWaterJones2019 = <span class="k">function</span>(img) {
   <span class="k">return</span>(waterMask);
 };</pre></div>
     <div class="callout"><p><strong>Ojo con los umbrales si usas otro código.</strong> En RivWidthCloud, las pruebas 4 y 5 usan valores como 900, 1500 o 3000, porque se escribieron para Landsat Colección 1, que guardaba la reflectancia multiplicada por 10 000. Nuestras imágenes ya pasaron por <code>scaler()</code> y están entre 0 y 1, así que esos umbrales equivalen a 0,09, 0,15 y 0,3, los mismos que publica el USGS para la Colección 2. Si se dejan los valores de la Colección 1 con datos escalados, las condiciones de reflectancia se cumplen siempre, y DSWE marca como agua más píxeles de los que debería.</p></div>
-    <div class="callout"><p><strong>Sobre el módulo.</strong> <code>require()</code> carga funciones guardadas en otro script del Code Editor, en este caso <code>users/sigeduca/routines:Indexes/Jones_2019</code>. Si al ejecutar aparece un error de acceso, crea un script nuevo en tu propio repositorio, pega el código del módulo que mostramos aquí, guárdalo como <code>Jones_2019</code> y cambia la ruta de <code>require()</code> por la tuya, por ejemplo <code>users/TU_USUARIO/TU_REPOSITORIO:Jones_2019</code>.</p></div>
 
     <h2 id="paso-6">Sección 6: Aplicar DSWE a la serie <a class="anchor" href="#paso-6" aria-label="Enlace a esta sección">#</a></h2>
     <p><code>Jones()</code> agrega la máscara de agua como banda nueva, así que cada año conserva su reflectancia y su año. Después seleccionamos solo <code>waterMask</code> y guardamos esas máscaras en <code>masked</code>.</p>
@@ -309,10 +311,52 @@ exports.ClassifyWaterJones2019 = <span class="k">function</span>(img) {
 
 print("Máscara de agua, Jones (2019)", masked);</pre></div>
 
-    <h2 id="paso-7">Sección 7: Visualizar la serie <a class="anchor" href="#paso-7" aria-label="Enlace a esta sección">#</a></h2>
+    <h2 id="paso-7">Sección 7: Calcular el área de agua <a class="anchor" href="#paso-7" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Un mapa de agua por año es útil, pero la pregunta que suele importar es más directa: ¿hay más o menos agua que antes? <code>ee.Image.pixelArea()</code> da el área de cada píxel en metros cuadrados, y la dividimos entre un millón para pasarla a km². Multiplicada por la máscara de agua, solo suman los píxeles de agua. <code>reduceRegion()</code> suma ese valor dentro del AOI, y el resultado se guarda como propiedad <code>water_area</code> de cada imagen. Con <code>bestEffort: true</code>, Earth Engine aumenta el tamaño de píxel si el AOI es muy grande, para que el cálculo no falle.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 7 → CALCULAR ÁREA DE CUERPOS DE AGUA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// Función para calcular el área de agua de cada imagen</span>
+<span class="k">function</span> water_area (img){
+  <span class="k">var</span> water = img.eq(1);
+  <span class="k">var</span> area = ee.Image.pixelArea();
+  <span class="k">var</span> waterArea = water.multiply(area).divide(1000000).rename('water_area');
+  <span class="k">var</span> stats = waterArea.reduceRegion({reducer: ee.Reducer.sum(), geometry: AOI, scale: 30,
+                                      bestEffort: <span class="k">true</span>, maxPixels: 10000000000});
+  <span class="k">return</span> img.set(stats).copyProperties(img);
+}
+
+<span class="k">var</span> water_area_c = masked.map(water_area);
+<span class="k">var</span> year_si = ee.Array(masked.aggregate_array('year'));
+<span class="k">var</span> wa_y = ee.Array(water_area_c.aggregate_array('water_area'));</pre></div>
+
+    <h2 id="paso-8">Sección 8: Graficar la evolución <a class="anchor" href="#paso-8" aria-label="Enlace a esta sección">#</a></h2>
+    <p><code>aggregate_array()</code> reúne los años y las áreas en dos listas, y <code>ui.Chart.array.values()</code> las dibuja con los años en el eje horizontal.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 8 → VISUALIZACIÓN DE RESULTADOS EN LA CONSOLA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// Gráfico del cambio de área en la consola</span>
+<span class="k">var</span> chart_W = ui.Chart.array.values({array: wa_y, axis: 0, xLabels: year_si})
+  .setOptions({
+    title: 'WATER AREA EVOLUTION',
+    colors: ['cf513e'],
+    hAxis: {title: 'Years', titleTextStyle: {italic: <span class="k">false</span>, bold: <span class="k">true</span>}},
+    vAxis: {title: 'AREA (Km^2)', titleTextStyle: {italic: <span class="k">false</span>, bold: <span class="k">true</span>}},
+    lineSize: 3,
+    pointSize: 3,
+    dataOpacity: 0.4,
+    legend: {position: 'none'}
+  });
+
+print(chart_W);</pre></div>
+    <div class="callout"><p><strong>Cuidado con los huecos.</strong> Las nubes que la mediana no logró quitar dejan píxeles sin datos, y en los años de Landsat 7 aparecen además sus franjas vacías. Esos píxeles no cuentan ni como agua ni como tierra, así que un año con muchos huecos mostrará menos agua de la real. Antes de interpretar una caída en el gráfico, activa la máscara de ese año en el mapa y revisa si tiene zonas vacías.</p></div>
+
+    <h2 id="paso-9">Sección 9: Visualizar la serie <a class="anchor" href="#paso-9" aria-label="Enlace a esta sección">#</a></h2>
     <p>Para cada año agregamos dos capas apagadas: la imagen en color verdadero y la máscara de agua, en la que el agua aparece en blanco y lo demás en negro.</p>
     <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
-<span class="c">// 7 → VISUALIZACIÓN EN EL MAPA</span>
+<span class="c">// 9 → VISUALIZACIÓN EN EL MAPA</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">// Visualización RGB</span>
 
@@ -340,10 +384,74 @@ len_masked.evaluate(<span class="k">function</span>(l) {
   }
 });</pre></div>
 
-    <h2 id="paso-8">Sección 8: Exportar las máscaras <a class="anchor" href="#paso-8" aria-label="Enlace a esta sección">#</a></h2>
+    <h2 id="paso-10">Sección 10: Crear la animación GIF <a class="anchor" href="#paso-10" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Un gráfico resume el cambio en números, pero una animación lo muestra. Cada cuadro del GIF debe ser una imagen RGB de 8 bits, y <code>visualize()</code> entrega justo eso. El año lo escribe el paquete <code>text</code> de Gennadii Donchyts, muy usado en la comunidad de Earth Engine y disponible para todos.</p>
+    <p><code>gifParams</code> fija el tamaño máximo en píxeles (<code>dimensions</code>) y la velocidad (<code>framesPerSecond</code>). En <code>annotations</code> indicamos que el texto vaya arriba y que lo tome de la propiedad <code>año</code>. El tamaño de la letra depende de la escala del mapa cuando ejecutas el script; si sale muy pequeña o muy grande, cambia el 2 de <code>Map.getScale() * 2</code>.</p>
+    <p><code>makeGifAnimation()</code> recibe una colección, unos parámetros de visualización y un nombre. Convierte cada imagen en un cuadro, escribe el año y une la serie con su versión invertida para que la animación vaya y vuelva sin cortes. La llamamos dos veces: el falso color SWIR1-NIR-Rojo muestra el agua casi negra, la vegetación verde y el suelo desnudo en tonos rosados; la máscara de agua muestra solo el agua, en azul.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 10 → CREACIÓN DE ANIMACIÓN CON FORMATO GIF</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// Parámetros:</span>
+<span class="c">//   collection → ImageCollection a animar</span>
+<span class="c">//   visArgs    → argumentos de visualización (bandas, min, max, palette, etc.)</span>
+<span class="c">//   label      → nombre para identificar la animación en la consola</span>
+
+<span class="k">var</span> text = require('users/gena/packages:text');
+
+<span class="k">var</span> gifParams = {
+  'region': AOI,
+  'dimensions': 800,
+  'crs': 'EPSG:4326',
+  'framesPerSecond': 6
+};
+
+<span class="k">var</span> annotations = [{
+  position: 'top',
+  offset: '5%',
+  margin: '5%',
+  property: 'año',
+  scale: Map.getScale() * 2
+}];
+
+<span class="k">function</span> makeGifAnimation(collection, visArgs, label) {
+
+<span class="c">  // Convertir cada imagen a visualización RGB y añadir la etiqueta del año</span>
+  <span class="k">var</span> visFun = <span class="k">function</span>(img) {
+    <span class="k">var</span> y = ee.Number(img.get('year')).toInt();
+    <span class="k">return</span> img.visualize(visArgs).set('año', ee.String(y));
+  };
+
+<span class="c">  // Escribir el año sobre cada imagen</span>
+  <span class="k">var</span> text_f = <span class="k">function</span>(img) {
+    <span class="k">return</span> text.annotateImage(img, {}, AOI, annotations)
+               .copyProperties(img, img.propertyNames());
+  };
+
+<span class="c">  // Aplicar visualización y anotación, y construir la animación (ida y vuelta)</span>
+  <span class="k">var</span> animated = collection.map(visFun).map(text_f);
+  <span class="k">var</span> basicAnimation = animated.merge(animated.sort('año', <span class="k">false</span>));
+
+<span class="c">  // Mostrar en la consola</span>
+  print('GIF URL → ' + label, basicAnimation.getVideoThumbURL(gifParams));
+  print('Animación → ' + label, ui.Thumbnail(basicAnimation, gifParams));
+
+  <span class="k">return</span> basicAnimation;
+}
+
+<span class="c">// Animación en falso color (Swir1, Nir, Red)</span>
+<span class="k">var</span> visArgs_RGB = {bands: 'Swir1,Nir,Red', min: 0.0125, max: 0.41448, gamma: 1};
+<span class="k">var</span> anim_RGB = makeGifAnimation(ee.ImageCollection(img_medians), visArgs_RGB, 'RGB Landsat');
+
+<span class="c">// Animación de la máscara de agua (Jones, 2019)</span>
+<span class="k">var</span> visArgs_WATER = {bands: 'waterMask', opacity: 1, palette: ['0c0c0c', '0400ff']};
+<span class="k">var</span> anim_WATER = makeGifAnimation(masked, visArgs_WATER, 'Water Mask Jones 2019');</pre></div>
+    <div class="callout"><p><strong>Para descargar el GIF</strong>, haz clic en el enlace que aparece en la consola y guárdalo desde el navegador. Si Earth Engine responde que la animación es demasiado grande, reduce <code>dimensions</code> o el tamaño del AOI.</p></div>
+
+    <h2 id="paso-11">Sección 11: Exportar las máscaras <a class="anchor" href="#paso-11" aria-label="Enlace a esta sección">#</a></h2>
     <p>La exportación viene desactivada: todo el bloque está entre <code>/*</code> y <code>*/</code>, así que Earth Engine lo ignora. Para usarla, borra las dos líneas que dicen <code>Eliminar comentario</code> y vuelve a ejecutar. En la pestaña <strong>Tasks</strong> aparecerá una tarea por año y tendrás que ejecutar cada una. <code>crs</code> fija la proyección de salida: <code>EPSG:32618</code> es UTM zona 18 Norte, que cubre buena parte de Colombia; cámbiala por la zona UTM de tu AOI.</p>
     <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
-<span class="c">// 8 → EXPORTACIÓN OPCIONAL A GOOGLE DRIVE</span>
+<span class="c">// 11 → EXPORTACIÓN OPCIONAL A GOOGLE DRIVE</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
 /*<span class="c">// Eliminar comentario</span>
@@ -435,7 +543,7 @@ count.evaluate(<span class="k">function</span>(n) {
 <span class="c">// 3 → DEFINIR PARÁMETROS DE BÚSQUEDA</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="k">var</span> startYear = 2010;<span class="c">  // Año inicio</span>
+<span class="k">var</span> startYear = 2000;<span class="c">  // Año inicio</span>
 <span class="k">var</span> endYear = 2025;<span class="c">    // Año final</span>
 <span class="k">var</span> startMonth = 1;<span class="c">    // Mes inicial</span>
 <span class="k">var</span> endMonth = 12;<span class="c">     // Mes final</span>
@@ -503,7 +611,44 @@ print("Lista de años", años);
 print("Máscara de agua, Jones (2019)", masked);
 
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
-<span class="c">// 7 → VISUALIZACIÓN EN EL MAPA</span>
+<span class="c">// 7 → CALCULAR ÁREA DE CUERPOS DE AGUA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// Función para calcular el área de agua de cada imagen</span>
+<span class="k">function</span> water_area (img){
+  <span class="k">var</span> water = img.eq(1);
+  <span class="k">var</span> area = ee.Image.pixelArea();
+  <span class="k">var</span> waterArea = water.multiply(area).divide(1000000).rename('water_area');
+  <span class="k">var</span> stats = waterArea.reduceRegion({reducer: ee.Reducer.sum(), geometry: AOI, scale: 30,
+                                      bestEffort: <span class="k">true</span>, maxPixels: 10000000000});
+  <span class="k">return</span> img.set(stats).copyProperties(img);
+}
+
+<span class="k">var</span> water_area_c = masked.map(water_area);
+<span class="k">var</span> year_si = ee.Array(masked.aggregate_array('year'));
+<span class="k">var</span> wa_y = ee.Array(water_area_c.aggregate_array('water_area'));
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 8 → VISUALIZACIÓN DE RESULTADOS EN LA CONSOLA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// Gráfico del cambio de área en la consola</span>
+<span class="k">var</span> chart_W = ui.Chart.array.values({array: wa_y, axis: 0, xLabels: year_si})
+  .setOptions({
+    title: 'WATER AREA EVOLUTION',
+    colors: ['cf513e'],
+    hAxis: {title: 'Years', titleTextStyle: {italic: <span class="k">false</span>, bold: <span class="k">true</span>}},
+    vAxis: {title: 'AREA (Km^2)', titleTextStyle: {italic: <span class="k">false</span>, bold: <span class="k">true</span>}},
+    lineSize: 3,
+    pointSize: 3,
+    dataOpacity: 0.4,
+    legend: {position: 'none'}
+  });
+
+print(chart_W);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 9 → VISUALIZACIÓN EN EL MAPA</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">// Visualización RGB</span>
 
@@ -532,7 +677,66 @@ len_masked.evaluate(<span class="k">function</span>(l) {
 });
 
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
-<span class="c">// 8 → EXPORTACIÓN OPCIONAL A GOOGLE DRIVE</span>
+<span class="c">// 10 → CREACIÓN DE ANIMACIÓN CON FORMATO GIF</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// Parámetros:</span>
+<span class="c">//   collection → ImageCollection a animar</span>
+<span class="c">//   visArgs    → argumentos de visualización (bandas, min, max, palette, etc.)</span>
+<span class="c">//   label      → nombre para identificar la animación en la consola</span>
+
+<span class="k">var</span> text = require('users/gena/packages:text');
+
+<span class="k">var</span> gifParams = {
+  'region': AOI,
+  'dimensions': 800,
+  'crs': 'EPSG:4326',
+  'framesPerSecond': 6
+};
+
+<span class="k">var</span> annotations = [{
+  position: 'top',
+  offset: '5%',
+  margin: '5%',
+  property: 'año',
+  scale: Map.getScale() * 2
+}];
+
+<span class="k">function</span> makeGifAnimation(collection, visArgs, label) {
+
+<span class="c">  // Convertir cada imagen a visualización RGB y añadir la etiqueta del año</span>
+  <span class="k">var</span> visFun = <span class="k">function</span>(img) {
+    <span class="k">var</span> y = ee.Number(img.get('year')).toInt();
+    <span class="k">return</span> img.visualize(visArgs).set('año', ee.String(y));
+  };
+
+<span class="c">  // Escribir el año sobre cada imagen</span>
+  <span class="k">var</span> text_f = <span class="k">function</span>(img) {
+    <span class="k">return</span> text.annotateImage(img, {}, AOI, annotations)
+               .copyProperties(img, img.propertyNames());
+  };
+
+<span class="c">  // Aplicar visualización y anotación, y construir la animación (ida y vuelta)</span>
+  <span class="k">var</span> animated = collection.map(visFun).map(text_f);
+  <span class="k">var</span> basicAnimation = animated.merge(animated.sort('año', <span class="k">false</span>));
+
+<span class="c">  // Mostrar en la consola</span>
+  print('GIF URL → ' + label, basicAnimation.getVideoThumbURL(gifParams));
+  print('Animación → ' + label, ui.Thumbnail(basicAnimation, gifParams));
+
+  <span class="k">return</span> basicAnimation;
+}
+
+<span class="c">// Animación en falso color (Swir1, Nir, Red)</span>
+<span class="k">var</span> visArgs_RGB = {bands: 'Swir1,Nir,Red', min: 0.0125, max: 0.41448, gamma: 1};
+<span class="k">var</span> anim_RGB = makeGifAnimation(ee.ImageCollection(img_medians), visArgs_RGB, 'RGB Landsat');
+
+<span class="c">// Animación de la máscara de agua (Jones, 2019)</span>
+<span class="k">var</span> visArgs_WATER = {bands: 'waterMask', opacity: 1, palette: ['0c0c0c', '0400ff']};
+<span class="k">var</span> anim_WATER = makeGifAnimation(masked, visArgs_WATER, 'Water Mask Jones 2019');
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 11 → EXPORTACIÓN OPCIONAL A GOOGLE DRIVE</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
 /*<span class="c">// Eliminar comentario</span>
@@ -567,7 +771,7 @@ count.evaluate(<span class="k">function</span>(n) {
 *<span class="c">/// Eliminar comentario</span></pre></div>
 
     <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
-    <p>DSWE da algo que un umbral simple no da: varias pruebas que se confirman entre sí y una forma de reconocer el agua parcial. En la siguiente lección usaremos la máscara de cada año para medir el área de agua y graficar cómo cambia.</p>
+    <p>Con un solo script recorriste todo el análisis: construiste la serie, clasificaste el agua de cada año con DSWE, mediste su área y la mostraste en una animación. Antes de sacar conclusiones, compara siempre la misma temporada y revisa los años con huecos. La función <code>makeGifAnimation()</code> sirve para cualquier colección, así que puedes usarla también con la serie de Sentinel-2 o con los índices de vegetación.</p>
     <p>Si trabajas con Sentinel-2, el proyecto OPERA del JPL de la NASA publica DSWx-HLS, un producto basado en DSWE que combina imágenes de Landsat y Sentinel-2. También está en el catálogo de Earth Engine como <code>OPERA/DSWX/L3_V1/HLS</code>.</p>
 
     <h2 id="referencias">Referencias <a class="anchor" href="#referencias" aria-label="Enlace a esta sección">#</a></h2>

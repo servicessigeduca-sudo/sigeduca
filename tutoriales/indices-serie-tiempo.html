@@ -89,9 +89,7 @@
               <li><a href="../tutoriales/serie-tiempo-landsat.html" title="Series de tiempo con Landsat 4 a 9 en Google Earth Engine">1. Series de tiempo con Landsat</a></li>
               <li><a href="../tutoriales/serie-tiempo-sentinel-2.html" title="Series de tiempo con Sentinel-2 en Google Earth Engine">2. Series de tiempo con Sentinel-2</a></li>
               <li><a href="../tutoriales/indices-serie-tiempo.html" class="on" aria-current="page" title="Índices espectrales en series de tiempo con Landsat en Google Earth Engine">3. Índices año a año</a></li>
-              <li><a href="../tutoriales/agua-dswe.html" title="Agua superficial con DSWE (Jones, 2019) en Google Earth Engine">4. Agua con DSWE</a></li>
-              <li><a href="../tutoriales/area-agua-dswe.html" title="Evolución del área de agua con DSWE en Google Earth Engine">5. Área de agua por año</a></li>
-              <li><a href="../tutoriales/gif-serie-tiempo.html" title="Animación GIF de una serie de tiempo en Google Earth Engine">6. Animación GIF</a></li>
+              <li><a href="../tutoriales/agua-dswe.html" title="Agua superficial con DSWE (Jones, 2019) en Google Earth Engine">4. Agua, área y GIF con DSWE</a></li>
             </ul>
           </details></li>
         </ul>
@@ -121,7 +119,7 @@
   <main>
     <div class="crumb"><a href="../index.html#ruta">cursos</a> / <a href="../cursos/curso-gee-intermedio.html">google earth engine intermedio</a></div>
     <h1>Índices espectrales en series de tiempo con Landsat en Google Earth Engine</h1>
-    <div class="meta-row"><span class="lvl i">intermedio</span><span>Lección 3 de 6</span><span>20 min</span><span>Google Earth Engine</span></div>
+    <div class="meta-row"><span class="lvl i">intermedio</span><span>Lección 3 de 4</span><span>20 min</span><span>Google Earth Engine</span></div>
     <p class="lead">Calcula el EVI de cada año de una serie de Landsat con una función cargada desde un módulo con require().</p>
     
     <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
@@ -265,7 +263,7 @@ exports.EVI = <span class="k">function</span>(image){
       <span class="s">'BLUE'</span>: image.<span class="f">select</span>([<span class="s">'Blue'</span>])
     }).<span class="f">rename</span>(<span class="s">'evi'</span>).<span class="f">toFloat</span>();
 };</pre></div>
-    <div class="callout"><p><strong>Sobre el módulo.</strong> <code>require()</code> carga funciones guardadas en otro script del Code Editor, en este caso <code>users/sigeduca/routines:Indexes/LIST_EDUCAINDEX</code>. Si al ejecutar aparece un error de acceso, crea un script nuevo en tu propio repositorio, pega el código del módulo que mostramos aquí, guárdalo como <code>LIST_EDUCAINDEX</code> y cambia la ruta de <code>require()</code> por la tuya, por ejemplo <code>users/TU_USUARIO/TU_REPOSITORIO:LIST_EDUCAINDEX</code>.</p></div>
+    <div class="callout"><p><strong>Sobre el módulo.</strong> <code>require()</code> carga funciones guardadas en otro script del Code Editor, en este caso <code>users/sigeduca/routines:Indexes/LIST_EDUCAINDEX</code>. Es un módulo público, así que funciona sin copiar nada. Si quieres modificarlo, crea un script en tu propio repositorio, pega el código que mostramos aquí, guárdalo como <code>LIST_EDUCAINDEX</code> y cambia la ruta de <code>require()</code> por la tuya.</p></div>
     <p><code>XIndex()</code> calcula el EVI de una imagen y le copia sus propiedades con <code>copyProperties()</code>, para que cada resultado conserve su año. <code>copyProperties()</code> devuelve un objeto genérico, por eso lo envolvemos en <code>ee.Image()</code>. Después aplicamos la función a toda la colección con <code>map()</code>.</p>
     <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">// 6 → CÁLCULO DE ÍNDICES ESPECTRALES</span>

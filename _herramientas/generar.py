@@ -64,9 +64,9 @@ CURSOS = [
         "titulo": "Google Earth Engine intermedio",
         "marca": "gee",
         "icono": GEE_ICONO,
-        "descripcion": "Pasa de analizar una imagen a analizar colecciones completas. Construirás series de tiempo anuales con Landsat 4 a 9 y con Sentinel-2, calcularás índices espectrales año a año, clasificarás el agua superficial con el método DSWE del USGS (Jones, 2019), graficarás cómo cambia su área y crearás animaciones GIF de la serie.",
+        "descripcion": "Pasa de analizar una imagen a analizar colecciones completas. Construirás series de tiempo anuales con Landsat 4 a 9 y con Sentinel-2, calcularás índices espectrales año a año, clasificarás el agua superficial con el método DSWE del USGS (Jones, 2019), medirás cómo cambia su área y crearás una animación GIF de la serie.",
         "lecciones": ["serie-tiempo-landsat", "serie-tiempo-sentinel-2", "indices-serie-tiempo",
-                      "agua-dswe", "area-agua-dswe", "gif-serie-tiempo"],
+                      "agua-dswe"],
     },
     {
         "id": "curso-qgis",
@@ -166,9 +166,7 @@ NOMBRE_CORTO = {
     "serie-tiempo-landsat": "Series de tiempo con Landsat",
     "serie-tiempo-sentinel-2": "Series de tiempo con Sentinel-2",
     "indices-serie-tiempo": "Índices año a año",
-    "agua-dswe": "Agua con DSWE",
-    "area-agua-dswe": "Área de agua por año",
-    "gif-serie-tiempo": "Animación GIF",
+    "agua-dswe": "Agua, área y GIF con DSWE",
     "descargar-qgis": "Instalar QGIS",
 }
 
@@ -525,35 +523,13 @@ TUTORIALES = {
         "siguiente": ("Agua superficial con DSWE", "tutoriales/agua-dswe.html"),
     },
     "agua-dswe": {
-        "resumen": "Aplica las cinco pruebas del método DSWE a una serie anual de Landsat.",
-        "claves": "dswe dynamic surface water extent jones 2019 usgs agua superficial humedales clasificacion landsat",
+        "resumen": "Aplica DSWE a una serie anual de Landsat, mide el área de agua de cada año y crea un GIF.",
+        "claves": "dswe dynamic surface water extent jones 2019 usgs agua superficial humedales area km2 pixelarea grafico evolucion gif animacion landsat",
         "titulo": "Agua superficial con DSWE (Jones, 2019) en Google Earth Engine",
-        "descripcion": "Clasifica el agua superficial de cada año con el método DSWE del USGS, desarrollado por John W. Jones, sobre una serie de Landsat.",
+        "descripcion": "Clasifica el agua de cada año con el método DSWE, calcula su área, grafica cómo cambia y crea una animación GIF de la serie de Landsat.",
         "herramienta": "Google Earth Engine",
         "nivel": ("intermedio", "i"),
-        "duracion": "20 min",
-        "video": None,
-        "siguiente": ("Evolución del área de agua", "tutoriales/area-agua-dswe.html"),
-    },
-    "area-agua-dswe": {
-        "resumen": "Calcula los km² de agua de cada año y grafica su evolución.",
-        "claves": "area de agua km2 pixelarea grafico evolucion dswe embalse cienaga sequia",
-        "titulo": "Evolución del área de agua con DSWE en Google Earth Engine",
-        "descripcion": "Calcula el área de agua de cada año a partir de DSWE y grafica cómo cambia en el tiempo.",
-        "herramienta": "Google Earth Engine",
-        "nivel": ("intermedio", "i"),
-        "duracion": "15 min",
-        "video": None,
-        "siguiente": ("Animación GIF de una serie de tiempo", "tutoriales/gif-serie-tiempo.html"),
-    },
-    "gif-serie-tiempo": {
-        "resumen": "Convierte la serie anual y la máscara de agua en GIF con el año en cada cuadro.",
-        "claves": "gif animacion timelapse getvideothumburl serie de tiempo texto año dswe",
-        "titulo": "Animación GIF de una serie de tiempo en Google Earth Engine",
-        "descripcion": "Crea animaciones GIF de una serie anual de Landsat y de su máscara de agua, con el año escrito en cada cuadro.",
-        "herramienta": "Google Earth Engine",
-        "nivel": ("intermedio", "i"),
-        "duracion": "15 min",
+        "duracion": "30 min",
         "video": None,
         "siguiente": ("Todos los cursos", "index.html#ruta"),
     },
@@ -836,10 +812,35 @@ def version(texto):
         texto = re.sub(rf'assets/{re.escape(nombre)}(\?v=\w+)?"', f'assets/{nombre}?v={h}"', texto)
     return texto
 
+# Lecciones que se unieron en otra: la dirección vieja lleva a la sección nueva
+REDIRECCIONES = {
+    "area-agua-dswe": "agua-dswe.html#paso-7",
+    "gif-serie-tiempo": "agua-dswe.html#paso-10",
+}
+
+def pagina_redireccion(destino):
+    return f'''<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="refresh" content="0; url={destino}">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="{SITIO}tutoriales/{destino.split('#')[0]}">
+<title>Esta lección se movió · SIG EDUCA</title>
+</head>
+<body>
+<p>Esta lección ahora es parte de <a href="{destino}">Agua superficial con DSWE</a>.</p>
+</body>
+</html>
+'''
+
 def main():
     for slug, t in TUTORIALES.items():
         (RAIZ / "tutoriales" / f"{slug}.html").write_text(version(pagina(slug, t)))
     (RAIZ / "cursos").mkdir(exist_ok=True)
+    for slug, destino in REDIRECCIONES.items():
+        (RAIZ / "tutoriales" / f"{slug}.html").write_text(pagina_redireccion(destino))
     for c in CURSOS:
         (RAIZ / "cursos" / f"{c['id']}.html").write_text(version(pagina_curso(c)))
     (RAIZ / "apps").mkdir(exist_ok=True)

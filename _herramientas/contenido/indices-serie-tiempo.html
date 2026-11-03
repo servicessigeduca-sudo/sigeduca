@@ -139,7 +139,7 @@ exports.EVI = <span class="k">function</span>(image){
       'BLUE': image.select(['Blue'])
     }).rename('evi').toFloat();
 };</pre></div>
-    <div class="callout"><p><strong>Sobre el módulo.</strong> <code>require()</code> carga funciones guardadas en otro script del Code Editor, en este caso <code>users/sigeduca/routines:Indexes/LIST_EDUCAINDEX</code>. Si al ejecutar aparece un error de acceso, crea un script nuevo en tu propio repositorio, pega el código del módulo que mostramos aquí, guárdalo como <code>LIST_EDUCAINDEX</code> y cambia la ruta de <code>require()</code> por la tuya, por ejemplo <code>users/TU_USUARIO/TU_REPOSITORIO:LIST_EDUCAINDEX</code>.</p></div>
+    <div class="callout"><p><strong>Sobre el módulo.</strong> <code>require()</code> carga funciones guardadas en otro script del Code Editor, en este caso <code>users/sigeduca/routines:Indexes/LIST_EDUCAINDEX</code>. Es un módulo público, así que funciona sin copiar nada. Si quieres modificarlo, crea un script en tu propio repositorio, pega el código que mostramos aquí, guárdalo como <code>LIST_EDUCAINDEX</code> y cambia la ruta de <code>require()</code> por la tuya.</p></div>
     <p><code>XIndex()</code> calcula el EVI de una imagen y le copia sus propiedades con <code>copyProperties()</code>, para que cada resultado conserve su año. <code>copyProperties()</code> devuelve un objeto genérico, por eso lo envolvemos en <code>ee.Image()</code>. Después aplicamos la función a toda la colección con <code>map()</code>.</p>
     <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">// 6 → CÁLCULO DE ÍNDICES ESPECTRALES</span>
