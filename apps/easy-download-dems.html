@@ -142,7 +142,7 @@
       <li><strong>Paso 1, dibuja el área de interés.</strong> Elige <strong>Rectángulo</strong> o <strong>Polígono</strong> y dibuja sobre el mapa. Con <strong>Editar área</strong> la ajustas y con <strong>Limpiar</strong> empiezas de nuevo.</li>
       <li><strong>Paso 2, elige el modelo de elevación.</strong> El predeterminado es SRTM de 30 m. Debajo de la lista aparece la ficha del modelo: resolución, tipo, origen, cobertura, precisión, para qué se recomienda y su ID en Earth Engine. Si no sabes cuál usar, pulsa <strong>Ver guía para elegir el modelo</strong>.</li>
       <li><strong>Paso 3, revisa el resultado.</strong> El mapa muestra el modelo con sombreado, una leyenda con la elevación mínima y máxima, y las estadísticas de tu área: elevación media, pendiente media y máxima, y superficie en km².</li>
-      <li><strong>Paso 4, descarga la capa.</strong> Elige la capa, por ejemplo <strong>Elevación (m)</strong>, y el formato: <strong>GeoTIFF directo</strong> o <strong>ZIP</strong>. La app te muestra el tamaño estimado del archivo. Pulsa <strong>Preparar descarga</strong> y luego el enlace <strong>Descargar</strong> que aparece debajo.</li>
+      <li><strong>Paso 4, descarga la capa.</strong> Elige la capa, <strong>Elevación (m)</strong>, que es la altura sobre el nivel del mar en metros, y el formato: <strong>GeoTIFF directo</strong> o <strong>ZIP</strong>. La app te muestra el tamaño estimado del archivo. Pulsa <strong>Preparar descarga</strong> y luego el enlace <strong>Descargar</strong> que aparece debajo.</li>
       <li>Recibirás un GeoTIFF en coordenadas geográficas (EPSG:4326, WGS 84) a la resolución original del modelo, listo para abrir en QGIS o ArcGIS Pro.</li>
     </ol>
     <h2 id="datos">Datos disponibles <a class="anchor" href="#datos" aria-label="Enlace a esta sección">#</a></h2>
@@ -150,21 +150,20 @@
       <table>
         <thead><tr><th>Modelo</th><th>Resolución</th><th>Fuente</th></tr></thead>
         <tbody>
-          <tr><td class="n">SRTM</td><td>30 m</td><td>NASA y USGS, misión del transbordador Endeavour (2000)</td></tr>
-          <tr><td class="n">NASADEM</td><td>30 m</td><td>NASA, reprocesamiento de SRTM con menos vacíos</td></tr>
-          <tr><td class="n">Copernicus GLO-30</td><td>30 m</td><td>ESA, modelo de superficie a partir de TanDEM-X</td></tr>
-          <tr><td class="n">ALOS AW3D30 v3.2</td><td>30 m</td><td>JAXA, modelo de superficie de imágenes estéreo de ALOS</td></tr>
-          <tr><td class="n">ASTER GED</td><td>100 m</td><td>NASA JPL, elevación del producto de emisividad de ASTER</td></tr>
-          <tr><td class="n">GTOPO30</td><td>1 km</td><td>USGS, modelo global de 1996</td></tr>
-          <tr><td class="n">ETOPO1</td><td>1,8 km</td><td>NOAA, relieve terrestre con batimetría de los océanos</td></tr>
+          <tr><td class="n">SRTM</td><td>30 m</td><td>NASA / USGS, misión del transbordador (febrero de 2000)</td></tr>
+          <tr><td class="n">NASADEM</td><td>30 m</td><td>NASA</td></tr>
+          <tr><td class="n">Copernicus GLO-30</td><td>30 m</td><td>ESA / Copernicus</td></tr>
+          <tr><td class="n">ALOS AW3D30 v3.2</td><td>30 m</td><td>JAXA</td></tr>
+          <tr><td class="n">ASTER GED</td><td>100 m</td><td>NASA</td></tr>
+          <tr><td class="n">GTOPO30</td><td>1 km</td><td>USGS</td></tr>
+          <tr><td class="n">ETOPO1</td><td>1,8 km</td><td>NOAA, incluye los océanos</td></tr>
         </tbody>
       </table>
     </div>
     <h2 id="ten-en-cuenta">Ten en cuenta <a class="anchor" href="#ten-en-cuenta" aria-label="Enlace a esta sección">#</a></h2>
-    <div class="callout"><p>Para áreas muy grandes con modelos de 30 m, el archivo puede superar el límite de descarga directa de Earth Engine. Si pasa, divide el área o elige un modelo de menor resolución.</p></div>
-    <div class="callout"><p>Los modelos de 30 m son de superficie: en bosques densos y ciudades registran parte de la altura de árboles y edificios. Copernicus GLO-30 y ALOS AW3D30 la registran más que SRTM y NASADEM.</p></div>
+    <div class="callout"><p>Antes de descargar, revisa el tamaño estimado en el Paso 4. Si tu área es muy grande, divídela en partes.</p></div>
     <div class="callout"><p>El GeoTIFF directo no hay que descomprimirlo, pero Google le pone un nombre aleatorio que termina en _getPixels.tiff. Cámbialo por el nombre que sugiere la app, por ejemplo SRTM30_elevacion_30m.tif, o elige ZIP para que conserve el nombre del modelo, la capa y la resolución.</p></div>
-    <div class="callout"><p>ETOPO1 es el único que incluye el fondo del mar. Úsalo si tu área abarca costa y océano.</p></div>
+    <div class="callout"><p>ETOPO1 es el único modelo que incluye los océanos. Para saber el tipo, la cobertura y la precisión de cada modelo, revisa su ficha en el Paso 2 o pulsa Ver guía para elegir el modelo.</p></div>
 
     <div class="app-acciones fin"><a class="btn" href="https://ee-sigeduca.projects.earthengine.app/view/easy-dem-v2" target="_blank" rel="noopener">Abrir la app ↗</a></div>
     <div class="pager"><a href="../index.html#apps"><small>Volver</small>← Todas las apps</a></div>
