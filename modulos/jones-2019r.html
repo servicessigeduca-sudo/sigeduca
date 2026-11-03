@@ -150,8 +150,8 @@
     <div class="callout"><p><strong>Solo devuelve la máscara.</strong> Internamente, <code>Dswe()</code> calcula las cinco clases (0 a 4), pero el módulo solo exporta la máscara de agua de confianza alta y moderada. Si necesitas las clases de agua parcial, exporta también esa función.</p></div>
     <div class="callout"><p><strong>¿Y Jones_2019, sin R?</strong> Es la versión original, con los umbrales de la Colección 1, que guardaba la reflectancia multiplicada por 10 000. Con imágenes de la Colección 2 escaladas de 0 a 1, sus pruebas 4 y 5 se cumplen siempre y marcan más agua de la real. Para imágenes actuales usa siempre Jones_2019R.</p></div>
 
-    <h2 id="ejemplo">Ejemplo de uso <a class="anchor" href="#ejemplo" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Dibuja una geometría llamada <code>AOI</code> en el mapa y ejecuta este script.</p>
+    <h2 id="ejemplo-imagen">Ejemplo con una imagen <a class="anchor" href="#ejemplo-imagen" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Dibuja una geometría llamada <code>AOI</code> en el mapa y ejecuta este script. Toma una imagen de Landsat 9 con menos de 10 % de nubes sobre tu zona, la pasa a reflectancia y le aplica el módulo.</p>
     <div class="codebox"><pre><span class="c">// Cargar el módulo</span>
 <span class="k">var</span> jones = <span class="g">require</span>(<span class="s">'users/sigeduca/routines:Indexes/Jones_2019R'</span>);
 
@@ -172,6 +172,52 @@
 <span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">11</span>);
 <span class="g">Map</span>.<span class="f">addLayer</span>(bands, {bands: [<span class="s">'Red'</span>, <span class="s">'Green'</span>, <span class="s">'Blue'</span>], min: <span class="n">0</span>, max: <span class="n">0.25</span>}, <span class="s">'Color verdadero'</span>);
 <span class="g">Map</span>.<span class="f">addLayer</span>(water.<span class="f">selfMask</span>(), {palette: [<span class="s">'0000ff'</span>]}, <span class="s">'Agua (DSWE)'</span>);</pre></div>
+
+    <h2 id="ejemplo-coleccion">Ejemplo con una colección <a class="anchor" href="#ejemplo-coleccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Para aplicar el módulo a muchas imágenes usamos <code>map()</code>: la función recibe cada imagen de la colección y devuelve el resultado. Dos detalles importan. Primero, cada imagen debe llegar escalada, con nombres comunes y sin nubes, y de eso se encarga <code>prepare()</code>. Segundo, las operaciones matemáticas borran las propiedades de la imagen, así que copiamos la fecha (<code>system:time_start</code>) con <code>copyProperties()</code> para poder graficar la serie en el tiempo.</p>
+    <div class="codebox"><pre><span class="c">// Cargar el módulo</span>
+<span class="k">var</span> jones = <span class="g">require</span>(<span class="s">'users/sigeduca/routines:Indexes/Jones_2019R'</span>);
+
+<span class="c">// Prepara cada imagen: máscara de nubes, reflectancia (0 a 1) y nombres comunes</span>
+<span class="k">function</span> <span class="f">prepare</span>(img) {
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
+  <span class="k">var</span> clear = qa.<span class="f">bitwiseAnd</span>(<span class="n">1</span> &lt;&lt; <span class="n">3</span>).<span class="f">eq</span>(<span class="n">0</span>)   <span class="c">// bit 3: nubes</span>
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(<span class="n">1</span> &lt;&lt; <span class="n">4</span>).<span class="f">eq</span>(<span class="n">0</span>));       <span class="c">// bit 4: sombras de nubes</span>
+  <span class="k">var</span> bands = img.<span class="f">select</span>([<span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B6'</span>, <span class="s">'SR_B7'</span>],
+                         [<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>])
+    .<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>)
+    .<span class="f">updateMask</span>(clear);
+  <span class="c">// Las operaciones matemáticas borran las propiedades: recuperamos la fecha</span>
+  <span class="k">return</span> <span class="g">ee</span>.<span class="f">Image</span>(bands.<span class="f">copyProperties</span>(img, [<span class="s">'system:time_start'</span>]));
+}
+
+<span class="c">// Landsat 8 y 9 de dos años sobre el AOI</span>
+<span class="k">var</span> collection = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">'LANDSAT/LC09/C02/T1_L2'</span>)
+  .<span class="f">merge</span>(<span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">'LANDSAT/LC08/C02/T1_L2'</span>))
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">filterDate</span>(<span class="s">'2023-01-01'</span>, <span class="s">'2025-01-01'</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER'</span>, <span class="n">30</span>))
+  .<span class="f">map</span>(prepare);
+<span class="g">print</span>(<span class="s">'Imágenes'</span>, collection.<span class="f">size</span>());
+
+<span class="c">// Aplicar el módulo a cada imagen, conservando la fecha</span>
+<span class="k">var</span> water = collection.<span class="f">map</span>(<span class="k">function</span>(img) {
+  <span class="k">return</span> <span class="g">ee</span>.<span class="f">Image</span>(jones.<span class="f">ClassifyWaterJones2019</span>(img).<span class="f">copyProperties</span>(img, [<span class="s">'system:time_start'</span>]));
+});
+
+<span class="c">// Frecuencia de agua: porcentaje de observaciones en que cada píxel fue agua</span>
+<span class="k">var</span> frequency = water.<span class="f">mean</span>().<span class="f">multiply</span>(<span class="n">100</span>).<span class="f">rename</span>(<span class="s">'frecuencia'</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">11</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(frequency.<span class="f">selfMask</span>(), {min: <span class="n">0</span>, max: <span class="n">100</span>, palette: [<span class="s">'c6dbef'</span>, <span class="s">'6baed6'</span>, <span class="s">'08306b'</span>]}, <span class="s">'Frecuencia de agua (%)'</span>);
+
+<span class="c">// Fracción del AOI cubierta por agua en cada fecha</span>
+<span class="k">var</span> chart = <span class="g">ui</span>.Chart.image.<span class="f">series</span>({
+  imageCollection: water,
+  region: AOI,
+  reducer: <span class="g">ee</span>.Reducer.<span class="f">mean</span>(),
+  scale: <span class="n">30</span>
+}).<span class="f">setOptions</span>({title: <span class="s">'Fracción de agua en el AOI (DSWE)'</span>, vAxis: {title: <span class="s">'Fracción (0 a 1)'</span>}, pointSize: <span class="n">3</span>});
+<span class="g">print</span>(chart);</pre></div>
 
     <h2 id="codigo">Código del módulo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>No necesitas copiarlo para usarlo. Si quieres modificarlo, créalo en tu propio repositorio y cambia la ruta de <code>require()</code>.</p>

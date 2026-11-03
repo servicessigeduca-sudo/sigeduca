@@ -117,6 +117,54 @@ APPS = [
                "ALOS DSM es un modelo de superficie: incluye la altura de árboles y edificios. SRTM y NASADEM se acercan más al terreno, aunque en bosques densos también registran parte del dosel."]},
 ]
 
+# Preparación común para los ejemplos con colección
+PREP_COL = """// Prepara cada imagen: máscara de nubes, reflectancia (0 a 1) y nombres comunes
+function prepare(img) {
+  var qa = img.select('QA_PIXEL');
+  var clear = qa.bitwiseAnd(1 << 3).eq(0)   // bit 3: nubes
+    .and(qa.bitwiseAnd(1 << 4).eq(0));       // bit 4: sombras de nubes
+  var bands = img.select(['SR_B2', 'SR_B3', 'SR_B4', 'SR_B5', 'SR_B6', 'SR_B7'],
+                         ['Blue', 'Green', 'Red', 'Nir', 'Swir1', 'Swir2'])
+    .multiply(0.0000275).add(-0.2)
+    .updateMask(clear);
+  // Las operaciones matemáticas borran las propiedades: recuperamos la fecha
+  return ee.Image(bands.copyProperties(img, ['system:time_start']));
+}
+
+// Landsat 8 y 9 de dos años sobre el AOI
+var collection = ee.ImageCollection('LANDSAT/LC09/C02/T1_L2')
+  .merge(ee.ImageCollection('LANDSAT/LC08/C02/T1_L2'))
+  .filterBounds(AOI)
+  .filterDate('2023-01-01', '2025-01-01')
+  .filter(ee.Filter.lte('CLOUD_COVER', 30))
+  .map(prepare);
+print('Imágenes', collection.size());
+"""
+
+def ejemplo_agua(var, ruta, funcion, nombre):
+    return f"""// Cargar el módulo
+var {var} = require('{ruta}');
+
+{PREP_COL}
+// Aplicar el módulo a cada imagen, conservando la fecha
+var water = collection.map(function(img) {{
+  return ee.Image({var}.{funcion}(img).copyProperties(img, ['system:time_start']));
+}});
+
+// Frecuencia de agua: porcentaje de observaciones en que cada píxel fue agua
+var frequency = water.mean().multiply(100).rename('frecuencia');
+Map.centerObject(AOI, 11);
+Map.addLayer(frequency.selfMask(), {{min: 0, max: 100, palette: ['c6dbef', '6baed6', '08306b']}}, 'Frecuencia de agua (%)');
+
+// Fracción del AOI cubierta por agua en cada fecha
+var chart = ui.Chart.image.series({{
+  imageCollection: water,
+  region: AOI,
+  reducer: ee.Reducer.mean(),
+  scale: 30
+}}).setOptions({{title: 'Fracción de agua en el AOI ({nombre})', vAxis: {{title: 'Fracción (0 a 1)'}}, pointSize: 3}});
+print(chart);"""
+
 # Módulos públicos de Earth Engine (users/sigeduca/routines). El código vive en _herramientas/modulos/.
 MODULOS = [
     {"id": "jones-2019r",
@@ -154,6 +202,7 @@ var water = jones.ClassifyWaterJones2019(bands);
 Map.centerObject(AOI, 11);
 Map.addLayer(bands, {bands: ['Red', 'Green', 'Blue'], min: 0, max: 0.25}, 'Color verdadero');
 Map.addLayer(water.selfMask(), {palette: ['0000ff']}, 'Agua (DSWE)');""",
+     "coleccion": ejemplo_agua("jones", "users/sigeduca/routines:Indexes/Jones_2019R", "ClassifyWaterJones2019", "DSWE"),
      "lecciones": ["agua-dswe"],
      "referencias": ["Jones, J. W. (2019). Improved automated detection of subpixel-scale inundation—Revised Dynamic Surface Water Extent (DSWE) partial surface water tests. <em>Remote Sensing</em>, 11(4), 374.",
                      "Yang, X., Pavelsky, T. M., Allen, G. H. y Donchyts, G. (2020). RivWidthCloud: An automated Google Earth Engine algorithm for river width extraction from remotely sensed imagery. <em>IEEE Geoscience and Remote Sensing Letters</em>, 17(2), 217–221."]},
@@ -205,6 +254,28 @@ print('Índices', indices);
 Map.centerObject(AOI, 11);
 Map.addLayer(evi, {min: 0, max: 0.8, palette: ['DF923D', 'FCD163', '74A901', '056201', '004C00']}, 'EVI');
 Map.addLayer(indices.select('mndwi'), {min: -0.5, max: 0.5, palette: ['d7191c', 'ffffbf', '2c7bb6']}, 'MNDWI');""",
+     "coleccion": """// Cargar el módulo
+var x = require('users/sigeduca/routines:Indexes/LIST_EDUCAINDEX');
+
+""" + PREP_COL + """
+// Calcular los índices de cada imagen, conservando la fecha
+var indices = collection.map(function(img) {
+  return ee.Image(x.calcAllIndices(img).copyProperties(img, ['system:time_start']));
+});
+print('Índices por fecha', indices);
+
+// Mediana del NDVI en los dos años
+Map.centerObject(AOI, 11);
+Map.addLayer(indices.select('ndvi').median(), {min: 0, max: 0.9, palette: ['DF923D', 'FCD163', '74A901', '056201', '004C00']}, 'NDVI mediano');
+
+// NDVI y EVI medios del AOI en cada fecha
+var chart = ui.Chart.image.series({
+  imageCollection: indices.select(['ndvi', 'evi']),
+  region: AOI,
+  reducer: ee.Reducer.mean(),
+  scale: 30
+}).setOptions({title: 'NDVI y EVI medios en el AOI', vAxis: {title: 'Valor del índice'}, pointSize: 3});
+print(chart);""",
      "lecciones": ["indices-serie-tiempo"],
      "referencias": ["Rouse, J. W., Haas, R. H., Schell, J. A. y Deering, D. W. (1974). Monitoring vegetation systems in the Great Plains with ERTS. <em>Third ERTS Symposium</em>, NASA SP-351, 309–317.",
                      "Huete, A., Didan, K., Miura, T., Rodriguez, E. P., Gao, X. y Ferreira, L. G. (2002). Overview of the radiometric and biophysical performance of the MODIS vegetation indices. <em>Remote Sensing of Environment</em>, 83(1–2), 195–213.",
@@ -248,6 +319,7 @@ var water = zou.ClassifyWaterZou2018(bands);
 Map.centerObject(AOI, 11);
 Map.addLayer(bands, {bands: ['Red', 'Green', 'Blue'], min: 0, max: 0.25}, 'Color verdadero');
 Map.addLayer(water.selfMask(), {palette: ['00ffff']}, 'Agua (Zou, 2018)');""",
+     "coleccion": ejemplo_agua("zou", "users/sigeduca/routines:Indexes/Zou_2018", "ClassifyWaterZou2018", "Zou, 2018"),
      "lecciones": [],
      "referencias": ["Zou, Z., Xiao, X., Dong, J., Qin, Y., Doughty, R. B., Menarguez, M. A., Zhang, G. y Wang, J. (2018). Divergent trends of open-surface water body area in the contiguous United States from 1984 to 2016. <em>Proceedings of the National Academy of Sciences</em>, 115(15), 3810–3815.",
                      "Yang, X., Pavelsky, T. M., Allen, G. H. y Donchyts, G. (2020). RivWidthCloud: An automated Google Earth Engine algorithm for river width extraction from remotely sensed imagery. <em>IEEE Geoscience and Remote Sensing Letters</em>, 17(2), 217–221."]},
@@ -830,9 +902,12 @@ def pagina_modulo(m):
       </table>
     </div>
 {notas}
-{h("ejemplo", "Ejemplo de uso")}
-    <p>Dibuja una geometría llamada <code>AOI</code> en el mapa y ejecuta este script.</p>
+{h("ejemplo-imagen", "Ejemplo con una imagen")}
+    <p>Dibuja una geometría llamada <code>AOI</code> en el mapa y ejecuta este script. Toma una imagen de Landsat 9 con menos de 10 % de nubes sobre tu zona, la pasa a reflectancia y le aplica el módulo.</p>
     <div class="codebox"><pre>{html.escape(m["ejemplo"])}</pre></div>
+{h("ejemplo-coleccion", "Ejemplo con una colección")}
+    <p>Para aplicar el módulo a muchas imágenes usamos <code>map()</code>: la función recibe cada imagen de la colección y devuelve el resultado. Dos detalles importan. Primero, cada imagen debe llegar escalada, con nombres comunes y sin nubes, y de eso se encarga <code>prepare()</code>. Segundo, las operaciones matemáticas borran las propiedades de la imagen, así que copiamos la fecha (<code>system:time_start</code>) con <code>copyProperties()</code> para poder graficar la serie en el tiempo.</p>
+    <div class="codebox"><pre>{html.escape(m["coleccion"])}</pre></div>
 {h("codigo", "Código del módulo")}
     <p>No necesitas copiarlo para usarlo. Si quieres modificarlo, créalo en tu propio repositorio y cambia la ruta de <code>require()</code>.</p>
     <div class="codebox"><pre>{html.escape(codigo)}</pre></div>'''
