@@ -149,18 +149,20 @@
       <table>
         <thead><tr><th>Modelo</th><th>Resolución</th><th>Fuente</th></tr></thead>
         <tbody>
-          <tr><td class="n">SRTM</td><td>30 m</td><td>NASA, misión del transbordador Endeavour (2000)</td></tr>
+          <tr><td class="n">SRTM</td><td>30 m</td><td>NASA y USGS, misión del transbordador Endeavour (2000)</td></tr>
           <tr><td class="n">NASADEM</td><td>30 m</td><td>NASA, reprocesamiento de SRTM con menos vacíos</td></tr>
-          <tr><td class="n">ALOS DSM</td><td>30 m</td><td>JAXA, modelo de superficie AW3D30</td></tr>
+          <tr><td class="n">Copernicus GLO-30</td><td>30 m</td><td>ESA, modelo de superficie a partir de TanDEM-X</td></tr>
+          <tr><td class="n">ALOS AW3D30 v3.2</td><td>30 m</td><td>JAXA, modelo de superficie de imágenes estéreo de ALOS</td></tr>
           <tr><td class="n">ASTER GED</td><td>100 m</td><td>NASA JPL, elevación del producto de emisividad de ASTER</td></tr>
-          <tr><td class="n">ETOPO1</td><td>1,8 km</td><td>NOAA, relieve terrestre y batimetría</td></tr>
           <tr><td class="n">GTOPO30</td><td>1 km</td><td>USGS, modelo global de 1996</td></tr>
+          <tr><td class="n">ETOPO1</td><td>1,8 km</td><td>NOAA, relieve terrestre con batimetría de los océanos</td></tr>
         </tbody>
       </table>
     </div>
     <h2 id="ten-en-cuenta">Ten en cuenta <a class="anchor" href="#ten-en-cuenta" aria-label="Enlace a esta sección">#</a></h2>
     <div class="callout"><p>Para áreas muy grandes con modelos de 30 m, el archivo puede superar el límite de descarga directa de Earth Engine. Si pasa, divide el área o elige un modelo de menor resolución.</p></div>
-    <div class="callout"><p>ALOS DSM es un modelo de superficie: incluye la altura de árboles y edificios. SRTM y NASADEM se acercan más al terreno, aunque en bosques densos también registran parte del dosel.</p></div>
+    <div class="callout"><p>Los modelos de 30 m son de superficie: en bosques densos y ciudades registran parte de la altura de árboles y edificios. Copernicus GLO-30 y ALOS AW3D30 la registran más que SRTM y NASADEM.</p></div>
+    <div class="callout"><p>ETOPO1 es el único que incluye el fondo del mar. Úsalo si tu área abarca costa y océano.</p></div>
 
     <div class="app-acciones fin"><a class="btn" href="https://ee-sigeduca.projects.earthengine.app/view/easy-dem-v2" target="_blank" rel="noopener">Abrir la app ↗</a></div>
     <div class="pager"><a href="../index.html#apps"><small>Volver</small>← Todas las apps</a></div>
