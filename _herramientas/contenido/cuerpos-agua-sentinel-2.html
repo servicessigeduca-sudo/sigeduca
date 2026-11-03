@@ -1,0 +1,195 @@
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Un índice de agua nos dice qué píxeles son agua, pero muchas veces lo que necesitamos es un <strong>shapefile</strong> con el contorno de ríos, ciénagas y lagunas para llevarlo a QGIS o ArcGIS Pro. En esta lección pasaremos de la imagen al vector, limpiando antes el ruido de la máscara para que los polígonos salgan ordenados.</p>
+    <p>Con Sentinel-2 los polígonos salen mucho más detallados gracias a los 10 m de resolución, así que es la mejor opción para cuerpos de agua pequeños o canales estrechos.</p>
+
+    <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Crear una máscara de agua combinando NDWI, MNDWI y AWEInsh.</li>
+      <li>Eliminar islas y charcos pequeños con <code>connectedPixelCount()</code>.</li>
+      <li>Convertir la máscara en polígonos con <code>reduceToVectors()</code>.</li>
+      <li>Exportar los cuerpos de agua como shapefile a Google Drive.</li>
+    </ul>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><a href="https://developers.google.com/earth-engine/apidocs/ee-image-reducetovectors" target="_blank" rel="noopener">ee.Image.reduceToVectors()</a></li>
+      <li><a href="https://developers.google.com/earth-engine/apidocs/ee-image-connectedpixelcount" target="_blank" rel="noopener">ee.Image.connectedPixelCount()</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR_HARMONIZED" target="_blank" rel="noopener">Sentinel-2 Surface Reflectance (COPERNICUS/S2_SR_HARMONIZED)</a></li>
+    </ul>
+
+    <h2 id="paso-1">Paso 1: Imagen e índices <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
+    <p>Preparamos una escena de Sentinel-2 sin nubes y calculamos NDWI, MNDWI y AWEInsh tal como en la lección <a href="deteccion-agua-sentinel-2.html">Detección de agua con Sentinel-2</a>. El falso color NIR-Red edge-Verde muestra el agua muy oscura y la vegetación en rojo.</p>
+    <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
+<span class="k">function</span> maskS2clouds(img) {
+  <span class="k">var</span> scl = img.select('SCL');
+  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
+    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
+    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
+    .and(scl.neq(10));<span class="c">     // cirros</span>
+  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+}</pre></div>
+    <div class="codebox"><pre><span class="c">// Primera imagen de Sentinel-2 con poca nubosidad sobre el AOI</span>
+<span class="k">var</span> s2_image = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
+  .filterDate("2023-01-01", "2023-12-01")
+  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 10))
+  .filterBounds(AOI)
+  .map(maskS2clouds)
+  .first()
+  .clip(AOI);
+print(s2_image);</pre></div>
+    <div class="codebox"><pre><span class="c">// Falso color NIR-Red edge-Verde</span>
+Map.addLayer(s2_image, {bands: "B8,B5,B3", min: 0, max: 0.4, gamma: 1}, "Sentinel-2");
+Map.centerObject(AOI, 12);</pre></div>
+    <div class="codebox"><pre><span class="c">// Índices para detectar agua con bandas de Sentinel-2</span>
+<span class="k">var</span> NDWI = s2_image.normalizedDifference(['B3', 'B8']).rename('NDWI');
+<span class="k">var</span> MNDWI = s2_image.normalizedDifference(['B3', 'B11']).rename('MNDWI');
+<span class="k">var</span> AWEInsh = s2_image.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
+  'GREEN': s2_image.select('B3'),
+  'SWIR1': s2_image.select('B11'),
+  'SWIR2': s2_image.select('B12'),
+  'NIR': s2_image.select('B8')
+}).rename('AWEInsh');
+<span class="k">var</span> index = NDWI.addBands([MNDWI, AWEInsh]);</pre></div>
+
+    <h2 id="paso-2">Paso 2: Máscara de agua <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Un píxel es agua si NDWI o MNDWI superan 0, o si AWEInsh supera 0,01. Combinar los tres índices ayuda a no perder orillas ni zonas con vegetación flotante.</p>
+    <div class="codebox"><pre><span class="c">// Máscara de agua con los tres índices</span>
+<span class="k">var</span> waterMask = <span class="k">function</span>(img) {
+  <span class="k">var</span> water = img.select('NDWI').gt(0)
+    .or(img.select('MNDWI').gt(0))
+    .or(img.select('AWEInsh').gt(0.01));
+  <span class="k">return</span> water.rename('waterMask');
+};
+<span class="k">var</span> masking = waterMask(index);
+Map.addLayer(masking, {}, 'Máscara de agua');</pre></div>
+
+    <h2 id="paso-3">Paso 3: Limpiar la máscara <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <p>La máscara cruda tiene píxeles sueltos que generarían cientos de polígonos diminutos. <code>connectedPixelCount()</code> cuenta cuántos píxeles conectados tiene cada grupo, y con eso rellenamos las islas pequeñas dentro del agua y eliminamos el agua aislada de pocos píxeles. El parámetro <code>FILL_SIZE</code> controla qué tan agresiva es la limpieza.</p>
+    <div class="codebox"><pre><span class="c">// Rellenar islas pequeñas: tierra rodeada de agua con menos de FILL_SIZE píxeles</span>
+<span class="k">var</span> removeIslands = <span class="k">function</span>(img, FILL_SIZE) {
+  <span class="k">var</span> fill = img.not().selfMask().connectedPixelCount(FILL_SIZE).lt(FILL_SIZE);
+  <span class="k">return</span> img.where(fill, 1).rename('waterMask');
+};
+
+<span class="c">// Quitar charcos pequeños: agua aislada con menos de FILL_SIZE píxeles</span>
+<span class="k">var</span> removeSmallWater = <span class="k">function</span>(img, FILL_SIZE) {
+  <span class="k">var</span> fill = img.connectedPixelCount(FILL_SIZE).lt(FILL_SIZE);
+  <span class="k">return</span> img.where(fill, 0).rename('waterMask');
+};
+
+<span class="k">var</span> mask_clean = removeSmallWater(removeIslands(masking, 40), 10);
+Map.addLayer(mask_clean, {}, 'Máscara limpia');</pre></div>
+
+    <h2 id="paso-4">Paso 4: Vectorizar y exportar <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p><code>reduceToVectors()</code> agrupa los píxeles contiguos de agua en polígonos. La tabla resultante se exporta como shapefile y puedes abrirla directamente en QGIS.</p>
+    <div class="codebox"><pre><span class="c">// Convertir los píxeles de agua en polígonos</span>
+<span class="k">var</span> waterPolygons = mask_clean.selfMask().reduceToVectors({
+  geometry: AOI,
+  scale: 10,
+  geometryType: 'polygon',
+  eightConnected: <span class="k">false</span>,
+  labelProperty: 'zone',
+  maxPixels: 1e13
+});
+Map.addLayer(waterPolygons, {color: 'cyan'}, "Polígonos de agua");
+
+<span class="c">// Exportar como shapefile a Google Drive</span>
+Export.table.toDrive({
+  collection: waterPolygons,
+  description: "water_polygons_sentinel",
+  folder: "shapes",
+  fileFormat: "SHP"
+});</pre></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
+    <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
+<span class="k">function</span> maskS2clouds(img) {
+  <span class="k">var</span> scl = img.select('SCL');
+  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
+    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
+    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
+    .and(scl.neq(10));<span class="c">     // cirros</span>
+  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+}
+
+<span class="c">// Primera imagen de Sentinel-2 con poca nubosidad sobre el AOI</span>
+<span class="k">var</span> s2_image = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
+  .filterDate("2023-01-01", "2023-12-01")
+  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 10))
+  .filterBounds(AOI)
+  .map(maskS2clouds)
+  .first()
+  .clip(AOI);
+print(s2_image);
+
+<span class="c">// Falso color NIR-Red edge-Verde</span>
+Map.addLayer(s2_image, {bands: "B8,B5,B3", min: 0, max: 0.4, gamma: 1}, "Sentinel-2");
+Map.centerObject(AOI, 12);
+
+<span class="c">// Índices para detectar agua con bandas de Sentinel-2</span>
+<span class="k">var</span> NDWI = s2_image.normalizedDifference(['B3', 'B8']).rename('NDWI');
+<span class="k">var</span> MNDWI = s2_image.normalizedDifference(['B3', 'B11']).rename('MNDWI');
+<span class="k">var</span> AWEInsh = s2_image.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
+  'GREEN': s2_image.select('B3'),
+  'SWIR1': s2_image.select('B11'),
+  'SWIR2': s2_image.select('B12'),
+  'NIR': s2_image.select('B8')
+}).rename('AWEInsh');
+<span class="k">var</span> index = NDWI.addBands([MNDWI, AWEInsh]);
+
+<span class="c">// Máscara de agua con los tres índices</span>
+<span class="k">var</span> waterMask = <span class="k">function</span>(img) {
+  <span class="k">var</span> water = img.select('NDWI').gt(0)
+    .or(img.select('MNDWI').gt(0))
+    .or(img.select('AWEInsh').gt(0.01));
+  <span class="k">return</span> water.rename('waterMask');
+};
+<span class="k">var</span> masking = waterMask(index);
+Map.addLayer(masking, {}, 'Máscara de agua');
+
+<span class="c">// Rellenar islas pequeñas: tierra rodeada de agua con menos de FILL_SIZE píxeles</span>
+<span class="k">var</span> removeIslands = <span class="k">function</span>(img, FILL_SIZE) {
+  <span class="k">var</span> fill = img.not().selfMask().connectedPixelCount(FILL_SIZE).lt(FILL_SIZE);
+  <span class="k">return</span> img.where(fill, 1).rename('waterMask');
+};
+
+<span class="c">// Quitar charcos pequeños: agua aislada con menos de FILL_SIZE píxeles</span>
+<span class="k">var</span> removeSmallWater = <span class="k">function</span>(img, FILL_SIZE) {
+  <span class="k">var</span> fill = img.connectedPixelCount(FILL_SIZE).lt(FILL_SIZE);
+  <span class="k">return</span> img.where(fill, 0).rename('waterMask');
+};
+
+<span class="k">var</span> mask_clean = removeSmallWater(removeIslands(masking, 40), 10);
+Map.addLayer(mask_clean, {}, 'Máscara limpia');
+
+<span class="c">// Convertir los píxeles de agua en polígonos</span>
+<span class="k">var</span> waterPolygons = mask_clean.selfMask().reduceToVectors({
+  geometry: AOI,
+  scale: 10,
+  geometryType: 'polygon',
+  eightConnected: <span class="k">false</span>,
+  labelProperty: 'zone',
+  maxPixels: 1e13
+});
+Map.addLayer(waterPolygons, {color: 'cyan'}, "Polígonos de agua");
+
+<span class="c">// Exportar como shapefile a Google Drive</span>
+Export.table.toDrive({
+  collection: waterPolygons,
+  description: "water_polygons_sentinel",
+  folder: "shapes",
+  fileFormat: "SHP"
+});</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Con Sentinel-2 obtienes contornos de agua precisos a 10 m. Si tu zona tiene muchas islas o vegetación flotante, sube el valor de <code>FILL_SIZE</code> para obtener polígonos más limpios.</p>
+
+    <h2 id="referencias">Referencias <a class="anchor" href="#referencias" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="refs">
+      <li>McFeeters, S. K. (1996). The use of the Normalized Difference Water Index (NDWI) in the delineation of open water features. <em>International Journal of Remote Sensing</em>, 17(7), 1425–1432.</li>
+      <li>Gao, B.-C. (1996). NDWI—A normalized difference water index for remote sensing of vegetation liquid water from space. <em>Remote Sensing of Environment</em>, 58(3), 257–266.</li>
+      <li>Xu, H. (2006). Modification of normalised difference water index (NDWI) to enhance open water features in remotely sensed imagery. <em>International Journal of Remote Sensing</em>, 27(14), 3025–3033.</li>
+      <li>Feyisa, G. L., Meilby, H., Fensholt, R. y Proud, S. R. (2014). Automated Water Extraction Index: A new technique for surface water mapping using Landsat imagery. <em>Remote Sensing of Environment</em>, 140, 23–35.</li>
+    </ul>

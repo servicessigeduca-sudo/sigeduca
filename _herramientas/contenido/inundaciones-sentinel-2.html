@@ -1,0 +1,190 @@
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Sentinel-2 pasa con más frecuencia que Landsat, así que es más probable encontrar una imagen útil justo durante una inundación. En esta lección trabajaremos sobre el valle del río Sinú, alrededor de Montería (Córdoba, Colombia). Compararemos enero de 2026, durante una inundación, con los meses siguientes, y calcularemos el área cubierta por agua en cada momento.</p>
+
+    <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Seleccionar una imagen de antes y otra de después de una inundación.</li>
+      <li>Escribir los índices para detectar agua como funciones reutilizables.</li>
+      <li>Crear una máscara binaria de agua para cada fecha.</li>
+      <li>Calcular el área de agua en km² y comparar ambas fechas.</li>
+    </ul>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR_HARMONIZED" target="_blank" rel="noopener">Sentinel-2 Surface Reflectance (COPERNICUS/S2_SR_HARMONIZED)</a></li>
+      <li><a href="https://developers.google.com/earth-engine/apidocs/ee-image-pixelarea" target="_blank" rel="noopener">ee.Image.pixelArea()</a></li>
+    </ul>
+
+    <h2 id="metodo">Cómo funciona <a class="anchor" href="#metodo" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Creamos una composición de mediana sin nubes para cada periodo.</li>
+      <li>Calculamos NDWI, MNDWI y AWEInsh, que vimos en la lección <a href="deteccion-agua-sentinel-2.html">Detección de agua con Sentinel-2</a>. Un píxel es agua si cualquiera de los tres supera 0.</li>
+      <li>Sumamos el área de los píxeles de agua con <code>ee.Image.pixelArea()</code>.</li>
+    </ul>
+    <div class="callout"><p><strong>Las fechas importan.</strong> Para el periodo posterior conviene una ventana corta y cercana al evento. Con ventanas largas la imagen puede corresponder a semanas después, cuando el agua ya bajó.</p></div>
+
+    <h2 id="paso-1">Paso 1: Composiciones durante y después <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
+    <p>Usamos la máscara de nubes con la banda SCL y una mediana por periodo, que ayuda a rellenar los huecos que dejan las nubes en época de lluvias.</p>
+    <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
+<span class="k">function</span> maskS2clouds(img) {
+  <span class="k">var</span> scl = img.select('SCL');
+  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
+    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
+    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
+    .and(scl.neq(10));<span class="c">     // cirros</span>
+  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+}</pre></div>
+    <div class="codebox"><pre><span class="c">// Composiciones durante y después de la inundación</span>
+<span class="k">var</span> s2_pre = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+  .filterDate("2026-01-01", "2026-02-01")
+  .filterBounds(AOI)
+  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 20))
+  .map(maskS2clouds)
+  .median()
+  .clip(AOI);
+
+<span class="k">var</span> s2_post = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+  .filterDate("2026-02-01", "2026-12-01")
+  .filterBounds(AOI)
+  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 20))
+  .map(maskS2clouds)
+  .median()
+  .clip(AOI);
+
+<span class="k">var</span> visRGB = {bands: "B4,B3,B2", min: 0, max: 0.3, gamma: 1};
+Map.addLayer(s2_pre, visRGB, "Sentinel-2 durante");
+Map.addLayer(s2_post, visRGB, "Sentinel-2 después");
+Map.centerObject(AOI, 10);</pre></div>
+
+    <h2 id="paso-2">Paso 2: Índices y máscara de agua <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Agrupamos los tres índices en una función y otra función decide qué píxeles son agua. Así el mismo código sirve para las dos fechas.</p>
+    <div class="codebox"><pre><span class="c">// Índices para detectar agua con bandas de Sentinel-2</span>
+<span class="k">var</span> waterIndex = <span class="k">function</span>(img) {
+  <span class="k">var</span> ndwi = img.normalizedDifference(['B3', 'B8']).rename('NDWI');
+  <span class="k">var</span> mndwi = img.normalizedDifference(['B3', 'B11']).rename('MNDWI');
+  <span class="k">var</span> awei = img.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
+    'GREEN': img.select('B3'), 'SWIR1': img.select('B11'),
+    'SWIR2': img.select('B12'), 'NIR': img.select('B8')
+  }).rename('AWEInsh');
+  <span class="k">return</span> ndwi.addBands([mndwi, awei]);
+};
+
+<span class="c">// Agua si cualquiera de los tres índices es mayor que 0</span>
+<span class="k">var</span> waterMask = <span class="k">function</span>(img) {
+  <span class="k">var</span> idx = waterIndex(img);
+  <span class="k">var</span> water = idx.select('NDWI').gt(0)
+    .or(idx.select('MNDWI').gt(0))
+    .or(idx.select('AWEInsh').gt(0));
+  <span class="k">return</span> water.rename('waterMask');
+};
+
+<span class="k">var</span> mask_pre = waterMask(s2_pre);
+<span class="k">var</span> mask_post = waterMask(s2_post);
+Map.addLayer(mask_pre.selfMask(), {palette: ["db0202"]}, 'Agua durante');
+Map.addLayer(mask_post.selfMask(), {palette: ["2dd4f1"]}, 'Agua después');</pre></div>
+
+    <h2 id="paso-3">Paso 3: Calcular el área de agua <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Sumamos el área de los píxeles de agua en cada periodo. La diferencia entre ambos valores estima cuánto terreno estaba cubierto por la inundación.</p>
+    <div class="codebox"><pre><span class="c">// Área de agua en km² dentro del AOI</span>
+<span class="k">var</span> waterArea = <span class="k">function</span>(mask) {
+  <span class="k">var</span> area = mask.eq(1).multiply(ee.Image.pixelArea()).divide(1e6).rename('area');
+  <span class="k">var</span> stats = area.reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: AOI,
+    scale: 10,
+    bestEffort: <span class="k">true</span>,
+    maxPixels: 1e13
+  });
+  <span class="k">return</span> ee.Number(stats.get('area'));
+};
+
+print("Área de agua durante la inundación (km²):", waterArea(mask_pre));
+print("Área de agua después de la inundación (km²):", waterArea(mask_post));</pre></div>
+    <div class="callout"><p><strong>Revisa las imágenes antes de comparar cifras.</strong> Los píxeles cubiertos por nubes quedan enmascarados y no se cuentan como agua. Si una de las fechas tiene muchas nubes, el área de agua saldrá más baja de lo real.</p></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
+    <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
+<span class="k">function</span> maskS2clouds(img) {
+  <span class="k">var</span> scl = img.select('SCL');
+  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
+    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
+    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
+    .and(scl.neq(10));<span class="c">     // cirros</span>
+  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+}
+
+<span class="c">// Composiciones durante y después de la inundación</span>
+<span class="k">var</span> s2_pre = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+  .filterDate("2026-01-01", "2026-02-01")
+  .filterBounds(AOI)
+  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 20))
+  .map(maskS2clouds)
+  .median()
+  .clip(AOI);
+
+<span class="k">var</span> s2_post = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+  .filterDate("2026-02-01", "2026-12-01")
+  .filterBounds(AOI)
+  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 20))
+  .map(maskS2clouds)
+  .median()
+  .clip(AOI);
+
+<span class="k">var</span> visRGB = {bands: "B4,B3,B2", min: 0, max: 0.3, gamma: 1};
+Map.addLayer(s2_pre, visRGB, "Sentinel-2 durante");
+Map.addLayer(s2_post, visRGB, "Sentinel-2 después");
+Map.centerObject(AOI, 10);
+
+<span class="c">// Índices para detectar agua con bandas de Sentinel-2</span>
+<span class="k">var</span> waterIndex = <span class="k">function</span>(img) {
+  <span class="k">var</span> ndwi = img.normalizedDifference(['B3', 'B8']).rename('NDWI');
+  <span class="k">var</span> mndwi = img.normalizedDifference(['B3', 'B11']).rename('MNDWI');
+  <span class="k">var</span> awei = img.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
+    'GREEN': img.select('B3'), 'SWIR1': img.select('B11'),
+    'SWIR2': img.select('B12'), 'NIR': img.select('B8')
+  }).rename('AWEInsh');
+  <span class="k">return</span> ndwi.addBands([mndwi, awei]);
+};
+
+<span class="c">// Agua si cualquiera de los tres índices es mayor que 0</span>
+<span class="k">var</span> waterMask = <span class="k">function</span>(img) {
+  <span class="k">var</span> idx = waterIndex(img);
+  <span class="k">var</span> water = idx.select('NDWI').gt(0)
+    .or(idx.select('MNDWI').gt(0))
+    .or(idx.select('AWEInsh').gt(0));
+  <span class="k">return</span> water.rename('waterMask');
+};
+
+<span class="k">var</span> mask_pre = waterMask(s2_pre);
+<span class="k">var</span> mask_post = waterMask(s2_post);
+Map.addLayer(mask_pre.selfMask(), {palette: ["db0202"]}, 'Agua durante');
+Map.addLayer(mask_post.selfMask(), {palette: ["2dd4f1"]}, 'Agua después');
+
+<span class="c">// Área de agua en km² dentro del AOI</span>
+<span class="k">var</span> waterArea = <span class="k">function</span>(mask) {
+  <span class="k">var</span> area = mask.eq(1).multiply(ee.Image.pixelArea()).divide(1e6).rename('area');
+  <span class="k">var</span> stats = area.reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: AOI,
+    scale: 10,
+    bestEffort: <span class="k">true</span>,
+    maxPixels: 1e13
+  });
+  <span class="k">return</span> ee.Number(stats.get('area'));
+};
+
+print("Área de agua durante la inundación (km²):", waterArea(mask_pre));
+print("Área de agua después de la inundación (km²):", waterArea(mask_post));</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Sentinel-2 da mapas de inundación más detallados y con más fechas disponibles. Cuando las nubes no dejan ver nada durante días, el siguiente paso natural es trabajar con radar (Sentinel-1), que atraviesa las nubes.</p>
+
+    <h2 id="referencias">Referencias <a class="anchor" href="#referencias" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="refs">
+      <li>McFeeters, S. K. (1996). The use of the Normalized Difference Water Index (NDWI) in the delineation of open water features. <em>International Journal of Remote Sensing</em>, 17(7), 1425–1432.</li>
+      <li>Gao, B.-C. (1996). NDWI—A normalized difference water index for remote sensing of vegetation liquid water from space. <em>Remote Sensing of Environment</em>, 58(3), 257–266.</li>
+      <li>Xu, H. (2006). Modification of normalised difference water index (NDWI) to enhance open water features in remotely sensed imagery. <em>International Journal of Remote Sensing</em>, 27(14), 3025–3033.</li>
+      <li>Feyisa, G. L., Meilby, H., Fensholt, R. y Proud, S. R. (2014). Automated Water Extraction Index: A new technique for surface water mapping using Landsat imagery. <em>Remote Sensing of Environment</em>, 140, 23–35.</li>
+    </ul>

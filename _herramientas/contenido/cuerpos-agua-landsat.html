@@ -1,0 +1,218 @@
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Un índice de agua nos dice qué píxeles son agua, pero muchas veces lo que necesitamos es un <strong>shapefile</strong> con el contorno de ríos, ciénagas y lagunas para llevarlo a QGIS o ArcGIS Pro. En esta lección pasaremos de la imagen al vector, limpiando antes el ruido de la máscara para que los polígonos salgan ordenados.</p>
+
+    <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Crear una máscara de agua combinando NDWI, MNDWI y AWEInsh.</li>
+      <li>Eliminar islas y charcos pequeños con <code>connectedPixelCount()</code>.</li>
+      <li>Convertir la máscara en polígonos con <code>reduceToVectors()</code>.</li>
+      <li>Exportar los cuerpos de agua como shapefile a Google Drive.</li>
+    </ul>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><a href="https://developers.google.com/earth-engine/apidocs/ee-image-reducetovectors" target="_blank" rel="noopener">ee.Image.reduceToVectors()</a></li>
+      <li><a href="https://developers.google.com/earth-engine/apidocs/ee-image-connectedpixelcount" target="_blank" rel="noopener">ee.Image.connectedPixelCount()</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/LANDSAT_LC09_C02_T1_L2" target="_blank" rel="noopener">Landsat 9 Surface Reflectance (LANDSAT/LC09/C02/T1_L2)</a></li>
+    </ul>
+
+    <h2 id="paso-1">Paso 1: Imagen e índices <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
+    <p>Preparamos una escena de Landsat 9 con máscara de nubes y factor de escala, y calculamos NDWI, MNDWI y AWEInsh tal como en la lección <a href="deteccion-agua-landsat.html">Detección de agua con Landsat 9</a>.</p>
+    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
+<span class="k">function</span> scaler(img) {
+  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
+  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
+  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+}
+
+<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
+<span class="k">function</span> mask_clouds(img) {
+  <span class="k">var</span> qa = img.select('QA_PIXEL');
+  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
+  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
+    .and(qa.bitwiseAnd(cloud).eq(0))
+    .and(qa.bitwiseAnd(cloudShadow).eq(0))
+    .and(qa.bitwiseAnd(snow).eq(0));
+  <span class="k">return</span> img.updateMask(mask);
+}</pre></div>
+    <div class="codebox"><pre><span class="c">// Primera imagen de Landsat 9 con poca nubosidad sobre el AOI</span>
+<span class="k">var</span> ls9_image = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
+  .filterDate('2023-01-01', '2023-12-31')
+  .filter(ee.Filter.lt("CLOUD_COVER_LAND", 10))
+  .filterBounds(AOI)
+  .map(mask_clouds)
+  .map(scaler)
+  .first()
+  .clip(AOI);
+print(ls9_image);</pre></div>
+    <div class="codebox"><pre><span class="c">// Falso color NIR-Rojo-Verde, donde el agua se ve oscura y la vegetación roja</span>
+Map.addLayer(ls9_image, {bands: "SR_B5,SR_B4,SR_B3", min: 0.01, max: 0.41, gamma: 1}, "Landsat 9");
+Map.centerObject(AOI, 12);</pre></div>
+    <div class="codebox"><pre><span class="c">// Índices para detectar agua</span>
+<span class="k">var</span> NDWI = ls9_image.normalizedDifference(['SR_B3', 'SR_B5']).rename('NDWI');
+<span class="k">var</span> MNDWI = ls9_image.normalizedDifference(['SR_B3', 'SR_B6']).rename('MNDWI');
+<span class="k">var</span> AWEInsh = ls9_image.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
+  'GREEN': ls9_image.select('SR_B3'),
+  'SWIR1': ls9_image.select('SR_B6'),
+  'SWIR2': ls9_image.select('SR_B7'),
+  'NIR': ls9_image.select('SR_B5')
+}).rename('AWEInsh');
+<span class="k">var</span> index = NDWI.addBands([MNDWI, AWEInsh]);</pre></div>
+
+    <h2 id="paso-2">Paso 2: Máscara de agua <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Un píxel es agua si NDWI o MNDWI superan 0, o si AWEInsh supera 0,01. Combinar los tres índices ayuda a no perder orillas ni zonas con vegetación flotante.</p>
+    <div class="codebox"><pre><span class="c">// Máscara de agua con los tres índices</span>
+<span class="k">var</span> waterMask = <span class="k">function</span>(img) {
+  <span class="k">var</span> water = img.select('NDWI').gt(0)
+    .or(img.select('MNDWI').gt(0))
+    .or(img.select('AWEInsh').gt(0.01));
+  <span class="k">return</span> water.rename('waterMask');
+};
+<span class="k">var</span> masking = waterMask(index);
+Map.addLayer(masking, {}, 'Máscara de agua');</pre></div>
+
+    <h2 id="paso-3">Paso 3: Limpiar la máscara <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <p>La máscara cruda tiene píxeles sueltos que generarían cientos de polígonos diminutos. <code>connectedPixelCount()</code> cuenta cuántos píxeles conectados tiene cada grupo, y con eso rellenamos las islas pequeñas dentro del agua y eliminamos el agua aislada de pocos píxeles. El parámetro <code>FILL_SIZE</code> controla qué tan agresiva es la limpieza.</p>
+    <div class="codebox"><pre><span class="c">// Rellenar islas pequeñas: tierra rodeada de agua con menos de FILL_SIZE píxeles</span>
+<span class="k">var</span> removeIslands = <span class="k">function</span>(img, FILL_SIZE) {
+  <span class="k">var</span> fill = img.not().selfMask().connectedPixelCount(FILL_SIZE).lt(FILL_SIZE);
+  <span class="k">return</span> img.where(fill, 1).rename('waterMask');
+};
+
+<span class="c">// Quitar charcos pequeños: agua aislada con menos de FILL_SIZE píxeles</span>
+<span class="k">var</span> removeSmallWater = <span class="k">function</span>(img, FILL_SIZE) {
+  <span class="k">var</span> fill = img.connectedPixelCount(FILL_SIZE).lt(FILL_SIZE);
+  <span class="k">return</span> img.where(fill, 0).rename('waterMask');
+};
+
+<span class="k">var</span> mask_clean = removeSmallWater(removeIslands(masking, 30), 10);
+Map.addLayer(mask_clean, {}, 'Máscara limpia');</pre></div>
+
+    <h2 id="paso-4">Paso 4: Vectorizar y exportar <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p><code>reduceToVectors()</code> agrupa los píxeles contiguos de agua en polígonos. La tabla resultante se exporta como shapefile y puedes abrirla directamente en QGIS.</p>
+    <div class="codebox"><pre><span class="c">// Convertir los píxeles de agua en polígonos</span>
+<span class="k">var</span> waterPolygons = mask_clean.selfMask().reduceToVectors({
+  geometry: AOI,
+  scale: 30,
+  geometryType: 'polygon',
+  eightConnected: <span class="k">false</span>,
+  labelProperty: 'zone',
+  maxPixels: 1e13
+});
+Map.addLayer(waterPolygons, {color: 'cyan'}, "Polígonos de agua");
+
+<span class="c">// Exportar como shapefile a Google Drive</span>
+Export.table.toDrive({
+  collection: waterPolygons,
+  description: "water_polygons_landsat",
+  folder: "shapes",
+  fileFormat: "SHP"
+});</pre></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
+    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
+<span class="k">function</span> scaler(img) {
+  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
+  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
+  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+}
+
+<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
+<span class="k">function</span> mask_clouds(img) {
+  <span class="k">var</span> qa = img.select('QA_PIXEL');
+  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
+  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
+    .and(qa.bitwiseAnd(cloud).eq(0))
+    .and(qa.bitwiseAnd(cloudShadow).eq(0))
+    .and(qa.bitwiseAnd(snow).eq(0));
+  <span class="k">return</span> img.updateMask(mask);
+}
+
+<span class="c">// Primera imagen de Landsat 9 con poca nubosidad sobre el AOI</span>
+<span class="k">var</span> ls9_image = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
+  .filterDate('2023-01-01', '2023-12-31')
+  .filter(ee.Filter.lt("CLOUD_COVER_LAND", 10))
+  .filterBounds(AOI)
+  .map(mask_clouds)
+  .map(scaler)
+  .first()
+  .clip(AOI);
+print(ls9_image);
+
+<span class="c">// Falso color NIR-Rojo-Verde, donde el agua se ve oscura y la vegetación roja</span>
+Map.addLayer(ls9_image, {bands: "SR_B5,SR_B4,SR_B3", min: 0.01, max: 0.41, gamma: 1}, "Landsat 9");
+Map.centerObject(AOI, 12);
+
+<span class="c">// Índices para detectar agua</span>
+<span class="k">var</span> NDWI = ls9_image.normalizedDifference(['SR_B3', 'SR_B5']).rename('NDWI');
+<span class="k">var</span> MNDWI = ls9_image.normalizedDifference(['SR_B3', 'SR_B6']).rename('MNDWI');
+<span class="k">var</span> AWEInsh = ls9_image.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
+  'GREEN': ls9_image.select('SR_B3'),
+  'SWIR1': ls9_image.select('SR_B6'),
+  'SWIR2': ls9_image.select('SR_B7'),
+  'NIR': ls9_image.select('SR_B5')
+}).rename('AWEInsh');
+<span class="k">var</span> index = NDWI.addBands([MNDWI, AWEInsh]);
+
+<span class="c">// Máscara de agua con los tres índices</span>
+<span class="k">var</span> waterMask = <span class="k">function</span>(img) {
+  <span class="k">var</span> water = img.select('NDWI').gt(0)
+    .or(img.select('MNDWI').gt(0))
+    .or(img.select('AWEInsh').gt(0.01));
+  <span class="k">return</span> water.rename('waterMask');
+};
+<span class="k">var</span> masking = waterMask(index);
+Map.addLayer(masking, {}, 'Máscara de agua');
+
+<span class="c">// Rellenar islas pequeñas: tierra rodeada de agua con menos de FILL_SIZE píxeles</span>
+<span class="k">var</span> removeIslands = <span class="k">function</span>(img, FILL_SIZE) {
+  <span class="k">var</span> fill = img.not().selfMask().connectedPixelCount(FILL_SIZE).lt(FILL_SIZE);
+  <span class="k">return</span> img.where(fill, 1).rename('waterMask');
+};
+
+<span class="c">// Quitar charcos pequeños: agua aislada con menos de FILL_SIZE píxeles</span>
+<span class="k">var</span> removeSmallWater = <span class="k">function</span>(img, FILL_SIZE) {
+  <span class="k">var</span> fill = img.connectedPixelCount(FILL_SIZE).lt(FILL_SIZE);
+  <span class="k">return</span> img.where(fill, 0).rename('waterMask');
+};
+
+<span class="k">var</span> mask_clean = removeSmallWater(removeIslands(masking, 30), 10);
+Map.addLayer(mask_clean, {}, 'Máscara limpia');
+
+<span class="c">// Convertir los píxeles de agua en polígonos</span>
+<span class="k">var</span> waterPolygons = mask_clean.selfMask().reduceToVectors({
+  geometry: AOI,
+  scale: 30,
+  geometryType: 'polygon',
+  eightConnected: <span class="k">false</span>,
+  labelProperty: 'zone',
+  maxPixels: 1e13
+});
+Map.addLayer(waterPolygons, {color: 'cyan'}, "Polígonos de agua");
+
+<span class="c">// Exportar como shapefile a Google Drive</span>
+Export.table.toDrive({
+  collection: waterPolygons,
+  description: "water_polygons_landsat",
+  folder: "shapes",
+  fileFormat: "SHP"
+});</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Con este flujo pasas de una imagen satelital a un shapefile de cuerpos de agua listo para medir, editar o cruzar con otras capas. Ajusta los umbrales de los índices y el tamaño de limpieza según tu zona, porque no es lo mismo una ciénaga costera que un embalse de montaña.</p>
+
+    <h2 id="referencias">Referencias <a class="anchor" href="#referencias" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="refs">
+      <li>McFeeters, S. K. (1996). The use of the Normalized Difference Water Index (NDWI) in the delineation of open water features. <em>International Journal of Remote Sensing</em>, 17(7), 1425–1432.</li>
+      <li>Gao, B.-C. (1996). NDWI—A normalized difference water index for remote sensing of vegetation liquid water from space. <em>Remote Sensing of Environment</em>, 58(3), 257–266.</li>
+      <li>Xu, H. (2006). Modification of normalised difference water index (NDWI) to enhance open water features in remotely sensed imagery. <em>International Journal of Remote Sensing</em>, 27(14), 3025–3033.</li>
+      <li>Feyisa, G. L., Meilby, H., Fensholt, R. y Proud, S. R. (2014). Automated Water Extraction Index: A new technique for surface water mapping using Landsat imagery. <em>Remote Sensing of Environment</em>, 140, 23–35.</li>
+    </ul>

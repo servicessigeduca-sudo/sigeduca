@@ -1,0 +1,159 @@
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Una sola imagen satelital casi nunca está limpia. En zonas tropicales las nubes aparecen en buena parte de las escenas, y eso complica cualquier análisis. La solución es combinar muchas imágenes de un mismo periodo en una <strong>composición de mediana</strong>.</p>
+    <p>En esta lección construiremos una composición sin nubes con Landsat 9. Crearemos funciones para aplicar el factor de escala y la máscara de nubes, compararemos el antes y el después, y exportaremos el resultado a Google Drive.</p>
+
+    <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Entender qué es una composición de mediana y por qué reduce el efecto de las nubes.</li>
+      <li>Crear funciones para el factor de escala y la máscara de nubes, y aplicarlas con <code>map()</code>.</li>
+      <li>Comparar la mediana con nubes, sin nubes y con filtro de nubosidad.</li>
+      <li>Exportar la composición a Google Drive como GeoTIFF.</li>
+    </ul>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/LANDSAT_LC09_C02_T1_L2" target="_blank" rel="noopener">Landsat 9 Surface Reflectance (LANDSAT/LC09/C02/T1_L2)</a></li>
+      <li><a href="https://www.usgs.gov/landsat-missions/landsat-collection-2-level-2-science-products" target="_blank" rel="noopener">Productos de nivel 2 de Landsat Colección 2 y sus factores de escala (USGS)</a></li>
+      <li><a href="https://www.usgs.gov/landsat-missions/landsat-collection-2-quality-assessment-bands" target="_blank" rel="noopener">Bandas de calidad de Landsat Colección 2 (USGS)</a></li>
+    </ul>
+
+    <h2 id="mediana">¿Por qué la mediana? <a class="anchor" href="#mediana" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Las nubes son muy brillantes y las sombras muy oscuras, así que en una serie de imágenes aparecen como valores extremos. La mediana ignora esos extremos y se queda con el valor típico de cada píxel. Si además enmascaramos las nubes antes de calcularla, el resultado es una imagen continua y limpia aunque ninguna escena individual lo sea.</p>
+    <div class="callout"><p><strong>Ojo con el orden.</strong> La máscara usa la banda <code>QA_PIXEL</code>, que no debe escalarse. Por eso aplicamos primero <code>mask_clouds</code> y después <code>scaler</code>.</p></div>
+
+    <h2 id="paso-1">Paso 1: Crear las funciones <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Landsat Colección 2 guarda la reflectancia como números enteros. La función <code>scaler</code> los convierte en reflectancia real con los factores que publica el USGS, y <code>mask_clouds</code> lee los bits de la banda <code>QA_PIXEL</code> para ocultar cirros, nubes, sombras de nubes y nieve.</p>
+    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
+<span class="k">function</span> scaler(img) {
+  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
+  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
+  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+}
+
+<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
+<span class="k">function</span> mask_clouds(img) {
+  <span class="k">var</span> qa = img.select('QA_PIXEL');
+  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
+  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
+    .and(qa.bitwiseAnd(cloud).eq(0))
+    .and(qa.bitwiseAnd(cloudShadow).eq(0))
+    .and(qa.bitwiseAnd(snow).eq(0));
+  <span class="k">return</span> img.updateMask(mask);
+}</pre></div>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Bit de QA_PIXEL</th><th>Significado</th></tr></thead>
+        <tbody>
+          <tr><td class="n">1</td><td>Nube dilatada</td></tr>
+          <tr><td class="n">2</td><td>Cirros</td></tr>
+          <tr><td class="n">3</td><td>Nube</td></tr>
+          <tr><td class="n">4</td><td>Sombra de nube</td></tr>
+          <tr><td class="n">5</td><td>Nieve</td></tr>
+          <tr><td class="n">7</td><td>Agua</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="paso-2">Paso 2: Filtrar la colección y ver la mediana con nubes <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
+    <p>Filtramos Landsat 9 por fecha y región y calculamos una mediana sin ninguna corrección. Así vemos el punto de partida, todavía con restos de nubes y en valores digitales.</p>
+    <div class="codebox"><pre><span class="c">// Colección de Landsat 9 filtrada por fecha y región</span>
+<span class="k">var</span> ls9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
+  .filterDate('2023-01-01', '2023-06-30')
+  .filterBounds(AOI);
+print(ls9);
+
+<span class="c">// Mediana sin máscara, todavía con nubes</span>
+<span class="k">var</span> ls9_m = ls9.median().clip(AOI);
+<span class="k">var</span> visRaw = {bands: "SR_B4,SR_B3,SR_B2", min: 7200, max: 13800, gamma: 1};
+Map.addLayer(ls9_m, visRaw, "Landsat 9 mediana con nubes");
+Map.centerObject(AOI, 8);</pre></div>
+
+    <h2 id="paso-3">Paso 3: Composición sin nubes <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Ahora aplicamos las dos funciones a cada imagen con <code>map()</code> y luego calculamos la mediana. La segunda versión añade un filtro por <code>CLOUD_COVER_LAND</code> para usar solo las escenas más despejadas, lo que suele dar colores más limpios.</p>
+    <div class="codebox"><pre><span class="c">// Mediana sin nubes: primero la máscara, luego el factor de escala</span>
+<span class="k">var</span> ls9_cf = ls9.map(mask_clouds).map(scaler).median().clip(AOI);
+<span class="k">var</span> visSR = {bands: "SR_B4,SR_B3,SR_B2", min: 0.002, max: 0.182, gamma: 1};
+Map.addLayer(ls9_cf, visSR, "Landsat 9 mediana sin nubes");
+
+<span class="c">// Mismo proceso, pero solo con escenas de menos del 10 % de nubes en tierra</span>
+<span class="k">var</span> ls9_cc = ls9.filter(ee.Filter.lt("CLOUD_COVER_LAND", 10))
+  .map(mask_clouds).map(scaler).median().clip(AOI);
+Map.addLayer(ls9_cc, visSR, "Landsat 9 mediana sin nubes y con filtro");</pre></div>
+
+    <h2 id="paso-4">Paso 4: Exportar la composición <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Exportamos solo las bandas ópticas <code>SR_B1</code> a <code>SR_B7</code> a 30 m. La tarea aparece en la pestaña <strong>Tasks</strong>, donde debes ejecutarla.</p>
+    <div class="codebox"><pre><span class="c">// Exportar las bandas ópticas a Google Drive</span>
+Export.image.toDrive({
+  image: ls9_cc.select(["SR_B[1-7]"]),
+  description: "landsat_9_cloud_free_composite",
+  folder: "landsat collection cloud free",
+  region: AOI,
+  scale: 30,
+  maxPixels: 1e13,
+  fileFormat: "TIFF",
+  formatOptions: {cloudOptimized: <span class="k">true</span>}
+});</pre></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
+    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
+<span class="k">function</span> scaler(img) {
+  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
+  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
+  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+}
+
+<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
+<span class="k">function</span> mask_clouds(img) {
+  <span class="k">var</span> qa = img.select('QA_PIXEL');
+  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
+  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
+    .and(qa.bitwiseAnd(cloud).eq(0))
+    .and(qa.bitwiseAnd(cloudShadow).eq(0))
+    .and(qa.bitwiseAnd(snow).eq(0));
+  <span class="k">return</span> img.updateMask(mask);
+}
+
+<span class="c">// Colección de Landsat 9 filtrada por fecha y región</span>
+<span class="k">var</span> ls9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
+  .filterDate('2023-01-01', '2023-06-30')
+  .filterBounds(AOI);
+print(ls9);
+
+<span class="c">// Mediana sin máscara, todavía con nubes</span>
+<span class="k">var</span> ls9_m = ls9.median().clip(AOI);
+<span class="k">var</span> visRaw = {bands: "SR_B4,SR_B3,SR_B2", min: 7200, max: 13800, gamma: 1};
+Map.addLayer(ls9_m, visRaw, "Landsat 9 mediana con nubes");
+Map.centerObject(AOI, 8);
+
+<span class="c">// Mediana sin nubes: primero la máscara, luego el factor de escala</span>
+<span class="k">var</span> ls9_cf = ls9.map(mask_clouds).map(scaler).median().clip(AOI);
+<span class="k">var</span> visSR = {bands: "SR_B4,SR_B3,SR_B2", min: 0.002, max: 0.182, gamma: 1};
+Map.addLayer(ls9_cf, visSR, "Landsat 9 mediana sin nubes");
+
+<span class="c">// Mismo proceso, pero solo con escenas de menos del 10 % de nubes en tierra</span>
+<span class="k">var</span> ls9_cc = ls9.filter(ee.Filter.lt("CLOUD_COVER_LAND", 10))
+  .map(mask_clouds).map(scaler).median().clip(AOI);
+Map.addLayer(ls9_cc, visSR, "Landsat 9 mediana sin nubes y con filtro");
+
+<span class="c">// Exportar las bandas ópticas a Google Drive</span>
+Export.image.toDrive({
+  image: ls9_cc.select(["SR_B[1-7]"]),
+  description: "landsat_9_cloud_free_composite",
+  folder: "landsat collection cloud free",
+  region: AOI,
+  scale: 30,
+  maxPixels: 1e13,
+  fileFormat: "TIFF",
+  formatOptions: {cloudOptimized: <span class="k">true</span>}
+});</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>La composición de mediana es la base de casi todo lo que viene en el curso. Con una imagen limpia de tu zona ya puedes calcular índices espectrales, detectar agua o comparar fechas sin que las nubes arruinen el resultado. En la siguiente lección haremos lo mismo con Sentinel-2.</p>

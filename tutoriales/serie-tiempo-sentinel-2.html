@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-src https://www.youtube-nocookie.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Series de tiempo con Sentinel-2 en Google Earth Engine · SIG EDUCA</title>
+<meta name="description" content="Crea una serie de medianas anuales sin nubes con Sentinel-2 y exporta cada año a Google Drive.">
+<!-- seo:inicio -->
+<link rel="canonical" href="https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/serie-tiempo-sentinel-2.html">
+<link rel="icon" type="image/png" href="../assets/img/favicon.png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SIG EDUCA">
+<meta property="og:locale" content="es_ES">
+<meta property="og:title" content="Series de tiempo con Sentinel-2 en Google Earth Engine · SIG EDUCA">
+<meta property="og:description" content="Crea una serie de medianas anuales sin nubes con Sentinel-2 y exporta cada año a Google Drive.">
+<meta property="og:url" content="https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/serie-tiempo-sentinel-2.html">
+<meta property="og:image" content="https://servicessigeduca-sudo.github.io/sigeduca/assets/img/compartir.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Series de tiempo con Sentinel-2 en Google Earth Engine · SIG EDUCA">
+<meta name="twitter:description" content="Crea una serie de medianas anuales sin nubes con Sentinel-2 y exporta cada año a Google Drive.">
+<meta name="twitter:image" content="https://servicessigeduca-sudo.github.io/sigeduca/assets/img/compartir.png">
+<!-- seo:fin -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<script src="../assets/theme.js?v=45ee55f4"></script>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <button class="menu-btn" id="menuBtn" aria-label="Abrir menú" aria-expanded="false">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <a class="brand" aria-label="SIG EDUCA, inicio" href="../index.html"><img src="../assets/img/logo-sig-educa.png" alt="" width="90" height="112"><span class="brand-txt">SIG <b>EDUCA</b></span></a>
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Buscar" aria-label="Buscar">
+    </div>
+    <button class="theme-btn" id="themeBtn" type="button" role="switch" aria-checked="false" aria-label="Modo oscuro"><span class="knob"><svg class="sun" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></span></button>
+    <a class="btn ghost" href="https://www.youtube.com/@SIG_EDUCA" target="_blank" rel="noopener">YouTube</a>
+    <a class="btn" href="../index.html#ruta">Tutoriales</a>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="side" id="side" aria-label="Secciones">
+    <ul>
+      <li><a href="../index.html#inicio">Inicio</a></li>
+      <li><a href="../index.html#primeros-pasos">Primeros pasos</a></li>
+      <li><a href="../index.html#ruta">Cursos</a></li>
+      <li class="grupo"><details open>
+        <summary>Google Earth Engine</summary>
+        <ul>
+          <li class="grupo nivel"><details>
+            <summary>Nivel básico</summary>
+            <ul>
+              <li><a href="../cursos/curso-gee.html">Presentación del curso</a></li>
+              <li><a href="../tutoriales/registro-earth-engine.html" title="Creación y registro en Google Earth Engine">1. Creación y registro</a></li>
+              <li><a href="../tutoriales/importar-shapefile.html" title="Importar shapefile en Google Earth Engine">2. Importar shapefile</a></li>
+              <li><a href="../tutoriales/filtrar-shapefiles.html" title="Trabajar con shapefiles en Google Earth Engine">3. Filtrar shapefiles</a></li>
+              <li><a href="../tutoriales/exportar-shapefile.html" title="Descargar shapefiles de Google Earth Engine">4. Descargar shapefiles</a></li>
+              <li><a href="../tutoriales/descargar-dem.html" title="Descargar un DEM en Google Earth Engine">5. Descargar un DEM</a></li>
+              <li><a href="../tutoriales/analisis-terreno.html" title="Análisis de terreno en Google Earth Engine">6. Análisis de terreno</a></li>
+              <li><a href="../tutoriales/descargar-landsat-9.html" title="Descargar imagen satelital de Landsat 9 en Google Earth Engine">7. Imagen de Landsat 9</a></li>
+              <li><a href="../tutoriales/descargar-sentinel-2.html" title="Descargar imagen satelital de Sentinel-2 en Google Earth Engine">8. Imagen de Sentinel-2</a></li>
+              <li><a href="../tutoriales/composicion-landsat.html" title="Composición sin nubes con Landsat 9 en Google Earth Engine">9. Composición con Landsat 9</a></li>
+              <li><a href="../tutoriales/composicion-sentinel-2.html" title="Composición sin nubes con Sentinel-2 en Google Earth Engine">10. Composición con Sentinel-2</a></li>
+              <li><a href="../tutoriales/indices-vegetacion-landsat.html" title="Índices de vegetación con Landsat 9 en Google Earth Engine">11. Vegetación con Landsat 9</a></li>
+              <li><a href="../tutoriales/indices-vegetacion-sentinel-2.html" title="Índices de vegetación con Sentinel-2 en Google Earth Engine">12. Vegetación con Sentinel-2</a></li>
+              <li><a href="../tutoriales/deteccion-agua-landsat.html" title="Detección de agua con Landsat 9 en Google Earth Engine">13. Agua con Landsat 9</a></li>
+              <li><a href="../tutoriales/deteccion-agua-sentinel-2.html" title="Detección de agua con Sentinel-2 en Google Earth Engine">14. Agua con Sentinel-2</a></li>
+              <li><a href="../tutoriales/inundaciones-landsat.html" title="Mapeo de inundaciones con Landsat 9 en Google Earth Engine">15. Inundaciones con Landsat 9</a></li>
+              <li><a href="../tutoriales/inundaciones-sentinel-2.html" title="Mapeo de inundaciones con Sentinel-2 en Google Earth Engine">16. Inundaciones con Sentinel-2</a></li>
+              <li><a href="../tutoriales/cuerpos-agua-landsat.html" title="Extracción de cuerpos de agua con Landsat 9 en Google Earth Engine">17. Cuerpos de agua con Landsat 9</a></li>
+              <li><a href="../tutoriales/cuerpos-agua-sentinel-2.html" title="Extracción de cuerpos de agua con Sentinel-2 en Google Earth Engine">18. Cuerpos de agua con Sentinel-2</a></li>
+            </ul>
+          </details></li>
+          <li class="grupo nivel"><details open>
+            <summary>Nivel intermedio</summary>
+            <ul>
+              <li><a href="../cursos/curso-gee-intermedio.html">Presentación del curso</a></li>
+              <li><a href="../tutoriales/serie-tiempo-landsat.html" title="Series de tiempo con Landsat 4 a 9 en Google Earth Engine">1. Series de tiempo con Landsat</a></li>
+              <li><a href="../tutoriales/serie-tiempo-sentinel-2.html" class="on" aria-current="page" title="Series de tiempo con Sentinel-2 en Google Earth Engine">2. Series de tiempo con Sentinel-2</a></li>
+              <li><a href="../tutoriales/indices-serie-tiempo.html" title="Índices espectrales en series de tiempo con Landsat en Google Earth Engine">3. Índices año a año</a></li>
+              <li><a href="../tutoriales/agua-dswe.html" title="Agua superficial con DSWE (Jones, 2019) en Google Earth Engine">4. Agua con DSWE</a></li>
+              <li><a href="../tutoriales/area-agua-dswe.html" title="Evolución del área de agua con DSWE en Google Earth Engine">5. Área de agua por año</a></li>
+              <li><a href="../tutoriales/gif-serie-tiempo.html" title="Animación GIF de una serie de tiempo en Google Earth Engine">6. Animación GIF</a></li>
+            </ul>
+          </details></li>
+        </ul>
+      </details></li>
+      <li class="grupo"><details>
+        <summary>QGIS</summary>
+        <ul>
+          <li class="grupo nivel"><details>
+            <summary>Nivel básico</summary>
+            <ul>
+              <li><a href="../cursos/curso-qgis.html">Presentación del curso</a></li>
+              <li><a href="../tutoriales/descargar-qgis.html" title="Descargar e instalar QGIS">1. Instalar QGIS</a></li>
+            </ul>
+          </details></li>
+        </ul>
+      </details></li>
+      <li class="grupo"><details>
+        <summary>Apps</summary>
+        <ul>
+          <li><a href="../apps/easy-download-dems.html">Easy Download DEMs</a></li>
+        </ul>
+      </details></li>
+      <li><a href="../index.html#contacto">Contacto</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <div class="crumb"><a href="../index.html#ruta">cursos</a> / <a href="../cursos/curso-gee-intermedio.html">google earth engine intermedio</a></div>
+    <h1>Series de tiempo con Sentinel-2 en Google Earth Engine</h1>
+    <div class="meta-row"><span class="lvl i">intermedio</span><span>Lección 2 de 6</span><span>15 min</span><span>Google Earth Engine</span></div>
+    <p class="lead">Crea una serie de medianas anuales sin nubes con Sentinel-2 y exporta cada año a Google Drive.</p>
+    
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Sentinel-2 tiene una historia más corta que Landsat, pero mucho más detalle. La Agencia Espacial Europea (ESA) lanzó Sentinel-2A en 2015 y Sentinel-2B en 2017. Juntos fotografían cada punto de la Tierra cada cinco días, con 10 m de resolución en las bandas visibles y en el infrarrojo cercano. Es la mejor opción para seguir cambios recientes en áreas pequeñas, como una finca, una ciénaga o el borde de una ciudad.</p>
+    <p>En esta lección crearemos una mediana anual sin nubes con la colección de reflectancia de superficie y exportaremos cada año a Google Drive.</p>
+
+    <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Filtrar la colección de Sentinel-2 por años, meses y nubosidad.</li>
+      <li>Crear una mediana anual sin nubes con la máscara SCL.</li>
+      <li>Mostrar y exportar cada año de la serie.</li>
+      <li>Entender por qué usamos la colección HARMONIZED en series de tiempo.</li>
+    </ul>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR_HARMONIZED" target="_blank" rel="noopener">Sentinel-2 Surface Reflectance (COPERNICUS/S2_SR_HARMONIZED)</a></li>
+      <li><a href="https://developers.google.com/earth-engine/apidocs/ee-imagecollection-fromimages" target="_blank" rel="noopener">ee.ImageCollection.fromImages()</a></li>
+    </ul>
+
+    <h2 id="antes">Dos detalles antes de empezar <a class="anchor" href="#antes" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><strong>¿Desde qué año?</strong> ESA genera la reflectancia de superficie (nivel 2A) de forma sistemática para todo el planeta desde diciembre de 2018. En años anteriores muchas zonas tienen pocas imágenes o ninguna, por eso empezamos la serie en 2019. Si tu zona tiene datos anteriores, puedes adelantar <code>startYear</code>, y el script descartará los años vacíos.</li>
+      <li><strong>¿Por qué HARMONIZED?</strong> Desde el 25 de enero de 2022, ESA suma 1000 a los valores de las imágenes nuevas por un cambio en su procesamiento. La colección <code>S2_SR_HARMONIZED</code> corrige ese desplazamiento para que las imágenes de antes y después de esa fecha sean comparables. En una serie de tiempo es indispensable: sin la corrección verías un salto falso en 2022.</li>
+    </ul>
+
+    <h2 id="paso-1">Paso 1: Crear la función de máscara <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
+    <p>Usamos la misma función del curso básico. Oculta sombras, nubes y cirros con la banda <code>SCL</code> y pasa los valores a reflectancia, de 0 a 1.</p>
+    <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
+<span class="k">function</span> maskS2clouds(img) {
+  <span class="k">var</span> scl = img.select('SCL');
+  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
+    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
+    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
+    .and(scl.neq(10));<span class="c">     // cirros</span>
+  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+}</pre></div>
+
+    <h2 id="paso-2">Paso 2: Parámetros y colección <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Filtramos por zona, años, meses y nubosidad, y aplicamos la máscara a cada imagen. Como Sentinel-2 pasa cada cinco días, un límite de 20 % de píxeles nubosos todavía deja muchas imágenes por año.</p>
+    <div class="codebox"><pre><span class="c">// Parámetros de búsqueda</span>
+<span class="k">var</span> startYear = 2019;<span class="c">   // año inicial</span>
+<span class="k">var</span> endYear = 2025;<span class="c">     // año final</span>
+<span class="k">var</span> startMonth = 1;<span class="c">     // mes inicial</span>
+<span class="k">var</span> endMonth = 12;<span class="c">      // mes final</span>
+<span class="k">var</span> cloudcover = 20;<span class="c">    // porcentaje máximo de píxeles nubosos</span>
+
+<span class="c">// Colección filtrada y sin nubes</span>
+<span class="k">var</span> collection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+  .filterBounds(AOI)
+  .filterDate(startYear + '-01-01', (endYear + 1) + '-01-01')
+  .filter(ee.Filter.calendarRange(startMonth, endMonth, 'month'))
+  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', cloudcover))
+  .map(maskS2clouds);
+print('Imágenes disponibles', collection.size());</pre></div>
+
+    <h2 id="paso-3">Paso 3: Crear una mediana por año <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <p>El método es el mismo de <a href="serie-tiempo-landsat.html">Series de tiempo con Landsat</a>: recorremos los años, calculamos una mediana para cada uno, guardamos el año y el número de imágenes, y eliminamos los años vacíos.</p>
+    <div class="codebox"><pre><span class="c">// Una mediana por año</span>
+<span class="k">var</span> years = ee.List.sequence(startYear, endYear);
+
+<span class="k">var</span> annual = ee.ImageCollection.fromImages(years.map(<span class="k">function</span> (year) {
+  <span class="k">var</span> start = ee.Date.fromYMD(year, 1, 1);
+  <span class="k">var</span> images = collection.filterDate(start, start.advance(1, 'year'));
+  <span class="k">return</span> images.median()
+    .clip(AOI)
+    .set('year', year)
+    .set('n_images', images.size());
+}));
+
+<span class="c">// Quitar los años sin imágenes</span>
+annual = annual.filter(ee.Filter.gt('n_images', 0));
+print('Medianas anuales', annual);</pre></div>
+
+    <h2 id="paso-4">Paso 4: Visualizar la serie <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Agregamos una capa por año en color verdadero. Activa las capas una por una en el panel <strong>Layers</strong> para comparar los años.</p>
+    <div class="codebox"><pre><span class="c">// Color verdadero, una capa por año</span>
+<span class="k">var</span> visRGB = {bands: ['B4', 'B3', 'B2'], min: 0.01, max: 0.22, gamma: 1};
+Map.centerObject(AOI, 11);
+
+annual.aggregate_array('year').evaluate(<span class="k">function</span> (list) {
+  list.forEach(<span class="k">function</span> (year) {
+    <span class="k">var</span> img = annual.filter(ee.Filter.eq('year', year)).first();
+    Map.addLayer(img, visRGB, 'RGB ' + year, <span class="k">false</span>);
+  });
+});</pre></div>
+
+    <h2 id="paso-5">Paso 5: Exportar cada año <a class="anchor" href="#paso-5" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Exportamos diez bandas a 10 m: las tres visibles, las tres del borde rojo, los dos infrarrojos cercanos (B8 y B8A) y los dos SWIR. Dejamos fuera B1 y B9, que sirven para medir aerosoles y vapor de agua en la atmósfera y tienen 60 m de resolución. Las bandas de 20 m se remuestrean a 10 m al exportar.</p>
+    <div class="codebox"><pre><span class="c">// Bandas a exportar: visibles, borde rojo, NIR y SWIR</span>
+<span class="k">var</span> exportBands = ['B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B11', 'B12'];
+
+<span class="c">// Una tarea de exportación por año</span>
+annual.aggregate_array('year').evaluate(<span class="k">function</span> (list) {
+  list.forEach(<span class="k">function</span> (year) {
+    <span class="k">var</span> img = ee.Image(annual.filter(ee.Filter.eq('year', year)).first());
+    Export.image.toDrive({
+      image: img.select(exportBands).toFloat(),
+      description: 'Sentinel2_mediana_' + year,
+      folder: 'Sentinel_Median',
+      region: AOI,
+      scale: 10,
+      crs: 'EPSG:32618',<span class="c">  // UTM 18N, cámbiala por la zona de tu AOI</span>
+      maxPixels: 1e13
+    });
+  });
+});</pre></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
+    <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
+<span class="k">function</span> maskS2clouds(img) {
+  <span class="k">var</span> scl = img.select('SCL');
+  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
+    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
+    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
+    .and(scl.neq(10));<span class="c">     // cirros</span>
+  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+}
+
+<span class="c">// Parámetros de búsqueda</span>
+<span class="k">var</span> startYear = 2019;<span class="c">   // año inicial</span>
+<span class="k">var</span> endYear = 2025;<span class="c">     // año final</span>
+<span class="k">var</span> startMonth = 1;<span class="c">     // mes inicial</span>
+<span class="k">var</span> endMonth = 12;<span class="c">      // mes final</span>
+<span class="k">var</span> cloudcover = 20;<span class="c">    // porcentaje máximo de píxeles nubosos</span>
+
+<span class="c">// Colección filtrada y sin nubes</span>
+<span class="k">var</span> collection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
+  .filterBounds(AOI)
+  .filterDate(startYear + '-01-01', (endYear + 1) + '-01-01')
+  .filter(ee.Filter.calendarRange(startMonth, endMonth, 'month'))
+  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', cloudcover))
+  .map(maskS2clouds);
+print('Imágenes disponibles', collection.size());
+
+<span class="c">// Una mediana por año</span>
+<span class="k">var</span> years = ee.List.sequence(startYear, endYear);
+
+<span class="k">var</span> annual = ee.ImageCollection.fromImages(years.map(<span class="k">function</span> (year) {
+  <span class="k">var</span> start = ee.Date.fromYMD(year, 1, 1);
+  <span class="k">var</span> images = collection.filterDate(start, start.advance(1, 'year'));
+  <span class="k">return</span> images.median()
+    .clip(AOI)
+    .set('year', year)
+    .set('n_images', images.size());
+}));
+
+<span class="c">// Quitar los años sin imágenes</span>
+annual = annual.filter(ee.Filter.gt('n_images', 0));
+print('Medianas anuales', annual);
+
+<span class="c">// Color verdadero, una capa por año</span>
+<span class="k">var</span> visRGB = {bands: ['B4', 'B3', 'B2'], min: 0.01, max: 0.22, gamma: 1};
+Map.centerObject(AOI, 11);
+
+annual.aggregate_array('year').evaluate(<span class="k">function</span> (list) {
+  list.forEach(<span class="k">function</span> (year) {
+    <span class="k">var</span> img = annual.filter(ee.Filter.eq('year', year)).first();
+    Map.addLayer(img, visRGB, 'RGB ' + year, <span class="k">false</span>);
+  });
+});
+
+<span class="c">// Bandas a exportar: visibles, borde rojo, NIR y SWIR</span>
+<span class="k">var</span> exportBands = ['B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B11', 'B12'];
+
+<span class="c">// Una tarea de exportación por año</span>
+annual.aggregate_array('year').evaluate(<span class="k">function</span> (list) {
+  list.forEach(<span class="k">function</span> (year) {
+    <span class="k">var</span> img = ee.Image(annual.filter(ee.Filter.eq('year', year)).first());
+    Export.image.toDrive({
+      image: img.select(exportBands).toFloat(),
+      description: 'Sentinel2_mediana_' + year,
+      folder: 'Sentinel_Median',
+      region: AOI,
+      scale: 10,
+      crs: 'EPSG:32618',<span class="c">  // UTM 18N, cámbiala por la zona de tu AOI</span>
+      maxPixels: 1e13
+    });
+  });
+});</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Con Sentinel-2 tienes menos años que con Landsat, pero cada uno con 10 m de detalle. Elige Landsat cuando necesites mirar décadas atrás y Sentinel-2 cuando te interesen cambios recientes en áreas pequeñas.</p>
+
+    <h2 id="referencias">Referencias <a class="anchor" href="#referencias" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="refs">
+      <li>Drusch, M., Del Bello, U., Carlier, S., Colin, O., Fernandez, V., Gascon, F., Hoersch, B., Isola, C., Laberinti, P., Martimort, P., Meygret, A., Spoto, F., Sy, O., Marchese, F. y Bargellini, P. (2012). Sentinel-2: ESA's Optical High-Resolution Mission for GMES Operational Services. <em>Remote Sensing of Environment</em>, 120, 25–36.</li>
+    </ul>
+
+    <div class="pager two">
+      <a href="../cursos/curso-gee-intermedio.html"><small>Volver al curso</small>← Google Earth Engine intermedio</a>
+      <a href="../tutoriales/indices-serie-tiempo.html"><small>Siguiente</small>Índices espectrales en series de tiempo →</a>
+    </div>
+    <footer class="foot"><span>© 2026 SIG EDUCA</span><span class="redes"><a href="https://www.youtube.com/@SIG_EDUCA" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .6 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .4-4.8 31 31 0 0 0-.4-4.8ZM9.7 15.1V8.9l5.8 3.1Z"/></svg></a><a href="https://www.instagram.com/sig_educa" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a><a href="https://www.linkedin.com/in/sig-educa" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9.5h4V21H3Zm7 0h3.8v1.6h.1c.5-1 1.8-2 3.8-2 4 0 4.8 2.6 4.8 6V21h-4v-5.2c0-1.2 0-2.8-1.7-2.8s-2 1.3-2 2.7V21h-4Z"/></svg></a></span></footer>
+  </main>
+
+  <aside class="toc" aria-label="En esta página">
+    <h4>En esta página</h4>
+    <ul id="toc"></ul>
+  </aside>
+</div>
+<script src="../assets/tutorial.js?v=cc33d166"></script>
+</body>
+</html>

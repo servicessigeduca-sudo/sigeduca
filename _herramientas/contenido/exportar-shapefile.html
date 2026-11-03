@@ -1,0 +1,104 @@
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>En esta guía nos centraremos en el proceso de exportación de datos vectoriales desde Google Earth Engine. Usaremos un ejemplo práctico para cargar una colección de datos vectoriales, visualizarla en el mapa y luego exportarla en formato shapefile a través de Google Drive.</p>
+
+    <h2 id="objetivo">Objetivo <a class="anchor" href="#objetivo" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Aprender a exportar datos vectoriales desde Google Earth Engine.</li>
+    </ul>
+
+    <h2 id="recursos">Recursos usados <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_SIMPLIFIED_500m_2015_level2" target="_blank" rel="noopener">Shapefile de ciudades del mundo (FAO GAUL simplificado, nivel 2)</a></li>
+      <li><a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor de Google Earth Engine</a></li>
+    </ul>
+
+    <h2 id="exportar-tablas">¿Cómo se exportan datos vectoriales? <a class="anchor" href="#exportar-tablas" aria-label="Enlace a esta sección">#</a></h2>
+    <p>En Earth Engine los datos vectoriales son <code>FeatureCollection</code>. Para llevarlos a tu computador se usa la familia de funciones <code>Export.table</code>, que crea una tarea en la pestaña <strong>Tasks</strong>. La tarea se procesa en los servidores de Google y el archivo llega a su destino cuando termina.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Función</th><th>Destino</th></tr></thead>
+        <tbody>
+          <tr><td class="n">Export.table.toDrive</td><td>Tu Google Drive. Es la opción más común.</td></tr>
+          <tr><td class="n">Export.table.toAsset</td><td>Tus assets de Earth Engine, para reutilizar la capa en otros scripts.</td></tr>
+          <tr><td class="n">Export.table.toCloudStorage</td><td>Un bucket de Google Cloud Storage.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Con el parámetro <code>fileFormat</code> eliges el formato del archivo, y estos son los más usados.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Formato</th><th>Uso habitual</th></tr></thead>
+        <tbody>
+          <tr><td class="n">SHP</td><td>Shapefile para QGIS, ArcGIS Pro y la mayoría de programas SIG.</td></tr>
+          <tr><td class="n">GeoJSON</td><td>Formato de texto muy usado en la web.</td></tr>
+          <tr><td class="n">KML / KMZ</td><td>Para abrir en Google Earth Pro.</td></tr>
+          <tr><td class="n">CSV</td><td>Tabla de atributos; la geometría se guarda como texto.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><p>Ten en cuenta que un shapefile admite un solo tipo de geometría. Si tu colección mezcla puntos y polígonos, expórtala en GeoJSON o sepárala antes.</p></div>
+
+    <h2 id="paso-1">Paso 1: Cargar los datos <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Cargamos la colección de ciudades con <code>ee.FeatureCollection()</code> y la guardamos en la variable <code>cities</code>.</p>
+    <div class="codebox"><pre><span class="c">// Cargar Feature collection de ciudades</span>
+<span class="k">var</span> cities = ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level2");
+print("Ciudades: ", cities.limit(30));</pre></div>
+
+    <h2 id="paso-2">Paso 2: Filtrar los datos <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Filtramos las entidades con <code>filterMetadata()</code> para quedarnos solo con la ciudad cuyo nombre es "Santafe De Bogota D.c." y la guardamos en la variable <code>Bogota</code>.</p>
+    <div class="codebox"><pre><span class="k">var</span> Bogota = cities.filterMetadata("ADM2_NAME", "equals", "Santafe De Bogota D.c.");</pre></div>
+
+    <h2 id="paso-3">Paso 3: Visualizar los datos <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Centramos el mapa en la entidad filtrada con <code>Map.centerObject()</code> y la agregamos como capa con <code>Map.addLayer()</code> usando un color específico.</p>
+    <div class="codebox"><pre><span class="c">// Visualizar la colección de ciudades en el mapa</span>
+Map.centerObject(Bogota, 10);
+Map.addLayer(Bogota, {color: "#31FFE0"}, "Bogotá");</pre></div>
+    <figure class="shot"><img src="../assets/img/exportar-shapefile/resultado.jpg" alt="Bogotá resaltada en color cian sobre el mapa de Earth Engine" loading="lazy" width="907" height="727"><figcaption>Bogotá visualizada en el mapa.</figcaption></figure>
+
+    <h2 id="paso-4">Paso 4: Exportar los datos <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Exportamos la entidad filtrada a Google Drive en formato shapefile (SHP) con <code>Export.table.toDrive()</code>. Indicamos la colección (<code>Bogota</code>), una descripción para el archivo de salida ("Bogota"), la carpeta de destino en Google Drive ("shapes") y el formato deseado ("SHP").</p>
+    <div class="codebox"><pre><span class="c">// Exportar la colección de ciudades a Google Drive en formato Shapefile</span>
+Export.table.toDrive({
+  collection: Bogota,
+  description: "Bogota",
+  folder: "shapes",
+  fileFormat: "SHP"
+});</pre></div>
+    <p>Luego vamos al panel derecho, abrimos la pestaña <strong>Tasks</strong> y ejecutamos la tarea con <kbd>Run</kbd>.</p>
+    <figure class="shot"><img src="../assets/img/exportar-shapefile/tareas.jpg" alt="Tarea Bogota con el botón RUN en la pestaña Tasks" loading="lazy" width="657" height="32"><figcaption>La tarea de exportación aparece en la pestaña Tasks.</figcaption></figure>
+    <figure class="shot"><img src="../assets/img/exportar-shapefile/exportar.jpg" alt="Ventana Task: Initiate table export con los parámetros de la exportación" loading="lazy" width="661" height="518"><figcaption>Confirma los parámetros y presiona Run para iniciar la exportación.</figcaption></figure>
+    <div class="callout"><p>Cuando la tarea termina, el shapefile queda en la carpeta "shapes" de tu Google Drive, listo para abrirlo en QGIS, ArcGIS Pro u otro programa SIG.</p></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo del tutorial. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a> y presiona <kbd>Run</kbd>. Luego ejecuta la exportación desde la pestaña <strong>Tasks</strong>.</p>
+    <div class="codebox"><pre><span class="c">// Cargar Feature collection de ciudades</span>
+<span class="k">var</span> cities = ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level2");
+print("Ciudades: ", cities.limit(30));
+
+<span class="c">// Filtrar la colección para obtener solo Bogotá</span>
+<span class="k">var</span> Bogota = cities.filterMetadata("ADM2_NAME", "equals", "Santafe De Bogota D.c.");
+
+<span class="c">// Visualizar la colección de ciudades en el mapa</span>
+Map.centerObject(Bogota, 10);
+Map.addLayer(Bogota, {color: "#31FFE0"}, "Bogotá");
+
+<span class="c">// Exportar la colección de ciudades a Google Drive en formato Shapefile</span>
+Export.table.toDrive({
+  collection: Bogota,
+  description: "Bogota",
+  folder: "shapes",
+  fileFormat: "SHP"
+});</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Con esta guía aprendimos a exportar datos vectoriales desde Google Earth Engine. Los cargamos, los vimos en el mapa y los llevamos a Google Drive en formato vectorial, listos para seguir trabajando en otros programas SIG.</p>
+
+    <h2 id="material">Material de apoyo <a class="anchor" href="#material" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="descarga">
+      <div><strong>Guía en PDF</strong><span>5.0 Exportación de datos vectoriales · 4 páginas</span></div>
+      <a class="btn" href="../assets/pdf/5.0-exportar-datos-vectoriales.pdf" target="_blank" rel="noopener">Descargar PDF</a>
+    </div>
+    <div class="descarga">
+      <div><strong>Código en GEE</strong><span>Abre el script en el Code Editor de Earth Engine</span></div>
+      <a class="btn ghost" href="https://code.earthengine.google.com/ebfc0b370451ab745681fc834879d8eb" target="_blank" rel="noopener">Abrir código</a>
+    </div>

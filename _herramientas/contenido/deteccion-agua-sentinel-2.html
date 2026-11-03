@@ -1,0 +1,172 @@
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>El agua refleja poca luz en general. Devuelve algo en el azul y el verde, pero en el infrarrojo cercano y en el de onda corta absorbe casi todo. El suelo y la vegetación hacen lo contrario y reflejan mucho más en el infrarrojo. Si comparamos el verde con una banda infrarroja obtenemos un número que tiende a ser positivo sobre el agua y negativo sobre todo lo demás, y en esa idea se basan los índices espectrales para detectar agua.</p>
+    <p>En esta lección calcularemos tres de estos índices, NDWI, MNDWI y AWEInsh, con Sentinel-2. Con 10 m de resolución se detectan ríos, canales y caños mucho más estrechos que con Landsat.</p>
+
+    <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Comprender en qué bandas se diferencia el agua del resto de coberturas.</li>
+      <li>Calcular NDWI, MNDWI y AWEInsh en Earth Engine.</li>
+      <li>Visualizar los índices con una paleta que resalte el agua.</li>
+      <li>Exportar los tres índices a Google Drive.</li>
+    </ul>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><a href="https://custom-scripts.sentinel-hub.com/custom-scripts/sentinel-2/ndwi/" target="_blank" rel="noopener">NDWI y MNDWI en Sentinel Hub</a></li>
+      <li><a href="https://www.sciencedirect.com/science/article/abs/pii/S0034425713002873" target="_blank" rel="noopener">Feyisa et al. (2014), Automated Water Extraction Index</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR_HARMONIZED" target="_blank" rel="noopener">Sentinel-2 Surface Reflectance (COPERNICUS/S2_SR_HARMONIZED)</a></li>
+    </ul>
+
+    <h2 id="indices">Los índices <a class="anchor" href="#indices" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Índice</th><th>Fórmula</th><th>Sentinel-2</th></tr></thead>
+        <tbody>
+          <tr><td class="n">NDWI</td><td>(Verde − NIR) / (Verde + NIR)</td><td>(B3 − B8) / (B3 + B8)</td></tr>
+          <tr><td class="n">MNDWI</td><td>(Verde − SWIR1) / (Verde + SWIR1)</td><td>(B3 − B11) / (B3 + B11)</td></tr>
+          <tr><td class="n">AWEInsh</td><td>4(Verde − SWIR1) − (0,25 NIR + 2,75 SWIR2)</td><td>B3, B11, B8, B12</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="check">
+      <li><strong>NDWI</strong> es el más sencillo y funciona muy bien en lagos y embalses.</li>
+      <li><strong>MNDWI</strong> cambia el NIR por el SWIR1 y separa mejor el agua de las zonas urbanas.</li>
+      <li><strong>AWEInsh</strong> combina cuatro bandas con coeficientes calculados para que el umbral 0 separe bien el agua, incluso frente a superficies oscuras como techos o asfalto.</li>
+    </ul>
+
+    <h2 id="origen">De dónde viene cada índice <a class="anchor" href="#origen" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><strong>NDWI.</strong> McFeeters (1996) lo propuso para delimitar cuerpos de agua abiertos con Landsat, comparando el verde con el infrarrojo cercano. Ese mismo año, Gao publicó otro índice también llamado NDWI, pero pensado para medir el agua dentro de las hojas y calculado con dos bandas infrarrojas. Cuando encuentres "NDWI" en un artículo, revisa qué bandas usa.</li>
+      <li><strong>MNDWI.</strong> Xu (2006) observó que con el NDWI las zonas urbanas también daban valores positivos y se confundían con agua. Reemplazó el infrarrojo cercano por el SWIR1, donde el agua sigue absorbiendo casi todo pero las superficies construidas reflejan mucho más.</li>
+      <li><strong>AWEI.</strong> Feyisa, Meilby, Fensholt y Proud (2014) buscaban extraer agua de forma automática con un umbral fijo de 0. Propusieron dos versiones, AWEInsh para zonas sin sombras importantes y AWEIsh para paisajes con sombras de montañas o edificios. En el curso usamos AWEInsh.</li>
+    </ul>
+
+    <h2 id="paso-1">Paso 1: Preparar la imagen <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Aplicamos la máscara de nubes y tomamos la primera escena con poca nubosidad sobre el AOI.</p>
+    <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
+    <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
+<span class="k">function</span> maskS2clouds(img) {
+  <span class="k">var</span> scl = img.select('SCL');
+  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
+    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
+    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
+    .and(scl.neq(10));<span class="c">     // cirros</span>
+  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+}</pre></div>
+    <div class="codebox"><pre><span class="c">// Primera imagen de Sentinel-2 con poca nubosidad sobre el AOI</span>
+<span class="k">var</span> s2_image = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
+  .filterDate("2023-01-01", "2023-12-01")
+  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 10))
+  .filterBounds(AOI)
+  .map(maskS2clouds)
+  .first()
+  .clip(AOI);
+print(s2_image);</pre></div>
+    <div class="codebox"><pre><span class="c">// Imagen en color verdadero</span>
+Map.addLayer(s2_image, {bands: "B4,B3,B2", min: 0, max: 0.3, gamma: 1}, "Sentinel-2");
+Map.centerObject(AOI, 11);</pre></div>
+
+    <h2 id="paso-2">Paso 2: Calcular los índices para detectar agua <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <p>NDWI y MNDWI son diferencias normalizadas entre dos bandas, así que basta con <code>normalizedDifference()</code>, que recibe primero la banda verde y después la infrarroja. AWEInsh combina cuatro bandas con coeficientes fijos, de modo que lo escribimos con <code>expression()</code> y asignamos un nombre a cada banda dentro de la fórmula.</p>
+    <div class="codebox"><pre><span class="c">// Índices para detectar agua con las bandas de Sentinel-2</span>
+<span class="k">var</span> NDWI = s2_image.normalizedDifference(['B3', 'B8']).rename('NDWI');
+<span class="k">var</span> MNDWI = s2_image.normalizedDifference(['B3', 'B11']).rename('MNDWI');
+<span class="k">var</span> AWEInsh = s2_image.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
+  'GREEN': s2_image.select('B3'),
+  'SWIR1': s2_image.select('B11'),
+  'SWIR2': s2_image.select('B12'),
+  'NIR': s2_image.select('B8')
+}).rename('AWEInsh');</pre></div>
+
+    <h2 id="paso-3">Paso 3: Visualizar los índices <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Usamos una paleta de −1 a 1 que va del rojo al azul. Los cuerpos de agua quedan en tonos cian y azul, y el suelo y la vegetación en rojo, amarillo o verde. NDWI y MNDWI siempre caen entre −1 y 1. AWEInsh no está acotado a ese rango, pero su umbral también es 0, así que la misma paleta separa bien el agua de lo demás.</p>
+    <div class="codebox"><pre><span class="c">// Simbología: rojo para lo seco, azul para el agua</span>
+<span class="k">var</span> waterPalette = {min: -1, max: 1, palette: ['red', 'yellow', 'green', 'cyan', 'blue']};
+
+Map.addLayer(NDWI, waterPalette, 'NDWI');
+Map.addLayer(MNDWI, waterPalette, 'MNDWI');
+Map.addLayer(AWEInsh, waterPalette, 'AWEInsh');</pre></div>
+
+    <h2 id="paso-4">Paso 4: Exportar los índices <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Unimos los tres índices con <code>addBands()</code> para que el GeoTIFF tenga una banda por índice, en el mismo orden en que aparecen en el mapa, y lo enviamos a Google Drive desde la pestaña <strong>Tasks</strong>.</p>
+    <div class="codebox"><pre><span class="c">// Unir los índices y exportarlos</span>
+<span class="k">var</span> index = NDWI.addBands([MNDWI, AWEInsh]).toFloat();
+
+Export.image.toDrive({
+  image: index,
+  description: "sentinel_2_water_index",
+  folder: "index",
+  region: AOI,
+  scale: 10,
+  maxPixels: 1e13,
+  fileFormat: "TIFF",
+  formatOptions: {cloudOptimized: <span class="k">true</span>}
+});</pre></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
+    <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
+<span class="k">function</span> maskS2clouds(img) {
+  <span class="k">var</span> scl = img.select('SCL');
+  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
+    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
+    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
+    .and(scl.neq(10));<span class="c">     // cirros</span>
+  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+}
+
+<span class="c">// Primera imagen de Sentinel-2 con poca nubosidad sobre el AOI</span>
+<span class="k">var</span> s2_image = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
+  .filterDate("2023-01-01", "2023-12-01")
+  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 10))
+  .filterBounds(AOI)
+  .map(maskS2clouds)
+  .first()
+  .clip(AOI);
+print(s2_image);
+
+<span class="c">// Imagen en color verdadero</span>
+Map.addLayer(s2_image, {bands: "B4,B3,B2", min: 0, max: 0.3, gamma: 1}, "Sentinel-2");
+Map.centerObject(AOI, 11);
+
+<span class="c">// Índices para detectar agua con las bandas de Sentinel-2</span>
+<span class="k">var</span> NDWI = s2_image.normalizedDifference(['B3', 'B8']).rename('NDWI');
+<span class="k">var</span> MNDWI = s2_image.normalizedDifference(['B3', 'B11']).rename('MNDWI');
+<span class="k">var</span> AWEInsh = s2_image.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
+  'GREEN': s2_image.select('B3'),
+  'SWIR1': s2_image.select('B11'),
+  'SWIR2': s2_image.select('B12'),
+  'NIR': s2_image.select('B8')
+}).rename('AWEInsh');
+
+<span class="c">// Simbología: rojo para lo seco, azul para el agua</span>
+<span class="k">var</span> waterPalette = {min: -1, max: 1, palette: ['red', 'yellow', 'green', 'cyan', 'blue']};
+
+Map.addLayer(NDWI, waterPalette, 'NDWI');
+Map.addLayer(MNDWI, waterPalette, 'MNDWI');
+Map.addLayer(AWEInsh, waterPalette, 'AWEInsh');
+
+<span class="c">// Unir los índices y exportarlos</span>
+<span class="k">var</span> index = NDWI.addBands([MNDWI, AWEInsh]).toFloat();
+
+Export.image.toDrive({
+  image: index,
+  description: "sentinel_2_water_index",
+  folder: "index",
+  region: AOI,
+  scale: 10,
+  maxPixels: 1e13,
+  fileFormat: "TIFF",
+  formatOptions: {cloudOptimized: <span class="k">true</span>}
+});</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Con Sentinel-2 los contornos del agua salen mucho más definidos. Ten en cuenta que MNDWI y AWEInsh usan bandas SWIR de 20 m, por lo que en los bordes verás algo menos de detalle que con NDWI.</p>
+
+    <h2 id="referencias">Referencias <a class="anchor" href="#referencias" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="refs">
+      <li>McFeeters, S. K. (1996). The use of the Normalized Difference Water Index (NDWI) in the delineation of open water features. <em>International Journal of Remote Sensing</em>, 17(7), 1425–1432.</li>
+      <li>Gao, B.-C. (1996). NDWI—A normalized difference water index for remote sensing of vegetation liquid water from space. <em>Remote Sensing of Environment</em>, 58(3), 257–266.</li>
+      <li>Xu, H. (2006). Modification of normalised difference water index (NDWI) to enhance open water features in remotely sensed imagery. <em>International Journal of Remote Sensing</em>, 27(14), 3025–3033.</li>
+      <li>Feyisa, G. L., Meilby, H., Fensholt, R. y Proud, S. R. (2014). Automated Water Extraction Index: A new technique for surface water mapping using Landsat imagery. <em>Remote Sensing of Environment</em>, 140, 23–35.</li>
+    </ul>

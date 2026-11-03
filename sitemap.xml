@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/cursos/curso-gee.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/cursos/curso-gee-intermedio.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/cursos/curso-qgis.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/registro-earth-engine.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/importar-shapefile.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/filtrar-shapefiles.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/exportar-shapefile.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/descargar-dem.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/analisis-terreno.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/descargar-landsat-9.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/descargar-sentinel-2.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/composicion-landsat.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/composicion-sentinel-2.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/indices-vegetacion-landsat.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/indices-vegetacion-sentinel-2.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/deteccion-agua-landsat.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/deteccion-agua-sentinel-2.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/inundaciones-landsat.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/inundaciones-sentinel-2.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/cuerpos-agua-landsat.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/cuerpos-agua-sentinel-2.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/serie-tiempo-landsat.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/serie-tiempo-sentinel-2.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/indices-serie-tiempo.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/agua-dswe.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/area-agua-dswe.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/gif-serie-tiempo.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/descargar-qgis.html</loc></url>
+  <url><loc>https://servicessigeduca-sudo.github.io/sigeduca/apps/easy-download-dems.html</loc></url>
+</urlset>

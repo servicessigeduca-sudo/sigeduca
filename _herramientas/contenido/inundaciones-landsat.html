@@ -1,0 +1,223 @@
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Cuando un río se desborda, la forma más rápida de dimensionar el evento es comparar imágenes satelitales de antes y después. Si en ambas detectamos el agua con un índice espectral, la diferencia entre las dos máscaras muestra la zona inundada, y Earth Engine calcula su área en kilómetros cuadrados en segundos.</p>
+    <p>En esta lección mapearemos una inundación con Landsat 9. El ejemplo está en Pakistán, cerca de Dera Ghazi Khan, en la provincia de Punjab. Entre junio y octubre de 2022 unas lluvias monzónicas excepcionales desbordaron el río Indo y sus afluentes, y esta fue una de las zonas afectadas.</p>
+
+    <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Seleccionar una imagen de antes y otra de después de una inundación.</li>
+      <li>Escribir los índices para detectar agua como funciones reutilizables.</li>
+      <li>Crear una máscara binaria de agua para cada fecha.</li>
+      <li>Calcular el área de agua en km² y comparar ambas fechas.</li>
+    </ul>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/LANDSAT_LC09_C02_T1_L2" target="_blank" rel="noopener">Landsat 9 Surface Reflectance (LANDSAT/LC09/C02/T1_L2)</a></li>
+      <li><a href="https://developers.google.com/earth-engine/apidocs/ee-image-pixelarea" target="_blank" rel="noopener">ee.Image.pixelArea()</a></li>
+    </ul>
+
+    <h2 id="metodo">Cómo funciona <a class="anchor" href="#metodo" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Elegimos dos periodos, uno antes del evento y otro después, y tomamos una imagen limpia de cada uno.</li>
+      <li>Calculamos NDWI y MNDWI, que vimos en la lección <a href="deteccion-agua-landsat.html">Detección de agua con Landsat 9</a>. Un píxel se considera agua si alguno de los dos índices es mayor que 0.</li>
+      <li>Multiplicamos la máscara por <code>ee.Image.pixelArea()</code>, que da el área de cada píxel en m², y sumamos dentro del AOI.</li>
+    </ul>
+    <div class="callout"><p><strong>Las fechas importan.</strong> Para el periodo posterior conviene una ventana corta y cercana al evento. Con ventanas largas la imagen puede corresponder a semanas después, cuando el agua ya bajó.</p></div>
+
+    <h2 id="paso-1">Paso 1: Imágenes antes y después <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
+    <p>Usamos las funciones de factor de escala y máscara de nubes. Para el periodo posterior aceptamos más nubosidad porque en temporada de lluvias es difícil encontrar escenas despejadas. El falso color SWIR1-NIR-Rojo hace que el agua se vea casi negra.</p>
+    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
+<span class="k">function</span> scaler(img) {
+  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
+  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
+  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+}
+
+<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
+<span class="k">function</span> mask_clouds(img) {
+  <span class="k">var</span> qa = img.select('QA_PIXEL');
+  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
+  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
+    .and(qa.bitwiseAnd(cloud).eq(0))
+    .and(qa.bitwiseAnd(cloudShadow).eq(0))
+    .and(qa.bitwiseAnd(snow).eq(0));
+  <span class="k">return</span> img.updateMask(mask);
+}</pre></div>
+    <div class="codebox"><pre><span class="c">// Imagen antes de la inundación</span>
+<span class="k">var</span> ls9_pre = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
+  .filterDate('2022-03-01', '2022-06-01')
+  .filter(ee.Filter.lt("CLOUD_COVER_LAND", 20))
+  .filterBounds(AOI)
+  .map(mask_clouds)
+  .map(scaler)
+  .first()
+  .clip(AOI);
+
+<span class="c">// Imagen después de la inundación</span>
+<span class="k">var</span> ls9_post = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
+  .filterDate('2022-08-01', '2022-12-31')
+  .filter(ee.Filter.lt("CLOUD_COVER_LAND", 50))
+  .filterBounds(AOI)
+  .map(mask_clouds)
+  .map(scaler)
+  .first()
+  .clip(AOI);
+print(ls9_pre, ls9_post);
+
+<span class="c">// Falso color SWIR1-NIR-Rojo, donde el agua se ve muy oscura</span>
+<span class="k">var</span> visFalse = {bands: "SR_B6,SR_B5,SR_B4", min: 0.003, max: 0.42, gamma: 1};
+Map.addLayer(ls9_pre, visFalse, "Landsat 9 antes");
+Map.addLayer(ls9_post, visFalse, "Landsat 9 después");
+Map.centerObject(AOI, 10);</pre></div>
+
+    <h2 id="paso-2">Paso 2: Índices para detectar agua como funciones <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Al escribir los índices como funciones podemos aplicarlos a las dos imágenes sin repetir código.</p>
+    <div class="codebox"><pre><span class="c">// Funciones de índices para detectar agua: se pueden aplicar a cualquier imagen</span>
+<span class="k">var</span> NDWI = <span class="k">function</span>(img) {
+  <span class="k">return</span> img.normalizedDifference(['SR_B3', 'SR_B5']).rename('NDWI');
+};
+<span class="k">var</span> MNDWI = <span class="k">function</span>(img) {
+  <span class="k">return</span> img.normalizedDifference(['SR_B3', 'SR_B6']).rename('MNDWI');
+};
+
+<span class="k">var</span> index_pre = NDWI(ls9_pre).addBands(MNDWI(ls9_pre));
+<span class="k">var</span> index_post = NDWI(ls9_post).addBands(MNDWI(ls9_post));</pre></div>
+
+    <h2 id="paso-3">Paso 3: Máscara de agua <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Convertimos los índices en una imagen binaria donde 1 es agua y 0 no lo es. Con <code>selfMask()</code> ocultamos los ceros para ver solo el agua. Todo lo que aparece en azul alrededor del agua de antes corresponde a la zona inundada.</p>
+    <div class="codebox"><pre><span class="c">// Un píxel es agua si cualquiera de los índices es mayor que 0</span>
+<span class="k">var</span> waterMask = <span class="k">function</span>(img) {
+  <span class="k">var</span> water = img.select('NDWI').gt(0).or(img.select('MNDWI').gt(0));
+  <span class="k">return</span> water.rename('waterMask');
+};
+
+<span class="k">var</span> mask_pre = waterMask(index_pre);
+<span class="k">var</span> mask_post = waterMask(index_post);
+
+<span class="c">// Rojo para el agua antes y azul para el agua después</span>
+Map.addLayer(mask_post.selfMask(), {palette: ["3274f1"]}, 'Agua después');
+Map.addLayer(mask_pre.selfMask(), {palette: ["db0202"]}, 'Agua antes');</pre></div>
+
+    <h2 id="paso-4">Paso 4: Calcular el área inundada <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Sumamos el área de los píxeles de agua en cada fecha. La diferencia entre ambos valores es una estimación del área que cubrió la inundación.</p>
+    <div class="codebox"><pre><span class="c">// Área de agua en km² dentro del AOI</span>
+<span class="k">var</span> waterArea = <span class="k">function</span>(mask) {
+  <span class="k">var</span> area = mask.eq(1).multiply(ee.Image.pixelArea()).divide(1e6).rename('area');
+  <span class="k">var</span> stats = area.reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: AOI,
+    scale: 30,
+    bestEffort: <span class="k">true</span>,
+    maxPixels: 1e13
+  });
+  <span class="k">return</span> ee.Number(stats.get('area'));
+};
+
+print("Área de agua antes de la inundación (km²):", waterArea(mask_pre));
+print("Área de agua después de la inundación (km²):", waterArea(mask_post));</pre></div>
+    <div class="callout"><p><strong>Revisa las imágenes antes de comparar cifras.</strong> Los píxeles cubiertos por nubes quedan enmascarados y no se cuentan como agua. Si una de las fechas tiene muchas nubes, el área de agua saldrá más baja de lo real.</p></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
+    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
+<span class="k">function</span> scaler(img) {
+  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
+  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
+  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+}
+
+<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
+<span class="k">function</span> mask_clouds(img) {
+  <span class="k">var</span> qa = img.select('QA_PIXEL');
+  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
+  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
+    .and(qa.bitwiseAnd(cloud).eq(0))
+    .and(qa.bitwiseAnd(cloudShadow).eq(0))
+    .and(qa.bitwiseAnd(snow).eq(0));
+  <span class="k">return</span> img.updateMask(mask);
+}
+
+<span class="c">// Imagen antes de la inundación</span>
+<span class="k">var</span> ls9_pre = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
+  .filterDate('2022-03-01', '2022-06-01')
+  .filter(ee.Filter.lt("CLOUD_COVER_LAND", 20))
+  .filterBounds(AOI)
+  .map(mask_clouds)
+  .map(scaler)
+  .first()
+  .clip(AOI);
+
+<span class="c">// Imagen después de la inundación</span>
+<span class="k">var</span> ls9_post = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
+  .filterDate('2022-08-01', '2022-12-31')
+  .filter(ee.Filter.lt("CLOUD_COVER_LAND", 50))
+  .filterBounds(AOI)
+  .map(mask_clouds)
+  .map(scaler)
+  .first()
+  .clip(AOI);
+print(ls9_pre, ls9_post);
+
+<span class="c">// Falso color SWIR1-NIR-Rojo, donde el agua se ve muy oscura</span>
+<span class="k">var</span> visFalse = {bands: "SR_B6,SR_B5,SR_B4", min: 0.003, max: 0.42, gamma: 1};
+Map.addLayer(ls9_pre, visFalse, "Landsat 9 antes");
+Map.addLayer(ls9_post, visFalse, "Landsat 9 después");
+Map.centerObject(AOI, 10);
+
+<span class="c">// Funciones de índices para detectar agua: se pueden aplicar a cualquier imagen</span>
+<span class="k">var</span> NDWI = <span class="k">function</span>(img) {
+  <span class="k">return</span> img.normalizedDifference(['SR_B3', 'SR_B5']).rename('NDWI');
+};
+<span class="k">var</span> MNDWI = <span class="k">function</span>(img) {
+  <span class="k">return</span> img.normalizedDifference(['SR_B3', 'SR_B6']).rename('MNDWI');
+};
+
+<span class="k">var</span> index_pre = NDWI(ls9_pre).addBands(MNDWI(ls9_pre));
+<span class="k">var</span> index_post = NDWI(ls9_post).addBands(MNDWI(ls9_post));
+
+<span class="c">// Un píxel es agua si cualquiera de los índices es mayor que 0</span>
+<span class="k">var</span> waterMask = <span class="k">function</span>(img) {
+  <span class="k">var</span> water = img.select('NDWI').gt(0).or(img.select('MNDWI').gt(0));
+  <span class="k">return</span> water.rename('waterMask');
+};
+
+<span class="k">var</span> mask_pre = waterMask(index_pre);
+<span class="k">var</span> mask_post = waterMask(index_post);
+
+<span class="c">// Rojo para el agua antes y azul para el agua después</span>
+Map.addLayer(mask_post.selfMask(), {palette: ["3274f1"]}, 'Agua después');
+Map.addLayer(mask_pre.selfMask(), {palette: ["db0202"]}, 'Agua antes');
+
+<span class="c">// Área de agua en km² dentro del AOI</span>
+<span class="k">var</span> waterArea = <span class="k">function</span>(mask) {
+  <span class="k">var</span> area = mask.eq(1).multiply(ee.Image.pixelArea()).divide(1e6).rename('area');
+  <span class="k">var</span> stats = area.reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: AOI,
+    scale: 30,
+    bestEffort: <span class="k">true</span>,
+    maxPixels: 1e13
+  });
+  <span class="k">return</span> ee.Number(stats.get('area'));
+};
+
+print("Área de agua antes de la inundación (km²):", waterArea(mask_pre));
+print("Área de agua después de la inundación (km²):", waterArea(mask_post));</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Con dos imágenes y un par de índices tienes un primer mapa de la inundación y una cifra de su extensión. Es un análisis rápido, ideal para una primera evaluación del evento.</p>
+
+    <h2 id="referencias">Referencias <a class="anchor" href="#referencias" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="refs">
+      <li>McFeeters, S. K. (1996). The use of the Normalized Difference Water Index (NDWI) in the delineation of open water features. <em>International Journal of Remote Sensing</em>, 17(7), 1425–1432.</li>
+      <li>Gao, B.-C. (1996). NDWI—A normalized difference water index for remote sensing of vegetation liquid water from space. <em>Remote Sensing of Environment</em>, 58(3), 257–266.</li>
+      <li>Xu, H. (2006). Modification of normalised difference water index (NDWI) to enhance open water features in remotely sensed imagery. <em>International Journal of Remote Sensing</em>, 27(14), 3025–3033.</li>
+      <li>Feyisa, G. L., Meilby, H., Fensholt, R. y Proud, S. R. (2014). Automated Water Extraction Index: A new technique for surface water mapping using Landsat imagery. <em>Remote Sensing of Environment</em>, 140, 23–35.</li>
+    </ul>

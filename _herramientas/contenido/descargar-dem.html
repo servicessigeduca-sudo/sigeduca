@@ -1,0 +1,138 @@
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Los Modelos Digitales de Elevación (DEM) son conjuntos de datos que representan la elevación de la superficie terrestre. En Google Earth Engine se pueden consultar y descargar varios DEM de forma gratuita. Esta guía explica paso a paso cómo seleccionar, visualizar y exportar un DEM.</p>
+
+    <h2 id="objetivo">Objetivo <a class="anchor" href="#objetivo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Descargar modelos digitales de elevación con Google Earth Engine, con énfasis en la selección adecuada del DEM, su visualización en el mapa y su exportación a Google Drive en formato GeoTIFF.</p>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <p>El catálogo de Google Earth Engine ofrece varios DEM gratuitos, entre ellos estos.</p>
+    <ul class="check">
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/JAXA_ALOS_AW3D30_V1_1" target="_blank" rel="noopener">ALOS DSM</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/NOAA_NGDC_ETOPO1" target="_blank" rel="noopener">ETOPO1</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/NASA_ASTER_GED_AG100_003" target="_blank" rel="noopener">ASTER GED</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/USGS_SRTMGL1_003" target="_blank" rel="noopener">SRTM</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/USGS_GTOPO30" target="_blank" rel="noopener">GTOPO30</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/NASA_NASADEM_HGT_001" target="_blank" rel="noopener">NASADEM</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/WWF_HydroSHEDS_03CONDEM" target="_blank" rel="noopener">WWF HydroSHEDS</a></li>
+    </ul>
+
+    <h2 id="que-es">¿Qué es un DEM? <a class="anchor" href="#que-es" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Un Modelo Digital de Elevación (DEM) es un raster en el que cada píxel guarda la altura del terreno sobre el nivel del mar, normalmente en metros. Es la base de muchos análisis, como el cálculo de pendientes, la delimitación de cuencas, los perfiles topográficos o los modelos 3D.</p>
+    <ul class="check">
+      <li>Un <strong>DSM</strong> (modelo digital de superficie) incluye todo lo que hay sobre el suelo, como árboles y edificios. ALOS AW3D30 es un DSM.</li>
+      <li>Un <strong>DTM</strong> (modelo digital del terreno) representa solo el suelo desnudo.</li>
+      <li>La <strong>resolución espacial</strong> es el tamaño del píxel. Cuanto más pequeño, más detalle, aunque también archivos más pesados.</li>
+    </ul>
+
+    <h2 id="comparativa">DEM disponibles en Earth Engine <a class="anchor" href="#comparativa" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Dataset</th><th>Resolución aproximada</th><th>Observaciones</th></tr></thead>
+        <tbody>
+          <tr><td class="n">ALOS AW3D30</td><td>30 m</td><td>Modelo de superficie de JAXA. Es el que usamos en este tutorial.</td></tr>
+          <tr><td class="n">SRTM</td><td>30 m</td><td>Misión de la NASA del año 2000, entre 60° N y 56° S.</td></tr>
+          <tr><td class="n">NASADEM</td><td>30 m</td><td>Versión reprocesada y mejorada de SRTM.</td></tr>
+          <tr><td class="n">WWF HydroSHEDS</td><td>90 m</td><td>Condicionado para análisis hidrológicos.</td></tr>
+          <tr><td class="n">ASTER GED</td><td>100 m</td><td>Incluye una banda de elevación además de emisividad.</td></tr>
+          <tr><td class="n">GTOPO30</td><td>1 km</td><td>Cobertura global para estudios regionales.</td></tr>
+          <tr><td class="n">ETOPO1</td><td>1,8 km</td><td>Incluye la batimetría del fondo oceánico.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><p>Para estudios locales te conviene un DEM de 30 m. Para un continente o el planeta, uno de baja resolución es más liviano y suficiente.</p></div>
+
+    <h2 id="proceso">Proceso <a class="anchor" href="#proceso" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el flujo de trabajo que vamos a seguir.</p>
+    <figure class="shot"><img src="../assets/img/descargar-dem/proceso.jpg" alt="Diagrama: dibujar el AOI, seleccionar el DEM, recortarlo, visualizarlo y exportarlo" loading="lazy" width="1100" height="476"><figcaption>Flujo de trabajo para descargar un DEM.</figcaption></figure>
+
+    <h2 id="paso-1">Paso 1: Dibujar la región de interés <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Dibuja la región de interés (AOI) con las herramientas de geometría del Code Editor.</p>
+    <figure class="shot"><img src="../assets/img/descargar-dem/aoi.jpg" alt="Rectángulo dibujado como región de interés en el mapa" loading="lazy" width="1042" height="503"><figcaption>Región de interés (AOI) dibujada en el mapa.</figcaption></figure>
+    <div class="callout"><p>Antes de ejecutar el código, dibuja tu zona de estudio con las herramientas de geometría del mapa y cámbiale el nombre a <code>AOI</code> en el panel de importaciones, porque así la llama el script.</p></div>
+
+    <h2 id="paso-2">Paso 2: Seleccionar el DEM <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Selecciona uno de los DEM disponibles en Earth Engine. En este caso usamos el dataset de la misión ALOS de JAXA, con una resolución espacial de 30 metros.</p>
+    <div class="codebox"><pre><span class="k">var</span> DEM = ee.Image('JAXA/ALOS/AW3D30_V1_1').select(['AVE'], ['elevation']);</pre></div>
+
+    <h2 id="paso-3">Paso 3: Recortar con la región de interés <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Recorta el DEM con el AOI para limitar el área de trabajo, usando el método <code>.clip()</code>.</p>
+    <div class="codebox"><pre><span class="k">var</span> dem_clip = DEM.clip(AOI);</pre></div>
+
+    <h2 id="paso-4">Paso 4: Visualizar el DEM <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Visualiza el DEM recortado con una paleta de colores que resalta la elevación y agrégalo al mapa con <code>Map.addLayer()</code>.</p>
+    <div class="codebox"><pre><span class="c">// Generación de la paleta de visualización</span>
+<span class="k">var</span> vis_dem = {min: 0, max: 5000,
+  palette: [
+    '0602ff', '235cb1', '307ef3', '269db1', '30c8e2', '32d3ef', '3ae237', 'b5e22e', 'd6e21f',
+    'fff705', 'ffd611', 'ffb613', 'ff8b13', 'ff6e08', 'ff500d', 'ff0000', 'de0101', 'c21301'
+  ]};
+
+<span class="c">// Añadir el DEM al mapa con los parámetros de visualización</span>
+Map.addLayer(dem_clip, vis_dem, "DEM CLIPPED");
+Map.centerObject(AOI, 8);</pre></div>
+    <figure class="shot"><img src="../assets/img/descargar-dem/resultado.jpg" alt="DEM recortado con la paleta de colores sobre el mapa" loading="lazy" width="943" height="517"><figcaption>DEM recortado y visualizado en el mapa.</figcaption></figure>
+
+    <h2 id="paso-5">Paso 5: Exportar el DEM a Google Drive <a class="anchor" href="#paso-5" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Exporta el DEM a Google Drive en formato GeoTIFF con <code>Export.image.toDrive()</code>, indicando la resolución y las opciones de formato. Después ejecuta la tarea desde la pestaña <strong>Tasks</strong>.</p>
+    <div class="codebox"><pre>Export.image.toDrive({
+  image: DEM,
+  description: 'DEM',
+  folder: "Digital Elevation Model",
+  fileNamePrefix: 'DEM',
+  scale: 30,
+  region: AOI,
+  fileFormat: 'GeoTIFF',
+  formatOptions: {
+    cloudOptimized: <span class="k">true</span>
+  }
+});</pre></div>
+    <div class="callout"><p>Gracias a <code>region: AOI</code>, el archivo exportado cubre solo tu región de interés. La opción <code>cloudOptimized</code> genera un GeoTIFF optimizado para la nube (COG).</p></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo del tutorial. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a> y presiona <kbd>Run</kbd>. Luego ejecuta la exportación desde la pestaña <strong>Tasks</strong>.</p>
+    <div class="codebox"><pre><span class="c">// AOI: dibuja tu región de interés con las herramientas de geometría del mapa</span>
+<span class="c">// y nómbrala "AOI" en el panel de importaciones.</span>
+
+<span class="c">// Seleccionar el DEM (ALOS, 30 m)</span>
+<span class="k">var</span> DEM = ee.Image('JAXA/ALOS/AW3D30_V1_1').select(['AVE'], ['elevation']);
+
+<span class="c">// Recortar con la región de interés</span>
+<span class="k">var</span> dem_clip = DEM.clip(AOI);
+
+<span class="c">// Generación de la paleta de visualización</span>
+<span class="k">var</span> vis_dem = {min: 0, max: 5000,
+  palette: [
+    '0602ff', '235cb1', '307ef3', '269db1', '30c8e2', '32d3ef', '3ae237', 'b5e22e', 'd6e21f',
+    'fff705', 'ffd611', 'ffb613', 'ff8b13', 'ff6e08', 'ff500d', 'ff0000', 'de0101', 'c21301'
+  ]};
+
+<span class="c">// Añadir el DEM al mapa con los parámetros de visualización</span>
+Map.addLayer(dem_clip, vis_dem, "DEM CLIPPED");
+Map.centerObject(AOI, 8);
+
+<span class="c">// Exportar el DEM a Google Drive</span>
+Export.image.toDrive({
+  image: DEM,
+  description: 'DEM',
+  folder: "Digital Elevation Model",
+  fileNamePrefix: 'DEM',
+  scale: 30,
+  region: AOI,
+  fileFormat: 'GeoTIFF',
+  formatOptions: {
+    cloudOptimized: <span class="k">true</span>
+  }
+});</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Descargar modelos digitales de elevación en Google Earth Engine es un proceso sencillo que consiste en seleccionar, visualizar y exportar el DEM que necesitas. Con estos pasos puedes obtener el DEM de tu zona de estudio para usarlo en otros programas SIG.</p>
+
+    <h2 id="material">Material de apoyo <a class="anchor" href="#material" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="descarga">
+      <div><strong>Guía en PDF</strong><span>6.0 Descargar Modelos Digitales de Elevación · 5 páginas</span></div>
+      <a class="btn" href="../assets/pdf/6.0-descargar-modelos-digitales-de-elevacion.pdf" target="_blank" rel="noopener">Descargar PDF</a>
+    </div>
+    <div class="descarga">
+      <div><strong>Código en GEE</strong><span>Abre el script en el Code Editor de Earth Engine</span></div>
+      <a class="btn ghost" href="https://code.earthengine.google.com/7be990912e8349b089ea8a5b0f7bcbf5" target="_blank" rel="noopener">Abrir código</a>
+    </div>

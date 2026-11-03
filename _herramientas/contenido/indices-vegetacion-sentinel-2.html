@@ -1,0 +1,215 @@
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Las plantas sanas absorben casi toda la luz roja para hacer fotosíntesis y reflejan con fuerza el infrarrojo cercano. Los <strong>índices espectrales de vegetación</strong> aprovechan ese contraste para resumir en un solo número qué tan vigorosa, densa o húmeda está la cobertura de cada píxel.</p>
+    <p>En esta lección calcularemos siete índices con Sentinel-2. Gracias a sus 10 m de resolución podremos ver diferencias entre lotes, parques o bordes de bosque que en Landsat se pierden.</p>
+
+    <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Calcular NDVI, EVI, SAVI, MSAVI, NDMI, NBR y NBR2.</li>
+      <li>Usar <code>normalizedDifference()</code> y <code>expression()</code> para escribir fórmulas.</li>
+      <li>Visualizar cada índice con su propia simbología.</li>
+      <li>Exportar todos los índices como bandas de una misma imagen.</li>
+    </ul>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR_HARMONIZED" target="_blank" rel="noopener">Sentinel-2 Surface Reflectance (COPERNICUS/S2_SR_HARMONIZED)</a></li>
+    </ul>
+
+    <h2 id="indices">Los índices <a class="anchor" href="#indices" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Índice</th><th>Fórmula</th><th>Para qué sirve</th></tr></thead>
+        <tbody>
+          <tr><td class="n">NDVI</td><td>(NIR − R) / (NIR + R)</td><td>Vigor y densidad de la vegetación</td></tr>
+          <tr><td class="n">EVI</td><td>2,5 · (NIR − R) / (NIR + 6R − 7,5B + 1)</td><td>Vegetación densa, corrige efectos de la atmósfera</td></tr>
+          <tr><td class="n">SAVI</td><td>(NIR − R) / (NIR + R + 0,5) · 1,5</td><td>Zonas con suelo expuesto</td></tr>
+          <tr><td class="n">MSAVI</td><td>(2NIR + 1 − √((2NIR + 1)² − 8(NIR − R))) / 2</td><td>Vegetación escasa sin fijar el factor L</td></tr>
+          <tr><td class="n">NDMI</td><td>(NIR − SWIR1) / (NIR + SWIR1)</td><td>Contenido de humedad de la vegetación</td></tr>
+          <tr><td class="n">NBR</td><td>(NIR − SWIR2) / (NIR + SWIR2)</td><td>Áreas quemadas</td></tr>
+          <tr><td class="n">NBR2</td><td>(SWIR1 − SWIR2) / (SWIR1 + SWIR2)</td><td>Severidad de quemas y humedad del suelo</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="origen">De dónde viene cada índice <a class="anchor" href="#origen" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Cada índice nació para resolver un problema concreto. Conocer esa historia ayuda a elegir el adecuado para tu caso.</p>
+    <ul class="check">
+      <li><strong>NDVI.</strong> Rouse, Haas, Schell y Deering lo presentaron en 1974 para seguir la vegetación de las Grandes Llanuras de Estados Unidos con el satélite ERTS-1, el que después se llamó Landsat 1. Unos años más tarde, Tucker (1979) mostró su relación con la biomasa verde y lo convirtió en el índice más usado del mundo.</li>
+      <li><strong>SAVI.</strong> Huete (1988) notó que, donde la vegetación es escasa, el NDVI cambia con el color y el brillo del suelo. Para reducir ese efecto añadió un factor de ajuste L, que suele fijarse en 0,5.</li>
+      <li><strong>MSAVI.</strong> Qi y colaboradores (1994) propusieron que ese factor L se calculara a partir de la propia imagen en lugar de fijarlo a mano. La fórmula que usamos corresponde a la segunda versión de su trabajo, conocida también como MSAVI2.</li>
+      <li><strong>EVI.</strong> Huete y colaboradores (2002) lo afinaron para el sensor MODIS de la NASA. Usa la banda azul para corregir el efecto de la atmósfera y no se satura tan rápido como el NDVI en bosques muy densos.</li>
+      <li><strong>NDMI.</strong> Cambia el rojo por el infrarrojo de onda corta (SWIR1), una banda sensible al agua que contienen las hojas. Hardisky, Klemas y Smart lo propusieron en 1983 con el nombre de NDII, y Wilson y Sader (2002) lo llamaron NDMI al usarlo con Landsat para detectar talas de bosque.</li>
+      <li><strong>NBR.</strong> El fuego reduce el reflejo en el infrarrojo cercano, porque desaparece la vegetación sana, y lo aumenta en el SWIR2 por el suelo y la ceniza expuestos. López García y Caselles (1991) aprovecharon ese contraste para cartografiar quemas con Landsat, y Key y Benson lo estandarizaron en el protocolo FIREMON del Servicio Forestal de Estados Unidos, donde se compara antes y después del incendio (dNBR).</li>
+      <li><strong>NBR2.</strong> Es una variante con las dos bandas SWIR que el USGS incluye en sus productos de índices de Landsat. Es sensible a la humedad de la vegetación y se usa para seguir la recuperación después de un incendio.</li>
+    </ul>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Banda</th><th>Sentinel-2</th><th>Resolución</th></tr></thead>
+        <tbody>
+          <tr><td class="n">Azul (B)</td><td>B2</td><td>10 m</td></tr>
+          <tr><td class="n">Rojo (R)</td><td>B4</td><td>10 m</td></tr>
+          <tr><td class="n">NIR</td><td>B8</td><td>10 m</td></tr>
+          <tr><td class="n">SWIR1</td><td>B11</td><td>20 m</td></tr>
+          <tr><td class="n">SWIR2</td><td>B12</td><td>20 m</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="paso-1">Paso 1: Preparar la imagen <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Aplicamos la máscara de nubes, que además convierte los valores en reflectancia, y tomamos la primera escena con poca nubosidad sobre el AOI.</p>
+    <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
+    <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
+<span class="k">function</span> maskS2clouds(img) {
+  <span class="k">var</span> scl = img.select('SCL');
+  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
+    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
+    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
+    .and(scl.neq(10));<span class="c">     // cirros</span>
+  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+}</pre></div>
+    <div class="codebox"><pre><span class="c">// Primera imagen de Sentinel-2 con poca nubosidad sobre el AOI</span>
+<span class="k">var</span> s2_image = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
+  .filterDate("2023-01-01", "2023-12-01")
+  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 10))
+  .filterBounds(AOI)
+  .map(maskS2clouds)
+  .first()
+  .clip(AOI);
+print(s2_image);</pre></div>
+    <div class="codebox"><pre><span class="c">// Imagen en color verdadero</span>
+Map.addLayer(s2_image, {bands: "B4,B3,B2", min: 0, max: 0.3, gamma: 1}, "Sentinel-2");
+Map.centerObject(AOI, 12);</pre></div>
+
+    <h2 id="paso-2">Paso 2: Calcular los índices <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Para los índices que son una diferencia normalizada entre dos bandas, <code>normalizedDifference()</code> es lo más corto. Para fórmulas con constantes o raíces usamos <code>expression()</code>, que asigna un nombre a cada banda dentro de la ecuación.</p>
+    <div class="codebox"><pre><span class="c">// Índices con las bandas de Sentinel-2 (B2 azul, B4 rojo, B8 NIR, B11 SWIR1, B12 SWIR2)</span>
+<span class="k">var</span> NDVI = s2_image.normalizedDifference(['B8', 'B4']).rename('NDVI');
+<span class="k">var</span> EVI = s2_image.expression('2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))', {
+  'NIR': s2_image.select('B8'), 'RED': s2_image.select('B4'), 'BLUE': s2_image.select('B2')
+}).rename('EVI');
+<span class="k">var</span> SAVI = s2_image.expression('((NIR - RED) / (NIR + RED + 0.5)) * 1.5', {
+  'NIR': s2_image.select('B8'), 'RED': s2_image.select('B4')
+}).rename('SAVI');
+<span class="k">var</span> MSAVI = s2_image.expression('(2 * NIR + 1 - sqrt(pow((2 * NIR + 1), 2) - 8 * (NIR - RED))) / 2', {
+  'NIR': s2_image.select('B8'), 'RED': s2_image.select('B4')
+}).rename('MSAVI');
+<span class="k">var</span> NDMI = s2_image.normalizedDifference(['B8', 'B11']).rename('NDMI');
+<span class="k">var</span> NBR = s2_image.normalizedDifference(['B8', 'B12']).rename('NBR');
+<span class="k">var</span> NBR2 = s2_image.normalizedDifference(['B11', 'B12']).rename('NBR2');</pre></div>
+
+    <h2 id="paso-3">Paso 3: Visualizar los índices <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Los índices de vegetación van de 0 (sin vegetación) a 1 (vegetación muy densa), así que comparten una paleta que pasa del café al verde oscuro. NDMI y NBR tienen paletas propias.</p>
+    <div class="codebox"><pre><span class="c">// Simbologías</span>
+<span class="k">var</span> vegPalette = {min: 0, max: 1, palette: ['0000ff', 'DF923D', 'F1B555', 'FCD163', '99B718',
+  '74A901', '66A000', '529400', '3E8601', '207401', '056201', '004C00', '023B01', '012E01',
+  '011D01', '011301']};
+<span class="k">var</span> ndmiParams = {min: -0.5, max: 0.5, palette: ["ff0000", "ffa500", "ffff00", "00ff00", "187a07"]};
+<span class="k">var</span> nbrParams = {min: 0, max: 0.5, palette: ["e47f44", "ffe483", "5d61ed", "2902ff"]};
+
+Map.addLayer(NDVI, vegPalette, 'NDVI');
+Map.addLayer(EVI, vegPalette, 'EVI');
+Map.addLayer(SAVI, vegPalette, 'SAVI');
+Map.addLayer(MSAVI, vegPalette, 'MSAVI');
+Map.addLayer(NDMI, ndmiParams, 'NDMI');
+Map.addLayer(NBR, nbrParams, 'NBR');
+Map.addLayer(NBR2, nbrParams, 'NBR2');</pre></div>
+
+    <h2 id="paso-4">Paso 4: Exportar los índices <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Unimos los siete índices en una sola imagen y la exportamos a 10 m.</p>
+    <div class="codebox"><pre><span class="k">var</span> index = NDVI.addBands([EVI, SAVI, MSAVI, NDMI, NBR, NBR2]).toFloat();
+
+Export.image.toDrive({
+  image: index,
+  description: "sentinel_2_vegetation_index",
+  folder: "index",
+  region: AOI,
+  scale: 10,
+  maxPixels: 1e13,
+  fileFormat: "TIFF",
+  formatOptions: {cloudOptimized: <span class="k">true</span>}
+});</pre></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
+    <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
+<span class="k">function</span> maskS2clouds(img) {
+  <span class="k">var</span> scl = img.select('SCL');
+  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
+    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
+    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
+    .and(scl.neq(10));<span class="c">     // cirros</span>
+  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+}
+
+<span class="c">// Primera imagen de Sentinel-2 con poca nubosidad sobre el AOI</span>
+<span class="k">var</span> s2_image = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
+  .filterDate("2023-01-01", "2023-12-01")
+  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 10))
+  .filterBounds(AOI)
+  .map(maskS2clouds)
+  .first()
+  .clip(AOI);
+print(s2_image);
+
+<span class="c">// Imagen en color verdadero</span>
+Map.addLayer(s2_image, {bands: "B4,B3,B2", min: 0, max: 0.3, gamma: 1}, "Sentinel-2");
+Map.centerObject(AOI, 12);
+
+<span class="c">// Índices con las bandas de Sentinel-2 (B2 azul, B4 rojo, B8 NIR, B11 SWIR1, B12 SWIR2)</span>
+<span class="k">var</span> NDVI = s2_image.normalizedDifference(['B8', 'B4']).rename('NDVI');
+<span class="k">var</span> EVI = s2_image.expression('2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))', {
+  'NIR': s2_image.select('B8'), 'RED': s2_image.select('B4'), 'BLUE': s2_image.select('B2')
+}).rename('EVI');
+<span class="k">var</span> SAVI = s2_image.expression('((NIR - RED) / (NIR + RED + 0.5)) * 1.5', {
+  'NIR': s2_image.select('B8'), 'RED': s2_image.select('B4')
+}).rename('SAVI');
+<span class="k">var</span> MSAVI = s2_image.expression('(2 * NIR + 1 - sqrt(pow((2 * NIR + 1), 2) - 8 * (NIR - RED))) / 2', {
+  'NIR': s2_image.select('B8'), 'RED': s2_image.select('B4')
+}).rename('MSAVI');
+<span class="k">var</span> NDMI = s2_image.normalizedDifference(['B8', 'B11']).rename('NDMI');
+<span class="k">var</span> NBR = s2_image.normalizedDifference(['B8', 'B12']).rename('NBR');
+<span class="k">var</span> NBR2 = s2_image.normalizedDifference(['B11', 'B12']).rename('NBR2');
+
+<span class="c">// Simbologías</span>
+<span class="k">var</span> vegPalette = {min: 0, max: 1, palette: ['0000ff', 'DF923D', 'F1B555', 'FCD163', '99B718',
+  '74A901', '66A000', '529400', '3E8601', '207401', '056201', '004C00', '023B01', '012E01',
+  '011D01', '011301']};
+<span class="k">var</span> ndmiParams = {min: -0.5, max: 0.5, palette: ["ff0000", "ffa500", "ffff00", "00ff00", "187a07"]};
+<span class="k">var</span> nbrParams = {min: 0, max: 0.5, palette: ["e47f44", "ffe483", "5d61ed", "2902ff"]};
+
+Map.addLayer(NDVI, vegPalette, 'NDVI');
+Map.addLayer(EVI, vegPalette, 'EVI');
+Map.addLayer(SAVI, vegPalette, 'SAVI');
+Map.addLayer(MSAVI, vegPalette, 'MSAVI');
+Map.addLayer(NDMI, ndmiParams, 'NDMI');
+Map.addLayer(NBR, nbrParams, 'NBR');
+Map.addLayer(NBR2, nbrParams, 'NBR2');
+
+<span class="k">var</span> index = NDVI.addBands([EVI, SAVI, MSAVI, NDMI, NBR, NBR2]).toFloat();
+
+Export.image.toDrive({
+  image: index,
+  description: "sentinel_2_vegetation_index",
+  folder: "index",
+  region: AOI,
+  scale: 10,
+  maxPixels: 1e13,
+  fileFormat: "TIFF",
+  formatOptions: {cloudOptimized: <span class="k">true</span>}
+});</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Sentinel-2 es ideal para seguir la vegetación a escala de finca o de ciudad. Recuerda que NDMI, NBR y NBR2 usan bandas SWIR de 20 m, así que en esos índices el detalle es algo menor que en NDVI.</p>
+
+    <h2 id="referencias">Referencias <a class="anchor" href="#referencias" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="refs">
+      <li>Rouse, J. W., Haas, R. H., Schell, J. A. y Deering, D. W. (1974). Monitoring vegetation systems in the Great Plains with ERTS. <em>Third ERTS Symposium</em>, NASA SP-351, 309–317.</li>
+      <li>Tucker, C. J. (1979). Red and photographic infrared linear combinations for monitoring vegetation. <em>Remote Sensing of Environment</em>, 8(2), 127–150.</li>
+      <li>Hardisky, M. A., Klemas, V. y Smart, R. M. (1983). The influence of soil salinity, growth form, and leaf moisture on the spectral radiance of <em>Spartina alterniflora</em> canopies. <em>Photogrammetric Engineering and Remote Sensing</em>, 49(1), 77–83.</li>
+      <li>Huete, A. R. (1988). A soil-adjusted vegetation index (SAVI). <em>Remote Sensing of Environment</em>, 25(3), 295–309.</li>
+      <li>López García, M. J. y Caselles, V. (1991). Mapping burns and natural reforestation using Thematic Mapper data. <em>Geocarto International</em>, 6(1), 31–37.</li>
+      <li>Qi, J., Chehbouni, A., Huete, A. R., Kerr, Y. H. y Sorooshian, S. (1994). A modified soil adjusted vegetation index. <em>Remote Sensing of Environment</em>, 48(2), 119–126.</li>
+      <li>Huete, A., Didan, K., Miura, T., Rodriguez, E. P., Gao, X. y Ferreira, L. G. (2002). Overview of the radiometric and biophysical performance of the MODIS vegetation indices. <em>Remote Sensing of Environment</em>, 83(1–2), 195–213.</li>
+      <li>Wilson, E. H. y Sader, S. A. (2002). Detection of forest harvest type using multiple dates of Landsat TM imagery. <em>Remote Sensing of Environment</em>, 80(3), 385–396.</li>
+      <li>Key, C. H. y Benson, N. C. (2006). <em>Landscape assessment: ground measure of severity, the Composite Burn Index; and remote sensing of severity, the Normalized Burn Ratio</em>. USDA Forest Service, RMRS-GTR-164-CD.</li>
+    </ul>

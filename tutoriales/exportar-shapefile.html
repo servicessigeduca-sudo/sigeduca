@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-src https://www.youtube-nocookie.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Descargar shapefiles de Google Earth Engine · SIG EDUCA</title>
+<meta name="description" content="Aprende en pocos minutos a descargar correctamente un shapefile desde Google Earth Engine con Export.table.toDrive.">
+<!-- seo:inicio -->
+<link rel="canonical" href="https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/exportar-shapefile.html">
+<link rel="icon" type="image/png" href="../assets/img/favicon.png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SIG EDUCA">
+<meta property="og:locale" content="es_ES">
+<meta property="og:title" content="Descargar shapefiles de Google Earth Engine · SIG EDUCA">
+<meta property="og:description" content="Aprende en pocos minutos a descargar correctamente un shapefile desde Google Earth Engine con Export.table.toDrive.">
+<meta property="og:url" content="https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/exportar-shapefile.html">
+<meta property="og:image" content="https://servicessigeduca-sudo.github.io/sigeduca/assets/img/compartir.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Descargar shapefiles de Google Earth Engine · SIG EDUCA">
+<meta name="twitter:description" content="Aprende en pocos minutos a descargar correctamente un shapefile desde Google Earth Engine con Export.table.toDrive.">
+<meta name="twitter:image" content="https://servicessigeduca-sudo.github.io/sigeduca/assets/img/compartir.png">
+<!-- seo:fin -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<script src="../assets/theme.js?v=45ee55f4"></script>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <button class="menu-btn" id="menuBtn" aria-label="Abrir menú" aria-expanded="false">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <a class="brand" aria-label="SIG EDUCA, inicio" href="../index.html"><img src="../assets/img/logo-sig-educa.png" alt="" width="90" height="112"><span class="brand-txt">SIG <b>EDUCA</b></span></a>
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Buscar" aria-label="Buscar">
+    </div>
+    <button class="theme-btn" id="themeBtn" type="button" role="switch" aria-checked="false" aria-label="Modo oscuro"><span class="knob"><svg class="sun" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></span></button>
+    <a class="btn ghost" href="https://www.youtube.com/@SIG_EDUCA" target="_blank" rel="noopener">YouTube</a>
+    <a class="btn" href="../index.html#ruta">Tutoriales</a>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="side" id="side" aria-label="Secciones">
+    <ul>
+      <li><a href="../index.html#inicio">Inicio</a></li>
+      <li><a href="../index.html#primeros-pasos">Primeros pasos</a></li>
+      <li><a href="../index.html#ruta">Cursos</a></li>
+      <li class="grupo"><details open>
+        <summary>Google Earth Engine</summary>
+        <ul>
+          <li class="grupo nivel"><details open>
+            <summary>Nivel básico</summary>
+            <ul>
+              <li><a href="../cursos/curso-gee.html">Presentación del curso</a></li>
+              <li><a href="../tutoriales/registro-earth-engine.html" title="Creación y registro en Google Earth Engine">1. Creación y registro</a></li>
+              <li><a href="../tutoriales/importar-shapefile.html" title="Importar shapefile en Google Earth Engine">2. Importar shapefile</a></li>
+              <li><a href="../tutoriales/filtrar-shapefiles.html" title="Trabajar con shapefiles en Google Earth Engine">3. Filtrar shapefiles</a></li>
+              <li><a href="../tutoriales/exportar-shapefile.html" class="on" aria-current="page" title="Descargar shapefiles de Google Earth Engine">4. Descargar shapefiles</a></li>
+              <li><a href="../tutoriales/descargar-dem.html" title="Descargar un DEM en Google Earth Engine">5. Descargar un DEM</a></li>
+              <li><a href="../tutoriales/analisis-terreno.html" title="Análisis de terreno en Google Earth Engine">6. Análisis de terreno</a></li>
+              <li><a href="../tutoriales/descargar-landsat-9.html" title="Descargar imagen satelital de Landsat 9 en Google Earth Engine">7. Imagen de Landsat 9</a></li>
+              <li><a href="../tutoriales/descargar-sentinel-2.html" title="Descargar imagen satelital de Sentinel-2 en Google Earth Engine">8. Imagen de Sentinel-2</a></li>
+              <li><a href="../tutoriales/composicion-landsat.html" title="Composición sin nubes con Landsat 9 en Google Earth Engine">9. Composición con Landsat 9</a></li>
+              <li><a href="../tutoriales/composicion-sentinel-2.html" title="Composición sin nubes con Sentinel-2 en Google Earth Engine">10. Composición con Sentinel-2</a></li>
+              <li><a href="../tutoriales/indices-vegetacion-landsat.html" title="Índices de vegetación con Landsat 9 en Google Earth Engine">11. Vegetación con Landsat 9</a></li>
+              <li><a href="../tutoriales/indices-vegetacion-sentinel-2.html" title="Índices de vegetación con Sentinel-2 en Google Earth Engine">12. Vegetación con Sentinel-2</a></li>
+              <li><a href="../tutoriales/deteccion-agua-landsat.html" title="Detección de agua con Landsat 9 en Google Earth Engine">13. Agua con Landsat 9</a></li>
+              <li><a href="../tutoriales/deteccion-agua-sentinel-2.html" title="Detección de agua con Sentinel-2 en Google Earth Engine">14. Agua con Sentinel-2</a></li>
+              <li><a href="../tutoriales/inundaciones-landsat.html" title="Mapeo de inundaciones con Landsat 9 en Google Earth Engine">15. Inundaciones con Landsat 9</a></li>
+              <li><a href="../tutoriales/inundaciones-sentinel-2.html" title="Mapeo de inundaciones con Sentinel-2 en Google Earth Engine">16. Inundaciones con Sentinel-2</a></li>
+              <li><a href="../tutoriales/cuerpos-agua-landsat.html" title="Extracción de cuerpos de agua con Landsat 9 en Google Earth Engine">17. Cuerpos de agua con Landsat 9</a></li>
+              <li><a href="../tutoriales/cuerpos-agua-sentinel-2.html" title="Extracción de cuerpos de agua con Sentinel-2 en Google Earth Engine">18. Cuerpos de agua con Sentinel-2</a></li>
+            </ul>
+          </details></li>
+          <li class="grupo nivel"><details>
+            <summary>Nivel intermedio</summary>
+            <ul>
+              <li><a href="../cursos/curso-gee-intermedio.html">Presentación del curso</a></li>
+              <li><a href="../tutoriales/serie-tiempo-landsat.html" title="Series de tiempo con Landsat 4 a 9 en Google Earth Engine">1. Series de tiempo con Landsat</a></li>
+              <li><a href="../tutoriales/serie-tiempo-sentinel-2.html" title="Series de tiempo con Sentinel-2 en Google Earth Engine">2. Series de tiempo con Sentinel-2</a></li>
+              <li><a href="../tutoriales/indices-serie-tiempo.html" title="Índices espectrales en series de tiempo con Landsat en Google Earth Engine">3. Índices año a año</a></li>
+              <li><a href="../tutoriales/agua-dswe.html" title="Agua superficial con DSWE (Jones, 2019) en Google Earth Engine">4. Agua con DSWE</a></li>
+              <li><a href="../tutoriales/area-agua-dswe.html" title="Evolución del área de agua con DSWE en Google Earth Engine">5. Área de agua por año</a></li>
+              <li><a href="../tutoriales/gif-serie-tiempo.html" title="Animación GIF de una serie de tiempo en Google Earth Engine">6. Animación GIF</a></li>
+            </ul>
+          </details></li>
+        </ul>
+      </details></li>
+      <li class="grupo"><details>
+        <summary>QGIS</summary>
+        <ul>
+          <li class="grupo nivel"><details>
+            <summary>Nivel básico</summary>
+            <ul>
+              <li><a href="../cursos/curso-qgis.html">Presentación del curso</a></li>
+              <li><a href="../tutoriales/descargar-qgis.html" title="Descargar e instalar QGIS">1. Instalar QGIS</a></li>
+            </ul>
+          </details></li>
+        </ul>
+      </details></li>
+      <li class="grupo"><details>
+        <summary>Apps</summary>
+        <ul>
+          <li><a href="../apps/easy-download-dems.html">Easy Download DEMs</a></li>
+        </ul>
+      </details></li>
+      <li><a href="../index.html#contacto">Contacto</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <div class="crumb"><a href="../index.html#ruta">cursos</a> / <a href="../cursos/curso-gee.html">google earth engine básico</a></div>
+    <h1>Descargar shapefiles de Google Earth Engine</h1>
+    <div class="meta-row"><span class="lvl b">básico</span><span>Lección 4 de 18</span><span>5 min</span><span>Google Earth Engine</span></div>
+    <p class="lead">Aprende en pocos minutos a descargar correctamente un shapefile desde Google Earth Engine con Export.table.toDrive.</p>
+    <div class="video"><iframe src="https://www.youtube-nocookie.com/embed/L7pWd3Z1P1U" title="Descargar shapefiles de Google Earth Engine" loading="lazy" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>En esta guía nos centraremos en el proceso de exportación de datos vectoriales desde Google Earth Engine. Usaremos un ejemplo práctico para cargar una colección de datos vectoriales, visualizarla en el mapa y luego exportarla en formato shapefile a través de Google Drive.</p>
+
+    <h2 id="objetivo">Objetivo <a class="anchor" href="#objetivo" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Aprender a exportar datos vectoriales desde Google Earth Engine.</li>
+    </ul>
+
+    <h2 id="recursos">Recursos usados <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_SIMPLIFIED_500m_2015_level2" target="_blank" rel="noopener">Shapefile de ciudades del mundo (FAO GAUL simplificado, nivel 2)</a></li>
+      <li><a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor de Google Earth Engine</a></li>
+    </ul>
+
+    <h2 id="exportar-tablas">¿Cómo se exportan datos vectoriales? <a class="anchor" href="#exportar-tablas" aria-label="Enlace a esta sección">#</a></h2>
+    <p>En Earth Engine los datos vectoriales son <code>FeatureCollection</code>. Para llevarlos a tu computador se usa la familia de funciones <code>Export.table</code>, que crea una tarea en la pestaña <strong>Tasks</strong>. La tarea se procesa en los servidores de Google y el archivo llega a su destino cuando termina.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Función</th><th>Destino</th></tr></thead>
+        <tbody>
+          <tr><td class="n">Export.table.toDrive</td><td>Tu Google Drive. Es la opción más común.</td></tr>
+          <tr><td class="n">Export.table.toAsset</td><td>Tus assets de Earth Engine, para reutilizar la capa en otros scripts.</td></tr>
+          <tr><td class="n">Export.table.toCloudStorage</td><td>Un bucket de Google Cloud Storage.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Con el parámetro <code>fileFormat</code> eliges el formato del archivo, y estos son los más usados.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Formato</th><th>Uso habitual</th></tr></thead>
+        <tbody>
+          <tr><td class="n">SHP</td><td>Shapefile para QGIS, ArcGIS Pro y la mayoría de programas SIG.</td></tr>
+          <tr><td class="n">GeoJSON</td><td>Formato de texto muy usado en la web.</td></tr>
+          <tr><td class="n">KML / KMZ</td><td>Para abrir en Google Earth Pro.</td></tr>
+          <tr><td class="n">CSV</td><td>Tabla de atributos; la geometría se guarda como texto.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><p>Ten en cuenta que un shapefile admite un solo tipo de geometría. Si tu colección mezcla puntos y polígonos, expórtala en GeoJSON o sepárala antes.</p></div>
+
+    <h2 id="paso-1">Paso 1: Cargar los datos <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Cargamos la colección de ciudades con <code>ee.FeatureCollection()</code> y la guardamos en la variable <code>cities</code>.</p>
+    <div class="codebox"><pre><span class="c">// Cargar Feature collection de ciudades</span>
+<span class="k">var</span> cities = ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level2");
+print("Ciudades: ", cities.limit(30));</pre></div>
+
+    <h2 id="paso-2">Paso 2: Filtrar los datos <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Filtramos las entidades con <code>filterMetadata()</code> para quedarnos solo con la ciudad cuyo nombre es "Santafe De Bogota D.c." y la guardamos en la variable <code>Bogota</code>.</p>
+    <div class="codebox"><pre><span class="k">var</span> Bogota = cities.filterMetadata("ADM2_NAME", "equals", "Santafe De Bogota D.c.");</pre></div>
+
+    <h2 id="paso-3">Paso 3: Visualizar los datos <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Centramos el mapa en la entidad filtrada con <code>Map.centerObject()</code> y la agregamos como capa con <code>Map.addLayer()</code> usando un color específico.</p>
+    <div class="codebox"><pre><span class="c">// Visualizar la colección de ciudades en el mapa</span>
+Map.centerObject(Bogota, 10);
+Map.addLayer(Bogota, {color: "#31FFE0"}, "Bogotá");</pre></div>
+    <figure class="shot"><img src="../assets/img/exportar-shapefile/resultado.jpg" alt="Bogotá resaltada en color cian sobre el mapa de Earth Engine" loading="lazy" width="907" height="727"><figcaption>Bogotá visualizada en el mapa.</figcaption></figure>
+
+    <h2 id="paso-4">Paso 4: Exportar los datos <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Exportamos la entidad filtrada a Google Drive en formato shapefile (SHP) con <code>Export.table.toDrive()</code>. Indicamos la colección (<code>Bogota</code>), una descripción para el archivo de salida ("Bogota"), la carpeta de destino en Google Drive ("shapes") y el formato deseado ("SHP").</p>
+    <div class="codebox"><pre><span class="c">// Exportar la colección de ciudades a Google Drive en formato Shapefile</span>
+Export.table.toDrive({
+  collection: Bogota,
+  description: "Bogota",
+  folder: "shapes",
+  fileFormat: "SHP"
+});</pre></div>
+    <p>Luego vamos al panel derecho, abrimos la pestaña <strong>Tasks</strong> y ejecutamos la tarea con <kbd>Run</kbd>.</p>
+    <figure class="shot"><img src="../assets/img/exportar-shapefile/tareas.jpg" alt="Tarea Bogota con el botón RUN en la pestaña Tasks" loading="lazy" width="657" height="32"><figcaption>La tarea de exportación aparece en la pestaña Tasks.</figcaption></figure>
+    <figure class="shot"><img src="../assets/img/exportar-shapefile/exportar.jpg" alt="Ventana Task: Initiate table export con los parámetros de la exportación" loading="lazy" width="661" height="518"><figcaption>Confirma los parámetros y presiona Run para iniciar la exportación.</figcaption></figure>
+    <div class="callout"><p>Cuando la tarea termina, el shapefile queda en la carpeta "shapes" de tu Google Drive, listo para abrirlo en QGIS, ArcGIS Pro u otro programa SIG.</p></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo del tutorial. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a> y presiona <kbd>Run</kbd>. Luego ejecuta la exportación desde la pestaña <strong>Tasks</strong>.</p>
+    <div class="codebox"><pre><span class="c">// Cargar Feature collection de ciudades</span>
+<span class="k">var</span> cities = ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level2");
+print("Ciudades: ", cities.limit(30));
+
+<span class="c">// Filtrar la colección para obtener solo Bogotá</span>
+<span class="k">var</span> Bogota = cities.filterMetadata("ADM2_NAME", "equals", "Santafe De Bogota D.c.");
+
+<span class="c">// Visualizar la colección de ciudades en el mapa</span>
+Map.centerObject(Bogota, 10);
+Map.addLayer(Bogota, {color: "#31FFE0"}, "Bogotá");
+
+<span class="c">// Exportar la colección de ciudades a Google Drive en formato Shapefile</span>
+Export.table.toDrive({
+  collection: Bogota,
+  description: "Bogota",
+  folder: "shapes",
+  fileFormat: "SHP"
+});</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Con esta guía aprendimos a exportar datos vectoriales desde Google Earth Engine. Los cargamos, los vimos en el mapa y los llevamos a Google Drive en formato vectorial, listos para seguir trabajando en otros programas SIG.</p>
+
+    <h2 id="material">Material de apoyo <a class="anchor" href="#material" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="descarga">
+      <div><strong>Guía en PDF</strong><span>5.0 Exportación de datos vectoriales · 4 páginas</span></div>
+      <a class="btn" href="../assets/pdf/5.0-exportar-datos-vectoriales.pdf" target="_blank" rel="noopener">Descargar PDF</a>
+    </div>
+    <div class="descarga">
+      <div><strong>Código en GEE</strong><span>Abre el script en el Code Editor de Earth Engine</span></div>
+      <a class="btn ghost" href="https://code.earthengine.google.com/ebfc0b370451ab745681fc834879d8eb" target="_blank" rel="noopener">Abrir código</a>
+    </div>
+
+    <div class="pager two">
+      <a href="../cursos/curso-gee.html"><small>Volver al curso</small>← Google Earth Engine básico</a>
+      <a href="../tutoriales/descargar-dem.html"><small>Siguiente</small>Descargar un DEM en Earth Engine →</a>
+    </div>
+    <footer class="foot"><span>© 2026 SIG EDUCA</span><span class="redes"><a href="https://www.youtube.com/@SIG_EDUCA" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .6 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .4-4.8 31 31 0 0 0-.4-4.8ZM9.7 15.1V8.9l5.8 3.1Z"/></svg></a><a href="https://www.instagram.com/sig_educa" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a><a href="https://www.linkedin.com/in/sig-educa" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9.5h4V21H3Zm7 0h3.8v1.6h.1c.5-1 1.8-2 3.8-2 4 0 4.8 2.6 4.8 6V21h-4v-5.2c0-1.2 0-2.8-1.7-2.8s-2 1.3-2 2.7V21h-4Z"/></svg></a></span></footer>
+  </main>
+
+  <aside class="toc" aria-label="En esta página">
+    <h4>En esta página</h4>
+    <ul id="toc"></ul>
+  </aside>
+</div>
+<script src="../assets/tutorial.js?v=cc33d166"></script>
+</body>
+</html>

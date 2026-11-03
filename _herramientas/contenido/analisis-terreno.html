@@ -1,0 +1,204 @@
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>En esta guía aprenderás a cargar un modelo digital de elevación (DEM) en Google Earth Engine y calcular parámetros morfométricos del terreno como la pendiente, el aspecto y el sombreado. Estos productos son útiles en muchas aplicaciones, desde análisis hidrológicos hasta planificación urbana y modelado de la superficie terrestre.</p>
+
+    <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Importar un DEM y recortarlo según un área de interés.</li>
+      <li>Calcular la pendiente, el aspecto y el sombreado del terreno.</li>
+      <li>Visualizar los resultados en un mapa interactivo.</li>
+      <li>Exportar los productos generados a Google Drive para su posterior análisis.</li>
+    </ul>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Puedes hacer este análisis con cualquiera de los DEM del catálogo de Google Earth Engine, por ejemplo con estos.</p>
+    <ul class="check">
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/JAXA_ALOS_AW3D30_V1_1" target="_blank" rel="noopener">ALOS DSM</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/NOAA_NGDC_ETOPO1" target="_blank" rel="noopener">ETOPO1</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/NASA_ASTER_GED_AG100_003" target="_blank" rel="noopener">ASTER GED</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/USGS_SRTMGL1_003" target="_blank" rel="noopener">SRTM</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/USGS_GTOPO30" target="_blank" rel="noopener">GTOPO30</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/NASA_NASADEM_HGT_001" target="_blank" rel="noopener">NASADEM</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/WWF_HydroSHEDS_03CONDEM" target="_blank" rel="noopener">WWF HydroSHEDS</a></li>
+    </ul>
+    <p>Las paletas de colores vienen del <a href="https://www.gisandbeers.com/RRSS/Engine/ScriptPendientesLaderasGEE.txt" target="_blank" rel="noopener">script de pendientes de GIS&amp;Beers</a>, un gran recurso para empezar.</p>
+
+    <h2 id="parametros">Parámetros morfométricos <a class="anchor" href="#parametros" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Los parámetros morfométricos describen la forma del relieve y se calculan a partir de un DEM. Son clave en geología, hidrología, ordenamiento del territorio, agricultura y gestión del riesgo.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Parámetro</th><th>Qué mide</th><th>Ejemplo de uso</th></tr></thead>
+        <tbody>
+          <tr><td class="n">Pendiente</td><td>La inclinación del terreno en grados, donde 0° es plano y 90° es vertical.</td><td>Zonas susceptibles a deslizamientos o aptas para cultivo.</td></tr>
+          <tr><td class="n">Aspecto</td><td>Hacia dónde mira la ladera, con 0° o 360° al norte, 90° al este, 180° al sur y 270° al oeste.</td><td>Exposición al sol, humedad del suelo y vegetación.</td></tr>
+          <tr><td class="n">Sombreado</td><td>Cómo se ilumina el relieve con una fuente de luz simulada.</td><td>Mapas con efecto 3D y lectura visual de la topografía.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Como referencia, así se suele interpretar la pendiente.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Pendiente</th><th>Relieve</th></tr></thead>
+        <tbody>
+          <tr><td class="n">0° a 5°</td><td>Plano o casi plano</td></tr>
+          <tr><td class="n">5° a 15°</td><td>Ondulado suave</td></tr>
+          <tr><td class="n">15° a 30°</td><td>Moderadamente escarpado</td></tr>
+          <tr><td class="n">Más de 30°</td><td>Fuertemente escarpado</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><p>El sombreado suele ponerse debajo del DEM o de la pendiente con algo de transparencia. Por eso en el código tiene <code>opacity: 0.46</code>.</p></div>
+
+    <h2 id="proceso">Proceso <a class="anchor" href="#proceso" aria-label="Enlace a esta sección">#</a></h2>
+    <figure class="shot"><img src="../assets/img/analisis-terreno/proceso.jpg" alt="Diagrama: AOI, selección del DEM, recorte, cálculo con ee.Terrain.products, visualización y exportación" loading="lazy" width="1100" height="755"><figcaption>Flujo de trabajo del análisis de terreno.</figcaption></figure>
+
+    <h2 id="paso-1">Paso 1: Dibujar la región de interés <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Dibuja la región de interés (AOI) con las herramientas de geometría del Code Editor.</p>
+    <figure class="shot"><img src="../assets/img/analisis-terreno/aoi.jpg" alt="Rectángulo naranja dibujado como región de interés" loading="lazy" width="548" height="432"><figcaption>Región de interés (AOI).</figcaption></figure>
+    <div class="callout"><p>Antes de ejecutar el código, dibuja tu zona de estudio con las herramientas de geometría del mapa y cámbiale el nombre a <code>AOI</code> en el panel de importaciones, porque así la llama el script.</p></div>
+
+    <h2 id="paso-2">Paso 2: Seleccionar el DEM <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Usamos el dataset ALOS de JAXA, con una resolución espacial de 30 metros.</p>
+    <div class="codebox"><pre><span class="k">var</span> DEM = ee.Image('JAXA/ALOS/AW3D30_V1_1').select(['AVE'], ['elevation']);</pre></div>
+
+    <h2 id="paso-3">Paso 3: Recortar con la región de interés <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="codebox"><pre><span class="k">var</span> dem_clip = DEM.clip(AOI);</pre></div>
+
+    <h2 id="paso-4">Paso 4: Calcular pendiente, aspecto y sombreado <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Para estos cálculos usamos <code>ee.Terrain.products()</code>, que recibe un DEM y devuelve una imagen con varias bandas, cada una con una característica del terreno.</p>
+    <ul class="check">
+      <li>La <strong>pendiente</strong> (slope) es la inclinación del terreno en cada píxel, en grados.</li>
+      <li>El <strong>aspecto</strong> (aspect) indica hacia dónde se orienta la pendiente, de 0 a 360 grados, como en una brújula.</li>
+      <li>El <strong>sombreado</strong> (hillshade) simula el efecto de la luz solar sobre el terreno y da una sensación tridimensional del relieve.</li>
+    </ul>
+    <div class="codebox"><pre><span class="c">// Aplicación de la función ee.Terrain.products() al DEM</span>
+<span class="k">var</span> products = ee.Terrain.products(DEM);
+
+<span class="c">// Selección de las bandas resultantes para su visualización</span>
+<span class="k">var</span> slope = products.select(['slope']);
+<span class="k">var</span> aspect = products.select(['aspect']);
+<span class="k">var</span> hill = products.select(['hillshade']);</pre></div>
+
+    <h2 id="paso-5">Paso 5: Visualizar las variables <a class="anchor" href="#paso-5" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="codebox"><pre><span class="c">// Paleta de visualización para el DEM</span>
+<span class="k">var</span> vis_dem = {min: 0, max: 5000,
+  palette: [
+    '0602ff', '235cb1', '307ef3', '269db1', '30c8e2', '32d3ef', '3ae237', 'b5e22e', 'd6e21f',
+    'fff705', 'ffd611', 'ffb613', 'ff8b13', 'ff6e08', 'ff500d', 'ff0000', 'de0101', 'c21301'
+  ]};
+
+<span class="c">// Paleta de visualización para la pendiente</span>
+<span class="k">var</span> vis_slope = {min: 0, max: 60, opacity: 1,
+  palette: ['00ad45', '00ff1f', 'ffeb00', 'ffa500', 'ff0000']};
+
+<span class="c">// Paleta de visualización para el aspecto</span>
+<span class="k">var</span> vis_aspect = {min: 0, max: 360,
+  palette: [
+    '0602ff', '235cb1', '307ef3', '269db1', '30c8e2', '32d3ef', '3ae237', 'b5e22e', 'd6e21f',
+    'fff705', 'ffd611', 'ffb613', 'ff8b13', 'ff6e08', 'ff500d', 'ff0000', 'de0101', 'c21301'
+  ]};
+
+<span class="c">// Parámetros de visualización para el sombreado</span>
+<span class="k">var</span> vis_hill = {min: 0, max: 255, opacity: 0.46};
+
+<span class="c">// Añadir las variables al mapa</span>
+Map.addLayer(DEM, vis_dem, "elevation", 1);
+Map.addLayer(slope, vis_slope, "slope", 1);
+Map.addLayer(aspect, vis_aspect, "aspect", 1);
+Map.addLayer(hill, vis_hill, "hillshade", 1);
+Map.centerObject(AOI, 12);</pre></div>
+    <div class="shots-2">
+    <figure class="shot"><img src="../assets/img/analisis-terreno/dem.jpg" alt="DEM con paleta de colores" loading="lazy" width="446" height="386"><figcaption>Elevación (DEM)</figcaption></figure>
+    <figure class="shot"><img src="../assets/img/analisis-terreno/pendiente.jpg" alt="Pendiente en verde, amarillo y rojo" loading="lazy" width="438" height="386"><figcaption>Pendiente (slope)</figcaption></figure>
+    <figure class="shot"><img src="../assets/img/analisis-terreno/aspecto.jpg" alt="Aspecto con paleta multicolor" loading="lazy" width="450" height="398"><figcaption>Aspecto (aspect)</figcaption></figure>
+    <figure class="shot"><img src="../assets/img/analisis-terreno/sombreado.jpg" alt="Sombreado del relieve en escala de grises" loading="lazy" width="438" height="399"><figcaption>Sombreado (hillshade)</figcaption></figure>
+    </div>
+
+    <h2 id="paso-6">Paso 6: Exportar las variables a Google Drive <a class="anchor" href="#paso-6" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Exporta cada variable a Google Drive en formato GeoTIFF con <code>Export.image.toDrive()</code>. Este ejemplo exporta la pendiente; para las demás cambia <code>image</code>, <code>description</code> y <code>fileNamePrefix</code>.</p>
+    <div class="codebox"><pre>Export.image.toDrive({
+  image: slope,
+  description: 'Terrain variables',
+  folder: "Digital Elevation Model",
+  fileNamePrefix: 'DEM',
+  scale: 30,
+  region: AOI,
+  fileFormat: 'GeoTIFF',
+  formatOptions: {
+    cloudOptimized: <span class="k">true</span>
+  }
+});</pre></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo del tutorial. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a> y presiona <kbd>Run</kbd>. Luego ejecuta la exportación desde la pestaña <strong>Tasks</strong>.</p>
+    <div class="codebox"><pre><span class="c">// AOI: dibuja tu región de interés con las herramientas de geometría del mapa</span>
+<span class="c">// y nómbrala "AOI" en el panel de importaciones.</span>
+
+<span class="c">// Seleccionar el DEM (ALOS, 30 m)</span>
+<span class="k">var</span> DEM = ee.Image('JAXA/ALOS/AW3D30_V1_1').select(['AVE'], ['elevation']);
+
+<span class="c">// Recortar con la región de interés</span>
+<span class="k">var</span> dem_clip = DEM.clip(AOI);
+
+<span class="c">// Aplicación de la función ee.Terrain.products() al DEM</span>
+<span class="k">var</span> products = ee.Terrain.products(DEM);
+
+<span class="c">// Selección de las bandas resultantes para su visualización</span>
+<span class="k">var</span> slope = products.select(['slope']);
+<span class="k">var</span> aspect = products.select(['aspect']);
+<span class="k">var</span> hill = products.select(['hillshade']);
+
+<span class="c">// Paleta de visualización para el DEM</span>
+<span class="k">var</span> vis_dem = {min: 0, max: 5000,
+  palette: [
+    '0602ff', '235cb1', '307ef3', '269db1', '30c8e2', '32d3ef', '3ae237', 'b5e22e', 'd6e21f',
+    'fff705', 'ffd611', 'ffb613', 'ff8b13', 'ff6e08', 'ff500d', 'ff0000', 'de0101', 'c21301'
+  ]};
+
+<span class="c">// Paleta de visualización para la pendiente</span>
+<span class="k">var</span> vis_slope = {min: 0, max: 60, opacity: 1,
+  palette: ['00ad45', '00ff1f', 'ffeb00', 'ffa500', 'ff0000']};
+
+<span class="c">// Paleta de visualización para el aspecto</span>
+<span class="k">var</span> vis_aspect = {min: 0, max: 360,
+  palette: [
+    '0602ff', '235cb1', '307ef3', '269db1', '30c8e2', '32d3ef', '3ae237', 'b5e22e', 'd6e21f',
+    'fff705', 'ffd611', 'ffb613', 'ff8b13', 'ff6e08', 'ff500d', 'ff0000', 'de0101', 'c21301'
+  ]};
+
+<span class="c">// Parámetros de visualización para el sombreado</span>
+<span class="k">var</span> vis_hill = {min: 0, max: 255, opacity: 0.46};
+
+<span class="c">// Añadir las variables al mapa</span>
+Map.addLayer(DEM, vis_dem, "elevation", 1);
+Map.addLayer(slope, vis_slope, "slope", 1);
+Map.addLayer(aspect, vis_aspect, "aspect", 1);
+Map.addLayer(hill, vis_hill, "hillshade", 1);
+Map.centerObject(AOI, 12);
+
+<span class="c">// Exportar la pendiente a Google Drive</span>
+<span class="c">// (para exportar aspect o hillshade, cambia image, description y fileNamePrefix)</span>
+Export.image.toDrive({
+  image: slope,
+  description: 'Terrain variables',
+  folder: "Digital Elevation Model",
+  fileNamePrefix: 'DEM',
+  scale: 30,
+  region: AOI,
+  fileFormat: 'GeoTIFF',
+  formatOptions: {
+    cloudOptimized: <span class="k">true</span>
+  }
+});</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Con este proceso puedes descargar y visualizar modelos digitales de elevación junto con características del terreno en Google Earth Engine. Estos productos son valiosos para una amplia gama de aplicaciones geoespaciales y aportan información clave para el análisis del paisaje y la topografía.</p>
+
+    <h2 id="material">Material de apoyo <a class="anchor" href="#material" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="descarga">
+      <div><strong>Guía en PDF</strong><span>7.0 Análisis de terreno · 6 páginas</span></div>
+      <a class="btn" href="../assets/pdf/7.0-analisis-de-terreno.pdf" target="_blank" rel="noopener">Descargar PDF</a>
+    </div>
+    <div class="descarga">
+      <div><strong>Código en GEE</strong><span>Abre el script en el Code Editor de Earth Engine</span></div>
+      <a class="btn ghost" href="https://code.earthengine.google.com/ba405c4f6d665aed63b47bc15b53d825" target="_blank" rel="noopener">Abrir código</a>
+    </div>

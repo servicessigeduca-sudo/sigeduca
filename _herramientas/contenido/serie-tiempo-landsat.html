@@ -1,0 +1,266 @@
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Hasta ahora trabajamos con una imagen o con la mediana de unos pocos meses. En el nivel intermedio damos un paso más: usaremos colecciones completas para ver cómo cambia un lugar a lo largo de los años.</p>
+    <p>El programa Landsat es ideal para eso. Observa la Tierra desde 1972, y desde 1982, con Landsat 4, sus sensores miden la superficie con 30 m de resolución y bandas muy parecidas entre sí. Eso permite comparar una misma zona durante más de cuatro décadas. En esta lección uniremos Landsat 4, 5, 7, 8 y 9 en una sola colección y crearemos una mediana sin nubes para cada año.</p>
+
+    <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Unir las colecciones de Landsat 4, 5, 7, 8 y 9 con nombres de bandas comunes.</li>
+      <li>Recorrer una lista de años y crear una mediana anual sin nubes.</li>
+      <li>Eliminar los años que no tienen imágenes.</li>
+      <li>Mostrar y exportar cada año de la serie.</li>
+    </ul>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><a href="https://www.usgs.gov/landsat-missions/landsat-collection-2-level-2-science-products" target="_blank" rel="noopener">Productos de nivel 2 de Landsat Colección 2 (USGS)</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/LANDSAT_LT05_C02_T1_L2" target="_blank" rel="noopener">Landsat 5 Surface Reflectance (LANDSAT/LT05/C02/T1_L2)</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/LANDSAT_LC08_C02_T1_L2" target="_blank" rel="noopener">Landsat 8 Surface Reflectance (LANDSAT/LC08/C02/T1_L2)</a></li>
+      <li><a href="https://developers.google.com/earth-engine/apidocs/ee-imagecollection-fromimages" target="_blank" rel="noopener">ee.ImageCollection.fromImages()</a></li>
+    </ul>
+
+    <h2 id="satelites">Cinco satélites, una serie <a class="anchor" href="#satelites" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Satélite</th><th>Sensor</th><th>Datos en la serie</th><th>Detalle</th></tr></thead>
+        <tbody>
+          <tr><td class="n">Landsat 4</td><td>TM</td><td>1982 a 1993</td><td>Primer sensor TM, con 30 m y bandas SWIR.</td></tr>
+          <tr><td class="n">Landsat 5</td><td>TM</td><td>1984 a 2012</td><td>Operó casi 29 años, un récord Guinness.</td></tr>
+          <tr><td class="n">Landsat 7</td><td>ETM+</td><td>1999 a 2013</td><td>Desde 2003 sus escenas tienen franjas sin datos.</td></tr>
+          <tr><td class="n">Landsat 8</td><td>OLI</td><td>2013 en adelante</td><td>Más sensibilidad radiométrica que TM y ETM+.</td></tr>
+          <tr><td class="n">Landsat 9</td><td>OLI-2</td><td>2021 en adelante</td><td>Gemelo de Landsat 8. Juntos pasan cada 8 días.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Landsat 7 merece un comentario. El 31 de mayo de 2003 falló su corrector de líneas de escaneo (SLC), y desde entonces cada escena tiene franjas sin datos que suman cerca del 22 % de la imagen. En una mediana anual esas franjas se rellenan con otras fechas, así que el satélite sigue siendo útil. En el script lo usamos hasta mayo de 2013, cuando Landsat 8 empezó a entregar datos. Así cubrimos 2012, cuando Landsat 5 ya casi no tomaba imágenes y Landsat 8 todavía no estaba en órbita.</p>
+
+    <h2 id="bandas">Mismas bandas, distinto número <a class="anchor" href="#bandas" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Landsat 8 y 9 agregaron una banda azul costera al inicio, y por eso las demás se corrieron un número. El azul es <code>SR_B1</code> en Landsat 4, 5 y 7, pero <code>SR_B2</code> en Landsat 8 y 9. Para unir las colecciones renombramos las bandas con <code>select()</code>, que recibe una lista con las bandas de entrada y otra con los nombres nuevos.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Nombre común</th><th>Landsat 4, 5 y 7</th><th>Landsat 8 y 9</th></tr></thead>
+        <tbody>
+          <tr><td class="n">Blue</td><td>SR_B1</td><td>SR_B2</td></tr>
+          <tr><td class="n">Green</td><td>SR_B2</td><td>SR_B3</td></tr>
+          <tr><td class="n">Red</td><td>SR_B3</td><td>SR_B4</td></tr>
+          <tr><td class="n">Nir</td><td>SR_B4</td><td>SR_B5</td></tr>
+          <tr><td class="n">Swir1</td><td>SR_B5</td><td>SR_B6</td></tr>
+          <tr><td class="n">Swir2</td><td>SR_B7</td><td>SR_B7</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><p><strong>Los sensores no son idénticos.</strong> Las bandas de OLI son más estrechas que las de TM y ETM+, así que un mismo lugar puede dar valores un poco distintos con Landsat 7 y con Landsat 8. Para ver tendencias generales no es un problema. Para análisis cuantitativos finos, Roy et al. (2016) publicaron coeficientes para armonizar ambos sensores.</p></div>
+
+    <h2 id="paso-1">Paso 1: Crear las funciones <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
+    <p>Usamos las mismas funciones del curso básico. El factor de escala y los bits de <code>QA_PIXEL</code> son iguales en todos los Landsat de la Colección 2, así que sirven para los cinco satélites.</p>
+    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
+<span class="k">function</span> scaler(img) {
+  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
+  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
+  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+}
+
+<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
+<span class="k">function</span> mask_clouds(img) {
+  <span class="k">var</span> qa = img.select('QA_PIXEL');
+  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
+  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
+    .and(qa.bitwiseAnd(cloud).eq(0))
+    .and(qa.bitwiseAnd(cloudShadow).eq(0))
+    .and(qa.bitwiseAnd(snow).eq(0));
+  <span class="k">return</span> img.updateMask(mask);
+}</pre></div>
+
+    <h2 id="paso-2">Paso 2: Definir los parámetros <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Reunimos al inicio los valores que vas a cambiar. Con <code>startMonth</code> y <code>endMonth</code> puedes quedarte con una sola temporada, por ejemplo 1 y 3 para enero a marzo, la época seca en buena parte del Caribe colombiano. Comparar siempre la misma temporada evita confundir un cambio real con la diferencia entre la época seca y la de lluvias.</p>
+    <div class="codebox"><pre><span class="c">// Parámetros de búsqueda</span>
+<span class="k">var</span> startYear = 1984;<span class="c">   // año inicial</span>
+<span class="k">var</span> endYear = 2025;<span class="c">     // año final</span>
+<span class="k">var</span> startMonth = 1;<span class="c">     // mes inicial</span>
+<span class="k">var</span> endMonth = 12;<span class="c">      // mes final</span>
+<span class="k">var</span> cloudcover = 30;<span class="c">    // nubosidad máxima sobre tierra (%)</span></pre></div>
+
+    <h2 id="paso-3">Paso 3: Unir las colecciones <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <p>La función <code>landsat()</code> filtra una colección por zona, fechas, meses y nubosidad, y después prepara cada imagen: aplica la máscara de nubes, el factor de escala y los nombres comunes. Filtrar antes de <code>map()</code> hace que Earth Engine procese solo las imágenes que necesitas. Al final unimos las cinco colecciones con <code>merge()</code>.</p>
+    <div class="codebox"><pre><span class="c">// Nombres comunes para las bandas de todos los sensores</span>
+<span class="k">var</span> bandsTM = ['SR_B1', 'SR_B2', 'SR_B3', 'SR_B4', 'SR_B5', 'SR_B7'];<span class="c">   // Landsat 4, 5 y 7</span>
+<span class="k">var</span> bandsOLI = ['SR_B2', 'SR_B3', 'SR_B4', 'SR_B5', 'SR_B6', 'SR_B7'];<span class="c">  // Landsat 8 y 9</span>
+<span class="k">var</span> names = ['Blue', 'Green', 'Red', 'Nir', 'Swir1', 'Swir2'];
+
+<span class="c">// Filtra una colección y prepara cada imagen</span>
+<span class="k">function</span> landsat(id, bands) {
+  <span class="k">return</span> ee.ImageCollection(id)
+    .filterBounds(AOI)
+    .filterDate(startYear + '-01-01', (endYear + 1) + '-01-01')
+    .filter(ee.Filter.calendarRange(startMonth, endMonth, 'month'))
+    .filter(ee.Filter.lte('CLOUD_COVER_LAND', cloudcover))
+    .map(<span class="k">function</span> (img) {
+      <span class="k">return</span> scaler(mask_clouds(img)).select(bands, names);
+    });
+}
+
+<span class="c">// Landsat 4, 5, 7, 8 y 9 en una sola colección</span>
+<span class="k">var</span> collection = landsat('LANDSAT/LT04/C02/T1_L2', bandsTM)
+  .merge(landsat('LANDSAT/LT05/C02/T1_L2', bandsTM))
+  .merge(landsat('LANDSAT/LE07/C02/T1_L2', bandsTM).filterDate('1999-04-15', '2013-05-30'))
+  .merge(landsat('LANDSAT/LC08/C02/T1_L2', bandsOLI))
+  .merge(landsat('LANDSAT/LC09/C02/T1_L2', bandsOLI));
+print('Imágenes disponibles', collection.size());</pre></div>
+
+    <h2 id="paso-4">Paso 4: Crear una mediana por año <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Recorremos la lista de años con <code>map()</code>. Para cada año filtramos la colección, calculamos la mediana y guardamos el año como propiedad. También guardamos cuántas imágenes entraron en la mediana (<code>n_images</code>), y con ese dato eliminamos los años vacíos. En los primeros años del archivo puede no haber ninguna escena de tu zona.</p>
+    <div class="codebox"><pre><span class="c">// Una mediana por año</span>
+<span class="k">var</span> years = ee.List.sequence(startYear, endYear);
+
+<span class="k">var</span> annual = ee.ImageCollection.fromImages(years.map(<span class="k">function</span> (year) {
+  <span class="k">var</span> start = ee.Date.fromYMD(year, 1, 1);
+  <span class="k">var</span> images = collection.filterDate(start, start.advance(1, 'year'));
+  <span class="k">return</span> images.median()
+    .clip(AOI)
+    .set('year', year)
+    .set('n_images', images.size());
+}));
+
+<span class="c">// Quitar los años sin imágenes</span>
+annual = annual.filter(ee.Filter.gt('n_images', 0));
+print('Medianas anuales', annual);</pre></div>
+
+    <h2 id="paso-5">Paso 5: Visualizar la serie <a class="anchor" href="#paso-5" aria-label="Enlace a esta sección">#</a></h2>
+    <p><code>aggregate_array('year')</code> devuelve la lista de años que quedaron en la colección, y <code>evaluate()</code> la trae al navegador. Así podemos recorrerla con un ciclo normal de JavaScript y agregar una capa por año. Las capas se cargan apagadas: actívalas una por una en el panel <strong>Layers</strong> para ver cómo cambia tu zona.</p>
+    <div class="codebox"><pre><span class="c">// Color verdadero, una capa por año</span>
+<span class="k">var</span> visRGB = {bands: ['Red', 'Green', 'Blue'], min: 0.002, max: 0.25, gamma: 1};
+Map.centerObject(AOI, 10);
+
+annual.aggregate_array('year').evaluate(<span class="k">function</span> (list) {
+  list.forEach(<span class="k">function</span> (year) {
+    <span class="k">var</span> img = annual.filter(ee.Filter.eq('year', year)).first();
+    Map.addLayer(img, visRGB, 'RGB ' + year, <span class="k">false</span>);
+  });
+});</pre></div>
+
+    <h2 id="paso-6">Paso 6: Exportar cada año <a class="anchor" href="#paso-6" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Cada año se exporta como una tarea independiente, así que en la pestaña <strong>Tasks</strong> verás una tarea por año y tendrás que ejecutar cada una. Indicamos <code>crs</code> para que todas salgan en la misma proyección. <code>EPSG:32618</code> es UTM zona 18 Norte, que cubre buena parte de Colombia; cámbiala por la zona UTM de tu AOI.</p>
+    <div class="codebox"><pre><span class="c">// Una tarea de exportación por año</span>
+annual.aggregate_array('year').evaluate(<span class="k">function</span> (list) {
+  list.forEach(<span class="k">function</span> (year) {
+    <span class="k">var</span> img = ee.Image(annual.filter(ee.Filter.eq('year', year)).first());
+    Export.image.toDrive({
+      image: img.toFloat(),
+      description: 'Landsat_mediana_' + year,
+      folder: 'Landsat_Median',
+      region: AOI,
+      scale: 30,
+      crs: 'EPSG:32618',<span class="c">  // UTM 18N, cámbiala por la zona de tu AOI</span>
+      maxPixels: 1e13
+    });
+  });
+});</pre></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
+    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
+<span class="k">function</span> scaler(img) {
+  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
+  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
+  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+}
+
+<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
+<span class="k">function</span> mask_clouds(img) {
+  <span class="k">var</span> qa = img.select('QA_PIXEL');
+  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
+  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
+    .and(qa.bitwiseAnd(cloud).eq(0))
+    .and(qa.bitwiseAnd(cloudShadow).eq(0))
+    .and(qa.bitwiseAnd(snow).eq(0));
+  <span class="k">return</span> img.updateMask(mask);
+}
+
+<span class="c">// Parámetros de búsqueda</span>
+<span class="k">var</span> startYear = 1984;<span class="c">   // año inicial</span>
+<span class="k">var</span> endYear = 2025;<span class="c">     // año final</span>
+<span class="k">var</span> startMonth = 1;<span class="c">     // mes inicial</span>
+<span class="k">var</span> endMonth = 12;<span class="c">      // mes final</span>
+<span class="k">var</span> cloudcover = 30;<span class="c">    // nubosidad máxima sobre tierra (%)</span>
+
+<span class="c">// Nombres comunes para las bandas de todos los sensores</span>
+<span class="k">var</span> bandsTM = ['SR_B1', 'SR_B2', 'SR_B3', 'SR_B4', 'SR_B5', 'SR_B7'];<span class="c">   // Landsat 4, 5 y 7</span>
+<span class="k">var</span> bandsOLI = ['SR_B2', 'SR_B3', 'SR_B4', 'SR_B5', 'SR_B6', 'SR_B7'];<span class="c">  // Landsat 8 y 9</span>
+<span class="k">var</span> names = ['Blue', 'Green', 'Red', 'Nir', 'Swir1', 'Swir2'];
+
+<span class="c">// Filtra una colección y prepara cada imagen</span>
+<span class="k">function</span> landsat(id, bands) {
+  <span class="k">return</span> ee.ImageCollection(id)
+    .filterBounds(AOI)
+    .filterDate(startYear + '-01-01', (endYear + 1) + '-01-01')
+    .filter(ee.Filter.calendarRange(startMonth, endMonth, 'month'))
+    .filter(ee.Filter.lte('CLOUD_COVER_LAND', cloudcover))
+    .map(<span class="k">function</span> (img) {
+      <span class="k">return</span> scaler(mask_clouds(img)).select(bands, names);
+    });
+}
+
+<span class="c">// Landsat 4, 5, 7, 8 y 9 en una sola colección</span>
+<span class="k">var</span> collection = landsat('LANDSAT/LT04/C02/T1_L2', bandsTM)
+  .merge(landsat('LANDSAT/LT05/C02/T1_L2', bandsTM))
+  .merge(landsat('LANDSAT/LE07/C02/T1_L2', bandsTM).filterDate('1999-04-15', '2013-05-30'))
+  .merge(landsat('LANDSAT/LC08/C02/T1_L2', bandsOLI))
+  .merge(landsat('LANDSAT/LC09/C02/T1_L2', bandsOLI));
+print('Imágenes disponibles', collection.size());
+
+<span class="c">// Una mediana por año</span>
+<span class="k">var</span> years = ee.List.sequence(startYear, endYear);
+
+<span class="k">var</span> annual = ee.ImageCollection.fromImages(years.map(<span class="k">function</span> (year) {
+  <span class="k">var</span> start = ee.Date.fromYMD(year, 1, 1);
+  <span class="k">var</span> images = collection.filterDate(start, start.advance(1, 'year'));
+  <span class="k">return</span> images.median()
+    .clip(AOI)
+    .set('year', year)
+    .set('n_images', images.size());
+}));
+
+<span class="c">// Quitar los años sin imágenes</span>
+annual = annual.filter(ee.Filter.gt('n_images', 0));
+print('Medianas anuales', annual);
+
+<span class="c">// Color verdadero, una capa por año</span>
+<span class="k">var</span> visRGB = {bands: ['Red', 'Green', 'Blue'], min: 0.002, max: 0.25, gamma: 1};
+Map.centerObject(AOI, 10);
+
+annual.aggregate_array('year').evaluate(<span class="k">function</span> (list) {
+  list.forEach(<span class="k">function</span> (year) {
+    <span class="k">var</span> img = annual.filter(ee.Filter.eq('year', year)).first();
+    Map.addLayer(img, visRGB, 'RGB ' + year, <span class="k">false</span>);
+  });
+});
+
+<span class="c">// Una tarea de exportación por año</span>
+annual.aggregate_array('year').evaluate(<span class="k">function</span> (list) {
+  list.forEach(<span class="k">function</span> (year) {
+    <span class="k">var</span> img = ee.Image(annual.filter(ee.Filter.eq('year', year)).first());
+    Export.image.toDrive({
+      image: img.toFloat(),
+      description: 'Landsat_mediana_' + year,
+      folder: 'Landsat_Median',
+      region: AOI,
+      scale: 30,
+      crs: 'EPSG:32618',<span class="c">  // UTM 18N, cámbiala por la zona de tu AOI</span>
+      maxPixels: 1e13
+    });
+  });
+});</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Ya tienes una serie de cuatro décadas lista para analizar. En la siguiente lección construiremos la misma serie con Sentinel-2, más corta pero con 10 m de resolución. Después usaremos estas medianas anuales para calcular índices y detectar agua año a año.</p>
+
+    <h2 id="referencias">Referencias <a class="anchor" href="#referencias" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="refs">
+      <li>Roy, D. P., Kovalskyy, V., Zhang, H. K., Vermote, E. F., Yan, L., Kumar, S. S. y Egorov, A. (2016). Characterization of Landsat-7 to Landsat-8 reflective wavelength and normalized difference vegetation index continuity. <em>Remote Sensing of Environment</em>, 185, 57–70.</li>
+    </ul>

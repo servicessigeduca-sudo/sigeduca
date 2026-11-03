@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-src https://www.youtube-nocookie.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Descargar imagen satelital de Landsat 9 en Google Earth Engine · SIG EDUCA</title>
+<meta name="description" content="Aprende de manera sencilla a filtrar, visualizar y descargar imágenes satelitales de Landsat 9 desde Google Earth Engine.">
+<!-- seo:inicio -->
+<link rel="canonical" href="https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/descargar-landsat-9.html">
+<link rel="icon" type="image/png" href="../assets/img/favicon.png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SIG EDUCA">
+<meta property="og:locale" content="es_ES">
+<meta property="og:title" content="Descargar imagen satelital de Landsat 9 en Google Earth Engine · SIG EDUCA">
+<meta property="og:description" content="Aprende de manera sencilla a filtrar, visualizar y descargar imágenes satelitales de Landsat 9 desde Google Earth Engine.">
+<meta property="og:url" content="https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/descargar-landsat-9.html">
+<meta property="og:image" content="https://servicessigeduca-sudo.github.io/sigeduca/assets/img/compartir.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Descargar imagen satelital de Landsat 9 en Google Earth Engine · SIG EDUCA">
+<meta name="twitter:description" content="Aprende de manera sencilla a filtrar, visualizar y descargar imágenes satelitales de Landsat 9 desde Google Earth Engine.">
+<meta name="twitter:image" content="https://servicessigeduca-sudo.github.io/sigeduca/assets/img/compartir.png">
+<!-- seo:fin -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<script src="../assets/theme.js?v=45ee55f4"></script>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <button class="menu-btn" id="menuBtn" aria-label="Abrir menú" aria-expanded="false">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <a class="brand" aria-label="SIG EDUCA, inicio" href="../index.html"><img src="../assets/img/logo-sig-educa.png" alt="" width="90" height="112"><span class="brand-txt">SIG <b>EDUCA</b></span></a>
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Buscar" aria-label="Buscar">
+    </div>
+    <button class="theme-btn" id="themeBtn" type="button" role="switch" aria-checked="false" aria-label="Modo oscuro"><span class="knob"><svg class="sun" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></span></button>
+    <a class="btn ghost" href="https://www.youtube.com/@SIG_EDUCA" target="_blank" rel="noopener">YouTube</a>
+    <a class="btn" href="../index.html#ruta">Tutoriales</a>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="side" id="side" aria-label="Secciones">
+    <ul>
+      <li><a href="../index.html#inicio">Inicio</a></li>
+      <li><a href="../index.html#primeros-pasos">Primeros pasos</a></li>
+      <li><a href="../index.html#ruta">Cursos</a></li>
+      <li class="grupo"><details open>
+        <summary>Google Earth Engine</summary>
+        <ul>
+          <li class="grupo nivel"><details open>
+            <summary>Nivel básico</summary>
+            <ul>
+              <li><a href="../cursos/curso-gee.html">Presentación del curso</a></li>
+              <li><a href="../tutoriales/registro-earth-engine.html" title="Creación y registro en Google Earth Engine">1. Creación y registro</a></li>
+              <li><a href="../tutoriales/importar-shapefile.html" title="Importar shapefile en Google Earth Engine">2. Importar shapefile</a></li>
+              <li><a href="../tutoriales/filtrar-shapefiles.html" title="Trabajar con shapefiles en Google Earth Engine">3. Filtrar shapefiles</a></li>
+              <li><a href="../tutoriales/exportar-shapefile.html" title="Descargar shapefiles de Google Earth Engine">4. Descargar shapefiles</a></li>
+              <li><a href="../tutoriales/descargar-dem.html" title="Descargar un DEM en Google Earth Engine">5. Descargar un DEM</a></li>
+              <li><a href="../tutoriales/analisis-terreno.html" title="Análisis de terreno en Google Earth Engine">6. Análisis de terreno</a></li>
+              <li><a href="../tutoriales/descargar-landsat-9.html" class="on" aria-current="page" title="Descargar imagen satelital de Landsat 9 en Google Earth Engine">7. Imagen de Landsat 9</a></li>
+              <li><a href="../tutoriales/descargar-sentinel-2.html" title="Descargar imagen satelital de Sentinel-2 en Google Earth Engine">8. Imagen de Sentinel-2</a></li>
+              <li><a href="../tutoriales/composicion-landsat.html" title="Composición sin nubes con Landsat 9 en Google Earth Engine">9. Composición con Landsat 9</a></li>
+              <li><a href="../tutoriales/composicion-sentinel-2.html" title="Composición sin nubes con Sentinel-2 en Google Earth Engine">10. Composición con Sentinel-2</a></li>
+              <li><a href="../tutoriales/indices-vegetacion-landsat.html" title="Índices de vegetación con Landsat 9 en Google Earth Engine">11. Vegetación con Landsat 9</a></li>
+              <li><a href="../tutoriales/indices-vegetacion-sentinel-2.html" title="Índices de vegetación con Sentinel-2 en Google Earth Engine">12. Vegetación con Sentinel-2</a></li>
+              <li><a href="../tutoriales/deteccion-agua-landsat.html" title="Detección de agua con Landsat 9 en Google Earth Engine">13. Agua con Landsat 9</a></li>
+              <li><a href="../tutoriales/deteccion-agua-sentinel-2.html" title="Detección de agua con Sentinel-2 en Google Earth Engine">14. Agua con Sentinel-2</a></li>
+              <li><a href="../tutoriales/inundaciones-landsat.html" title="Mapeo de inundaciones con Landsat 9 en Google Earth Engine">15. Inundaciones con Landsat 9</a></li>
+              <li><a href="../tutoriales/inundaciones-sentinel-2.html" title="Mapeo de inundaciones con Sentinel-2 en Google Earth Engine">16. Inundaciones con Sentinel-2</a></li>
+              <li><a href="../tutoriales/cuerpos-agua-landsat.html" title="Extracción de cuerpos de agua con Landsat 9 en Google Earth Engine">17. Cuerpos de agua con Landsat 9</a></li>
+              <li><a href="../tutoriales/cuerpos-agua-sentinel-2.html" title="Extracción de cuerpos de agua con Sentinel-2 en Google Earth Engine">18. Cuerpos de agua con Sentinel-2</a></li>
+            </ul>
+          </details></li>
+          <li class="grupo nivel"><details>
+            <summary>Nivel intermedio</summary>
+            <ul>
+              <li><a href="../cursos/curso-gee-intermedio.html">Presentación del curso</a></li>
+              <li><a href="../tutoriales/serie-tiempo-landsat.html" title="Series de tiempo con Landsat 4 a 9 en Google Earth Engine">1. Series de tiempo con Landsat</a></li>
+              <li><a href="../tutoriales/serie-tiempo-sentinel-2.html" title="Series de tiempo con Sentinel-2 en Google Earth Engine">2. Series de tiempo con Sentinel-2</a></li>
+              <li><a href="../tutoriales/indices-serie-tiempo.html" title="Índices espectrales en series de tiempo con Landsat en Google Earth Engine">3. Índices año a año</a></li>
+              <li><a href="../tutoriales/agua-dswe.html" title="Agua superficial con DSWE (Jones, 2019) en Google Earth Engine">4. Agua con DSWE</a></li>
+              <li><a href="../tutoriales/area-agua-dswe.html" title="Evolución del área de agua con DSWE en Google Earth Engine">5. Área de agua por año</a></li>
+              <li><a href="../tutoriales/gif-serie-tiempo.html" title="Animación GIF de una serie de tiempo en Google Earth Engine">6. Animación GIF</a></li>
+            </ul>
+          </details></li>
+        </ul>
+      </details></li>
+      <li class="grupo"><details>
+        <summary>QGIS</summary>
+        <ul>
+          <li class="grupo nivel"><details>
+            <summary>Nivel básico</summary>
+            <ul>
+              <li><a href="../cursos/curso-qgis.html">Presentación del curso</a></li>
+              <li><a href="../tutoriales/descargar-qgis.html" title="Descargar e instalar QGIS">1. Instalar QGIS</a></li>
+            </ul>
+          </details></li>
+        </ul>
+      </details></li>
+      <li class="grupo"><details>
+        <summary>Apps</summary>
+        <ul>
+          <li><a href="../apps/easy-download-dems.html">Easy Download DEMs</a></li>
+        </ul>
+      </details></li>
+      <li><a href="../index.html#contacto">Contacto</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <div class="crumb"><a href="../index.html#ruta">cursos</a> / <a href="../cursos/curso-gee.html">google earth engine básico</a></div>
+    <h1>Descargar imagen satelital de Landsat 9 en Google Earth Engine</h1>
+    <div class="meta-row"><span class="lvl b">básico</span><span>Lección 7 de 18</span><span>8 min</span><span>Google Earth Engine</span></div>
+    <p class="lead">Aprende de manera sencilla a filtrar, visualizar y descargar imágenes satelitales de Landsat 9 desde Google Earth Engine.</p>
+    <div class="video"><iframe src="https://www.youtube-nocookie.com/embed/a7s_zqWZQ8c" title="Descargar imagen satelital de Landsat 9 en Google Earth Engine" loading="lazy" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>En esta guía aprenderemos a descargar imágenes satelitales de Landsat 9 con Google Earth Engine. Landsat 9 forma parte del programa Landsat de la NASA y el USGS, que proporciona datos continuos de la superficie terrestre desde 1972. Usaremos Earth Engine para filtrar imágenes de Landsat 9, visualizarlas y exportarlas a Google Drive para su posterior análisis.</p>
+
+    <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Filtrar imágenes satelitales de Landsat 9 según una región de interés (AOI).</li>
+      <li>Visualizar las imágenes seleccionadas en el mapa.</li>
+      <li>Exportar una imagen seleccionada a Google Drive en formato GeoTIFF.</li>
+    </ul>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><a href="https://www.usgs.gov/media/files/landsat-wrs-2-descending-path-row-shapefile" target="_blank" rel="noopener">Shapefile de Path y Row de Landsat 4-9 (WRS-2 descendente, USGS)</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/LANDSAT_LC09_C02_T1_L2" target="_blank" rel="noopener">Landsat 9 Surface Reflectance Tier 1 Level-2 (L2)</a></li>
+    </ul>
+
+    <h2 id="path-row">Shapefile de Path y Row <a class="anchor" href="#path-row" aria-label="Enlace a esta sección">#</a></h2>
+    <p>El shapefile "Landsat WRS-2 Descending Path Row" describe las rutas (paths) y filas (rows) del sistema de cuadrícula de Landsat 4-9. Cada polígono representa una combinación única de ruta y fila, lo que permite identificar con precisión qué escena cubre tu zona y filtrar las imágenes que coinciden con ella.</p>
+
+    <h2 id="dataset">Dataset Landsat 9 L2 <a class="anchor" href="#dataset" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Son imágenes de Landsat 9 en el nivel 2 de procesamiento. Están corregidas atmosféricamente y convertidas a reflectancia de superficie, por lo que sirven para monitoreo ambiental, análisis de cambios en el uso del suelo y detección de vegetación, entre otros usos.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Característica</th><th>Detalle</th></tr></thead>
+        <tbody>
+          <tr><td class="n">Bandas</td><td>19 bandas, incluidas visibles, infrarrojo cercano y térmicas</td></tr>
+          <tr><td class="n">Resolución</td><td>30 m en las bandas visibles e infrarrojo cercano</td></tr>
+          <tr><td class="n">Cobertura temporal</td><td>Desde septiembre de 2021</td></tr>
+          <tr><td class="n">Cobertura geográfica</td><td>Áreas terrestres de todo el mundo</td></tr>
+          <tr><td class="n">Procesamiento</td><td>Nivel 2: reflectancia de superficie corregida atmosféricamente</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="bandas">Bandas de Landsat 9 <a class="anchor" href="#bandas" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Landsat 9 se lanzó en septiembre de 2021 y lleva los sensores OLI-2 (óptico) y TIRS-2 (térmico). Junto con Landsat 8 permite tener una imagen del mismo lugar cada 8 días. En la tabla ves las bandas de reflectancia de superficie del dataset.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Banda</th><th>Región del espectro</th><th>Resolución</th></tr></thead>
+        <tbody>
+          <tr><td class="n">SR_B1</td><td>Aerosol costero</td><td>30 m</td></tr>
+          <tr><td class="n">SR_B2</td><td>Azul</td><td>30 m</td></tr>
+          <tr><td class="n">SR_B3</td><td>Verde</td><td>30 m</td></tr>
+          <tr><td class="n">SR_B4</td><td>Rojo</td><td>30 m</td></tr>
+          <tr><td class="n">SR_B5</td><td>Infrarrojo cercano (NIR)</td><td>30 m</td></tr>
+          <tr><td class="n">SR_B6</td><td>Infrarrojo de onda corta 1 (SWIR 1)</td><td>30 m</td></tr>
+          <tr><td class="n">SR_B7</td><td>Infrarrojo de onda corta 2 (SWIR 2)</td><td>30 m</td></tr>
+          <tr><td class="n">ST_B10</td><td>Térmica (temperatura de superficie)</td><td>100 m, entregada a 30 m</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Al combinar bandas puedes resaltar distintos elementos del paisaje.</p>
+    <ul class="check">
+      <li>Con <strong>4-3-2</strong> obtienes color natural, la imagen tal como la veríamos a simple vista.</li>
+      <li>Con <strong>5-4-3</strong>, el falso color infrarrojo, la vegetación sana aparece en rojo intenso.</li>
+      <li>Con <strong>6-5-4</strong> es más fácil diferenciar cultivos, suelo desnudo y agua.</li>
+    </ul>
+    <div class="callout"><p><strong>¿Por qué min 7600 y max 22000?</strong> Los valores de la Colección 2 vienen escalados. Para obtener reflectancia real se multiplican por 0.0000275 y se les suma -0.2. Los valores de visualización trabajan sobre la escala original.</p></div>
+
+    <h2 id="paso-1">Paso 1: Filtrar con la región de interés <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Cargamos el shapefile de Path y Row de Landsat 4-9 (subido como asset a Earth Engine).</li>
+      <li>Filtramos la colección de Landsat 9 por el período de interés, limitamos la cobertura de nubes y restringimos la búsqueda a la región de interés (AOI).</li>
+      <li>Mostramos la primera imagen en el mapa.</li>
+    </ul>
+    <div class="callout"><p>Antes de ejecutar el código, dibuja tu zona de estudio con las herramientas de geometría del mapa y cámbiale el nombre a <code>AOI</code> en el panel de importaciones, porque así la llama el script. Para cargar el shapefile de Path y Row, descárgalo del USGS y súbelo a tus assets, como en el tutorial <a href="importar-shapefile.html">Importar shapefile en Earth Engine</a>; luego cambia la ruta del asset por la tuya.</p></div>
+    <div class="codebox"><pre><span class="c">// Importar el shapefile de Path y Row</span>
+<span class="k">var</span> path_row = ee.FeatureCollection("projects/ee-sigeduca/assets/WRS2_descending");
+
+<span class="c">// Filtrado de la colección por fecha, nubosidad y región</span>
+<span class="k">var</span> ls9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
+  .filterDate('2021-01-01', '2023-12-31').sort('system:time_start', <span class="k">true</span>)
+  .filter(ee.Filter.lte('CLOUD_COVER_LAND', 20)).filterBounds(AOI);
+
+<span class="c">// Visualización de la imagen en el mapa</span>
+<span class="k">var</span> visparam = {bands: "SR_B4,SR_B3,SR_B2", min: 7600, max: 22000, gamma: 1};
+Map.centerObject(AOI, 8);
+Map.addLayer(ls9.first().clip(AOI), visparam, "First image Landsat 9");</pre></div>
+    <figure class="shot"><img src="../assets/img/descargar-landsat-9/aoi.jpg" alt="Región de interés sobre el área de Dallas y Fort Worth con la primera imagen recortada" loading="lazy" width="1032" height="627"><figcaption>Región de interés y primera imagen de Landsat 9.</figcaption></figure>
+
+    <h2 id="paso-2">Paso 2: Agregar el polígono de Path y Row <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Añadimos al mapa los polígonos de Path y Row que tocan el AOI para ver qué escenas lo cubren.</p>
+    <div class="codebox"><pre><span class="c">// Agregar polígono Path y Row al mapa</span>
+<span class="k">var</span> ls9_path = path_row.filterBounds(AOI);
+Map.addLayer(ls9_path, {color: "#0000"}, "PATH AND ROW SHAPEFILE", 0);</pre></div>
+    <figure class="shot"><img src="../assets/img/descargar-landsat-9/path-row.jpg" alt="Polígonos de Path y Row superpuestos sobre la región de interés" loading="lazy" width="825" height="562"><figcaption>Escenas de Landsat (Path y Row) que cubren la región de interés.</figcaption></figure>
+
+    <h2 id="paso-3">Paso 3: Filtrar por Path y Row <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Filtramos la colección con la ruta y fila obtenidas del polígono.</li>
+      <li>Seleccionamos la primera imagen filtrada y solo las bandas espectrales B1 a B7.</li>
+    </ul>
+    <div class="codebox"><pre><span class="c">// Filtro de Path y Row en la colección de imágenes</span>
+<span class="k">var</span> ls9_path_row = ls9.filter(ee.Filter.eq("WRS_PATH", 27))
+                      .filter(ee.Filter.eq("WRS_ROW", 37));
+<span class="k">var</span> image_ls9 = ls9_path_row.first().select(["SR_B[1-7]"]);
+
+<span class="c">// Cargar imagen filtrada al mapa</span>
+Map.addLayer(image_ls9.clip(AOI), visparam, "PATH AND ROW FILTER", 0);</pre></div>
+    <figure class="shot"><img src="../assets/img/descargar-landsat-9/resultado.jpg" alt="Imagen de Landsat 9 recortada a la región de interés" loading="lazy" width="793" height="530"><figcaption>Imagen de Landsat 9 filtrada por Path y Row y recortada.</figcaption></figure>
+
+    <h2 id="paso-4">Paso 4: Exportar la imagen a Google Drive <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Exportamos la imagen seleccionada a Google Drive en formato GeoTIFF optimizado para la nube, y ejecutamos la tarea desde la pestaña <strong>Tasks</strong>.</p>
+    <div class="codebox"><pre>Export.image.toDrive({
+  image: image_ls9,
+  description: "landsat_9_image",
+  folder: "landsat collections",
+  region: AOI,
+  scale: 30,
+  maxPixels: 1e13,
+  fileFormat: "TIFF",
+  formatOptions: {
+    cloudOptimized: <span class="k">true</span>
+  }
+});</pre></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo del tutorial. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a> y presiona <kbd>Run</kbd>. Luego ejecuta la exportación desde la pestaña <strong>Tasks</strong>.</p>
+    <div class="codebox"><pre><span class="c">// AOI: dibuja tu región de interés con las herramientas de geometría del mapa</span>
+<span class="c">// y nómbrala "AOI" en el panel de importaciones.</span>
+
+<span class="c">// Importar el shapefile de Path y Row (cambia la ruta por la de tu asset)</span>
+<span class="k">var</span> path_row = ee.FeatureCollection("projects/ee-sigeduca/assets/WRS2_descending");
+
+<span class="c">// Filtrado de la colección por fecha, nubosidad y región</span>
+<span class="k">var</span> ls9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
+  .filterDate('2021-01-01', '2023-12-31').sort('system:time_start', <span class="k">true</span>)
+  .filter(ee.Filter.lte('CLOUD_COVER_LAND', 20)).filterBounds(AOI);
+
+<span class="c">// Visualización de la imagen en el mapa</span>
+<span class="k">var</span> visparam = {bands: "SR_B4,SR_B3,SR_B2", min: 7600, max: 22000, gamma: 1};
+Map.centerObject(AOI, 8);
+Map.addLayer(ls9.first().clip(AOI), visparam, "First image Landsat 9");
+
+<span class="c">// Agregar polígono Path y Row al mapa</span>
+<span class="k">var</span> ls9_path = path_row.filterBounds(AOI);
+Map.addLayer(ls9_path, {color: "#0000"}, "PATH AND ROW SHAPEFILE", 0);
+
+<span class="c">// Filtro de Path y Row en la colección de imágenes</span>
+<span class="k">var</span> ls9_path_row = ls9.filter(ee.Filter.eq("WRS_PATH", 27))
+                      .filter(ee.Filter.eq("WRS_ROW", 37));
+<span class="k">var</span> image_ls9 = ls9_path_row.first().select(["SR_B[1-7]"]);
+
+<span class="c">// Cargar imagen filtrada al mapa</span>
+Map.addLayer(image_ls9.clip(AOI), visparam, "PATH AND ROW FILTER", 0);
+
+<span class="c">// Exportar la imagen a Google Drive</span>
+Export.image.toDrive({
+  image: image_ls9,
+  description: "landsat_9_image",
+  folder: "landsat collections",
+  region: AOI,
+  scale: 30,
+  maxPixels: 1e13,
+  fileFormat: "TIFF",
+  formatOptions: {
+    cloudOptimized: <span class="k">true</span>
+  }
+});</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Esta guía muestra cómo filtrar, visualizar y exportar imágenes de Landsat 9 con Google Earth Engine. Trabajar con estas imágenes en la plataforma permite realizar análisis geoespaciales avanzados y estudiar cambios en la superficie terrestre a lo largo del tiempo.</p>
+
+    <h2 id="material">Material de apoyo <a class="anchor" href="#material" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="descarga">
+      <div><strong>Guía en PDF</strong><span>8.0 Descargar imagen satelital de Landsat 9 · 6 páginas</span></div>
+      <a class="btn" href="../assets/pdf/8.0-descargar-imagen-landsat-9.pdf" target="_blank" rel="noopener">Descargar PDF</a>
+    </div>
+    <div class="descarga">
+      <div><strong>Código en GEE</strong><span>Abre el script en el Code Editor de Earth Engine</span></div>
+      <a class="btn ghost" href="https://code.earthengine.google.com/ec7a69c21a0932c56a500ee09b0cf280" target="_blank" rel="noopener">Abrir código</a>
+    </div>
+
+    <div class="pager two">
+      <a href="../cursos/curso-gee.html"><small>Volver al curso</small>← Google Earth Engine básico</a>
+      <a href="../tutoriales/descargar-sentinel-2.html"><small>Siguiente</small>Descargar imagen de Sentinel-2 →</a>
+    </div>
+    <footer class="foot"><span>© 2026 SIG EDUCA</span><span class="redes"><a href="https://www.youtube.com/@SIG_EDUCA" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .6 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .4-4.8 31 31 0 0 0-.4-4.8ZM9.7 15.1V8.9l5.8 3.1Z"/></svg></a><a href="https://www.instagram.com/sig_educa" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a><a href="https://www.linkedin.com/in/sig-educa" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9.5h4V21H3Zm7 0h3.8v1.6h.1c.5-1 1.8-2 3.8-2 4 0 4.8 2.6 4.8 6V21h-4v-5.2c0-1.2 0-2.8-1.7-2.8s-2 1.3-2 2.7V21h-4Z"/></svg></a></span></footer>
+  </main>
+
+  <aside class="toc" aria-label="En esta página">
+    <h4>En esta página</h4>
+    <ul id="toc"></ul>
+  </aside>
+</div>
+<script src="../assets/tutorial.js?v=cc33d166"></script>
+</body>
+</html>

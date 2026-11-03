@@ -1,0 +1,137 @@
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Sentinel-2 toma imágenes de todo el planeta cada cinco días con 10 m de resolución, así que en pocos meses acumula decenas de escenas de tu zona. Combinarlas en una <strong>composición de mediana</strong> permite obtener una imagen limpia de nubes y con mucho detalle.</p>
+    <p>En esta lección construiremos esa composición con una máscara de nubes basada en la banda SCL y exportaremos el resultado a Google Drive.</p>
+
+    <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Crear una función de máscara de nubes para Sentinel-2.</li>
+      <li>Calcular una composición de mediana con y sin máscara.</li>
+      <li>Filtrar las escenas por porcentaje de píxeles nubosos.</li>
+      <li>Exportar la composición a Google Drive como GeoTIFF.</li>
+    </ul>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR_HARMONIZED" target="_blank" rel="noopener">Sentinel-2 Surface Reflectance (COPERNICUS/S2_SR_HARMONIZED)</a></li>
+    </ul>
+
+    <h2 id="mediana">¿Por qué la mediana? <a class="anchor" href="#mediana" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Las nubes son muy brillantes y las sombras muy oscuras, así que en una serie de imágenes aparecen como valores extremos. La mediana ignora esos extremos y se queda con el valor típico de cada píxel. Si además enmascaramos las nubes antes de calcularla, el resultado es una imagen continua y limpia aunque ninguna escena individual lo sea.</p>
+
+    <h2 id="paso-1">Paso 1: Crear la función de máscara <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <p>La función <code>maskS2clouds</code> usa la banda <code>SCL</code> (clasificación de la escena) para ocultar sombras, nubes y cirros. Después se queda solo con las bandas espectrales y las divide entre 10 000 para pasarlas a reflectancia, de 0 a 1.</p>
+    <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
+<span class="k">function</span> maskS2clouds(img) {
+  <span class="k">var</span> scl = img.select('SCL');
+  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
+    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
+    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
+    .and(scl.neq(10));<span class="c">     // cirros</span>
+  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+}</pre></div>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Clase SCL</th><th>Significado</th></tr></thead>
+        <tbody>
+          <tr><td class="n">3</td><td>Sombra de nube</td></tr>
+          <tr><td class="n">8</td><td>Nube, probabilidad media</td></tr>
+          <tr><td class="n">9</td><td>Nube, probabilidad alta</td></tr>
+          <tr><td class="n">10</td><td>Cirros</td></tr>
+          <tr><td class="n">4</td><td>Vegetación</td></tr>
+          <tr><td class="n">6</td><td>Agua</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="paso-2">Paso 2: Filtrar la colección y ver la mediana con nubes <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
+    <p>Filtramos la colección por fecha y región y calculamos una mediana sin máscara para ver el punto de partida. Los valores todavía están multiplicados por 10 000.</p>
+    <div class="codebox"><pre><span class="c">// Colección de Sentinel-2 filtrada por fecha y región</span>
+<span class="k">var</span> s2 = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
+  .filterDate("2023-01-01", "2023-12-01")
+  .filterBounds(AOI);
+print(s2);
+
+<span class="c">// Mediana sin máscara, todavía con nubes</span>
+<span class="k">var</span> s2_m = s2.median().clip(AOI);
+Map.addLayer(s2_m, {bands: "B4,B3,B2", min: 0, max: 3000, gamma: 1}, "Sentinel-2 mediana con nubes");
+Map.centerObject(AOI, 8);</pre></div>
+
+    <h2 id="paso-3">Paso 3: Composición sin nubes <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Aplicamos la máscara a cada imagen con <code>map()</code> y calculamos la mediana. En la segunda versión filtramos antes por <code>CLOUDY_PIXEL_PERCENTAGE</code> para usar solo las escenas más despejadas.</p>
+    <div class="codebox"><pre><span class="c">// Mediana sin nubes</span>
+<span class="k">var</span> visSR = {bands: "B4,B3,B2", min: 0, max: 0.3, gamma: 1};
+<span class="k">var</span> s2_cf = s2.map(maskS2clouds).median().clip(AOI);
+Map.addLayer(s2_cf, visSR, "Sentinel-2 mediana sin nubes");
+
+<span class="c">// Mismo proceso, solo con escenas de hasta 20 % de píxeles nubosos</span>
+<span class="k">var</span> s2_cc = s2.filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 20))
+  .map(maskS2clouds)
+  .median()
+  .clip(AOI);
+Map.addLayer(s2_cc, visSR, "Sentinel-2 mediana sin nubes y con filtro");</pre></div>
+    <div class="callout"><p><strong>Consejo.</strong> Si quieres una composición de una temporada concreta, por ejemplo la época seca, agrega <code>.filter(ee.Filter.calendarRange(10, 11, 'month'))</code> a la colección para quedarte solo con las imágenes de octubre y noviembre.</p></div>
+
+    <h2 id="paso-4">Paso 4: Exportar la composición <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Exportamos las bandas azul, verde, roja, NIR y las dos SWIR a 10 m. Recuerda ejecutar la tarea desde la pestaña <strong>Tasks</strong>.</p>
+    <div class="codebox"><pre><span class="c">// Exportar las bandas principales a Google Drive</span>
+Export.image.toDrive({
+  image: s2_cc.select(['B2', 'B3', 'B4', 'B8', 'B11', 'B12']),
+  description: 'sentinel_2_cloud_free_composite',
+  folder: "sentinel collections",
+  region: AOI,
+  scale: 10,
+  maxPixels: 1e13,
+  fileFormat: "TIFF",
+  formatOptions: {cloudOptimized: <span class="k">true</span>}
+});</pre></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
+    <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
+<span class="k">function</span> maskS2clouds(img) {
+  <span class="k">var</span> scl = img.select('SCL');
+  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
+    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
+    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
+    .and(scl.neq(10));<span class="c">     // cirros</span>
+  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+}
+
+<span class="c">// Colección de Sentinel-2 filtrada por fecha y región</span>
+<span class="k">var</span> s2 = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
+  .filterDate("2023-01-01", "2023-12-01")
+  .filterBounds(AOI);
+print(s2);
+
+<span class="c">// Mediana sin máscara, todavía con nubes</span>
+<span class="k">var</span> s2_m = s2.median().clip(AOI);
+Map.addLayer(s2_m, {bands: "B4,B3,B2", min: 0, max: 3000, gamma: 1}, "Sentinel-2 mediana con nubes");
+Map.centerObject(AOI, 8);
+
+<span class="c">// Mediana sin nubes</span>
+<span class="k">var</span> visSR = {bands: "B4,B3,B2", min: 0, max: 0.3, gamma: 1};
+<span class="k">var</span> s2_cf = s2.map(maskS2clouds).median().clip(AOI);
+Map.addLayer(s2_cf, visSR, "Sentinel-2 mediana sin nubes");
+
+<span class="c">// Mismo proceso, solo con escenas de hasta 20 % de píxeles nubosos</span>
+<span class="k">var</span> s2_cc = s2.filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 20))
+  .map(maskS2clouds)
+  .median()
+  .clip(AOI);
+Map.addLayer(s2_cc, visSR, "Sentinel-2 mediana sin nubes y con filtro");
+
+<span class="c">// Exportar las bandas principales a Google Drive</span>
+Export.image.toDrive({
+  image: s2_cc.select(['B2', 'B3', 'B4', 'B8', 'B11', 'B12']),
+  description: 'sentinel_2_cloud_free_composite',
+  folder: "sentinel collections",
+  region: AOI,
+  scale: 10,
+  maxPixels: 1e13,
+  fileFormat: "TIFF",
+  formatOptions: {cloudOptimized: <span class="k">true</span>}
+});</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Con unas pocas líneas tienes una imagen de Sentinel-2 sin nubes y a 10 m, lista para calcular índices o comparar fechas. Las siguientes lecciones parten de imágenes preparadas de esta forma.</p>

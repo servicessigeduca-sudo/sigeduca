@@ -1,0 +1,172 @@
+    <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>En esta guía aprenderemos a descargar imágenes satelitales de Landsat 9 con Google Earth Engine. Landsat 9 forma parte del programa Landsat de la NASA y el USGS, que proporciona datos continuos de la superficie terrestre desde 1972. Usaremos Earth Engine para filtrar imágenes de Landsat 9, visualizarlas y exportarlas a Google Drive para su posterior análisis.</p>
+
+    <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Filtrar imágenes satelitales de Landsat 9 según una región de interés (AOI).</li>
+      <li>Visualizar las imágenes seleccionadas en el mapa.</li>
+      <li>Exportar una imagen seleccionada a Google Drive en formato GeoTIFF.</li>
+    </ul>
+
+    <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li><a href="https://www.usgs.gov/media/files/landsat-wrs-2-descending-path-row-shapefile" target="_blank" rel="noopener">Shapefile de Path y Row de Landsat 4-9 (WRS-2 descendente, USGS)</a></li>
+      <li><a href="https://developers.google.com/earth-engine/datasets/catalog/LANDSAT_LC09_C02_T1_L2" target="_blank" rel="noopener">Landsat 9 Surface Reflectance Tier 1 Level-2 (L2)</a></li>
+    </ul>
+
+    <h2 id="path-row">Shapefile de Path y Row <a class="anchor" href="#path-row" aria-label="Enlace a esta sección">#</a></h2>
+    <p>El shapefile "Landsat WRS-2 Descending Path Row" describe las rutas (paths) y filas (rows) del sistema de cuadrícula de Landsat 4-9. Cada polígono representa una combinación única de ruta y fila, lo que permite identificar con precisión qué escena cubre tu zona y filtrar las imágenes que coinciden con ella.</p>
+
+    <h2 id="dataset">Dataset Landsat 9 L2 <a class="anchor" href="#dataset" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Son imágenes de Landsat 9 en el nivel 2 de procesamiento. Están corregidas atmosféricamente y convertidas a reflectancia de superficie, por lo que sirven para monitoreo ambiental, análisis de cambios en el uso del suelo y detección de vegetación, entre otros usos.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Característica</th><th>Detalle</th></tr></thead>
+        <tbody>
+          <tr><td class="n">Bandas</td><td>19 bandas, incluidas visibles, infrarrojo cercano y térmicas</td></tr>
+          <tr><td class="n">Resolución</td><td>30 m en las bandas visibles e infrarrojo cercano</td></tr>
+          <tr><td class="n">Cobertura temporal</td><td>Desde septiembre de 2021</td></tr>
+          <tr><td class="n">Cobertura geográfica</td><td>Áreas terrestres de todo el mundo</td></tr>
+          <tr><td class="n">Procesamiento</td><td>Nivel 2: reflectancia de superficie corregida atmosféricamente</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="bandas">Bandas de Landsat 9 <a class="anchor" href="#bandas" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Landsat 9 se lanzó en septiembre de 2021 y lleva los sensores OLI-2 (óptico) y TIRS-2 (térmico). Junto con Landsat 8 permite tener una imagen del mismo lugar cada 8 días. En la tabla ves las bandas de reflectancia de superficie del dataset.</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Banda</th><th>Región del espectro</th><th>Resolución</th></tr></thead>
+        <tbody>
+          <tr><td class="n">SR_B1</td><td>Aerosol costero</td><td>30 m</td></tr>
+          <tr><td class="n">SR_B2</td><td>Azul</td><td>30 m</td></tr>
+          <tr><td class="n">SR_B3</td><td>Verde</td><td>30 m</td></tr>
+          <tr><td class="n">SR_B4</td><td>Rojo</td><td>30 m</td></tr>
+          <tr><td class="n">SR_B5</td><td>Infrarrojo cercano (NIR)</td><td>30 m</td></tr>
+          <tr><td class="n">SR_B6</td><td>Infrarrojo de onda corta 1 (SWIR 1)</td><td>30 m</td></tr>
+          <tr><td class="n">SR_B7</td><td>Infrarrojo de onda corta 2 (SWIR 2)</td><td>30 m</td></tr>
+          <tr><td class="n">ST_B10</td><td>Térmica (temperatura de superficie)</td><td>100 m, entregada a 30 m</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Al combinar bandas puedes resaltar distintos elementos del paisaje.</p>
+    <ul class="check">
+      <li>Con <strong>4-3-2</strong> obtienes color natural, la imagen tal como la veríamos a simple vista.</li>
+      <li>Con <strong>5-4-3</strong>, el falso color infrarrojo, la vegetación sana aparece en rojo intenso.</li>
+      <li>Con <strong>6-5-4</strong> es más fácil diferenciar cultivos, suelo desnudo y agua.</li>
+    </ul>
+    <div class="callout"><p><strong>¿Por qué min 7600 y max 22000?</strong> Los valores de la Colección 2 vienen escalados. Para obtener reflectancia real se multiplican por 0.0000275 y se les suma -0.2. Los valores de visualización trabajan sobre la escala original.</p></div>
+
+    <h2 id="paso-1">Paso 1: Filtrar con la región de interés <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Cargamos el shapefile de Path y Row de Landsat 4-9 (subido como asset a Earth Engine).</li>
+      <li>Filtramos la colección de Landsat 9 por el período de interés, limitamos la cobertura de nubes y restringimos la búsqueda a la región de interés (AOI).</li>
+      <li>Mostramos la primera imagen en el mapa.</li>
+    </ul>
+    <div class="callout"><p>Antes de ejecutar el código, dibuja tu zona de estudio con las herramientas de geometría del mapa y cámbiale el nombre a <code>AOI</code> en el panel de importaciones, porque así la llama el script. Para cargar el shapefile de Path y Row, descárgalo del USGS y súbelo a tus assets, como en el tutorial <a href="importar-shapefile.html">Importar shapefile en Earth Engine</a>; luego cambia la ruta del asset por la tuya.</p></div>
+    <div class="codebox"><pre><span class="c">// Importar el shapefile de Path y Row</span>
+<span class="k">var</span> path_row = ee.FeatureCollection("projects/ee-sigeduca/assets/WRS2_descending");
+
+<span class="c">// Filtrado de la colección por fecha, nubosidad y región</span>
+<span class="k">var</span> ls9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
+  .filterDate('2021-01-01', '2023-12-31').sort('system:time_start', <span class="k">true</span>)
+  .filter(ee.Filter.lte('CLOUD_COVER_LAND', 20)).filterBounds(AOI);
+
+<span class="c">// Visualización de la imagen en el mapa</span>
+<span class="k">var</span> visparam = {bands: "SR_B4,SR_B3,SR_B2", min: 7600, max: 22000, gamma: 1};
+Map.centerObject(AOI, 8);
+Map.addLayer(ls9.first().clip(AOI), visparam, "First image Landsat 9");</pre></div>
+    <figure class="shot"><img src="../assets/img/descargar-landsat-9/aoi.jpg" alt="Región de interés sobre el área de Dallas y Fort Worth con la primera imagen recortada" loading="lazy" width="1032" height="627"><figcaption>Región de interés y primera imagen de Landsat 9.</figcaption></figure>
+
+    <h2 id="paso-2">Paso 2: Agregar el polígono de Path y Row <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Añadimos al mapa los polígonos de Path y Row que tocan el AOI para ver qué escenas lo cubren.</p>
+    <div class="codebox"><pre><span class="c">// Agregar polígono Path y Row al mapa</span>
+<span class="k">var</span> ls9_path = path_row.filterBounds(AOI);
+Map.addLayer(ls9_path, {color: "#0000"}, "PATH AND ROW SHAPEFILE", 0);</pre></div>
+    <figure class="shot"><img src="../assets/img/descargar-landsat-9/path-row.jpg" alt="Polígonos de Path y Row superpuestos sobre la región de interés" loading="lazy" width="825" height="562"><figcaption>Escenas de Landsat (Path y Row) que cubren la región de interés.</figcaption></figure>
+
+    <h2 id="paso-3">Paso 3: Filtrar por Path y Row <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <ul class="check">
+      <li>Filtramos la colección con la ruta y fila obtenidas del polígono.</li>
+      <li>Seleccionamos la primera imagen filtrada y solo las bandas espectrales B1 a B7.</li>
+    </ul>
+    <div class="codebox"><pre><span class="c">// Filtro de Path y Row en la colección de imágenes</span>
+<span class="k">var</span> ls9_path_row = ls9.filter(ee.Filter.eq("WRS_PATH", 27))
+                      .filter(ee.Filter.eq("WRS_ROW", 37));
+<span class="k">var</span> image_ls9 = ls9_path_row.first().select(["SR_B[1-7]"]);
+
+<span class="c">// Cargar imagen filtrada al mapa</span>
+Map.addLayer(image_ls9.clip(AOI), visparam, "PATH AND ROW FILTER", 0);</pre></div>
+    <figure class="shot"><img src="../assets/img/descargar-landsat-9/resultado.jpg" alt="Imagen de Landsat 9 recortada a la región de interés" loading="lazy" width="793" height="530"><figcaption>Imagen de Landsat 9 filtrada por Path y Row y recortada.</figcaption></figure>
+
+    <h2 id="paso-4">Paso 4: Exportar la imagen a Google Drive <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Exportamos la imagen seleccionada a Google Drive en formato GeoTIFF optimizado para la nube, y ejecutamos la tarea desde la pestaña <strong>Tasks</strong>.</p>
+    <div class="codebox"><pre>Export.image.toDrive({
+  image: image_ls9,
+  description: "landsat_9_image",
+  folder: "landsat collections",
+  region: AOI,
+  scale: 30,
+  maxPixels: 1e13,
+  fileFormat: "TIFF",
+  formatOptions: {
+    cloudOptimized: <span class="k">true</span>
+  }
+});</pre></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo del tutorial. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a> y presiona <kbd>Run</kbd>. Luego ejecuta la exportación desde la pestaña <strong>Tasks</strong>.</p>
+    <div class="codebox"><pre><span class="c">// AOI: dibuja tu región de interés con las herramientas de geometría del mapa</span>
+<span class="c">// y nómbrala "AOI" en el panel de importaciones.</span>
+
+<span class="c">// Importar el shapefile de Path y Row (cambia la ruta por la de tu asset)</span>
+<span class="k">var</span> path_row = ee.FeatureCollection("projects/ee-sigeduca/assets/WRS2_descending");
+
+<span class="c">// Filtrado de la colección por fecha, nubosidad y región</span>
+<span class="k">var</span> ls9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
+  .filterDate('2021-01-01', '2023-12-31').sort('system:time_start', <span class="k">true</span>)
+  .filter(ee.Filter.lte('CLOUD_COVER_LAND', 20)).filterBounds(AOI);
+
+<span class="c">// Visualización de la imagen en el mapa</span>
+<span class="k">var</span> visparam = {bands: "SR_B4,SR_B3,SR_B2", min: 7600, max: 22000, gamma: 1};
+Map.centerObject(AOI, 8);
+Map.addLayer(ls9.first().clip(AOI), visparam, "First image Landsat 9");
+
+<span class="c">// Agregar polígono Path y Row al mapa</span>
+<span class="k">var</span> ls9_path = path_row.filterBounds(AOI);
+Map.addLayer(ls9_path, {color: "#0000"}, "PATH AND ROW SHAPEFILE", 0);
+
+<span class="c">// Filtro de Path y Row en la colección de imágenes</span>
+<span class="k">var</span> ls9_path_row = ls9.filter(ee.Filter.eq("WRS_PATH", 27))
+                      .filter(ee.Filter.eq("WRS_ROW", 37));
+<span class="k">var</span> image_ls9 = ls9_path_row.first().select(["SR_B[1-7]"]);
+
+<span class="c">// Cargar imagen filtrada al mapa</span>
+Map.addLayer(image_ls9.clip(AOI), visparam, "PATH AND ROW FILTER", 0);
+
+<span class="c">// Exportar la imagen a Google Drive</span>
+Export.image.toDrive({
+  image: image_ls9,
+  description: "landsat_9_image",
+  folder: "landsat collections",
+  region: AOI,
+  scale: 30,
+  maxPixels: 1e13,
+  fileFormat: "TIFF",
+  formatOptions: {
+    cloudOptimized: <span class="k">true</span>
+  }
+});</pre></div>
+
+    <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Esta guía muestra cómo filtrar, visualizar y exportar imágenes de Landsat 9 con Google Earth Engine. Trabajar con estas imágenes en la plataforma permite realizar análisis geoespaciales avanzados y estudiar cambios en la superficie terrestre a lo largo del tiempo.</p>
+
+    <h2 id="material">Material de apoyo <a class="anchor" href="#material" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="descarga">
+      <div><strong>Guía en PDF</strong><span>8.0 Descargar imagen satelital de Landsat 9 · 6 páginas</span></div>
+      <a class="btn" href="../assets/pdf/8.0-descargar-imagen-landsat-9.pdf" target="_blank" rel="noopener">Descargar PDF</a>
+    </div>
+    <div class="descarga">
+      <div><strong>Código en GEE</strong><span>Abre el script en el Code Editor de Earth Engine</span></div>
+      <a class="btn ghost" href="https://code.earthengine.google.com/ec7a69c21a0932c56a500ee09b0cf280" target="_blank" rel="noopener">Abrir código</a>
+    </div>

@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-src https://www.youtube-nocookie.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="google-site-verification" content="RoRaQOxMKmfjFwEKBzjn-90u23lPptj7Qn4AYYdvW_k">
+<meta name="description" content="Tutoriales prácticos en español sobre ArcGIS Pro, QGIS, Google Earth Pro y Google Earth Engine, con video, guía en PDF y código.">
+<title>SIG EDUCA · Tutoriales de ArcGIS Pro, QGIS y Google Earth Engine</title>
+<!-- seo:inicio -->
+<link rel="canonical" href="https://servicessigeduca-sudo.github.io/sigeduca/">
+<link rel="icon" type="image/png" href="assets/img/favicon.png">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SIG EDUCA">
+<meta property="og:locale" content="es_ES">
+<meta property="og:title" content="SIG EDUCA · Tutoriales de ArcGIS Pro, QGIS y Google Earth Engine">
+<meta property="og:description" content="SIG EDUCA es una iniciativa educativa para fortalecer el aprendizaje de los SIG en español: ArcGIS Pro, QGIS y Google Earth Engine, paso a paso.">
+<meta property="og:url" content="https://servicessigeduca-sudo.github.io/sigeduca/">
+<meta property="og:image" content="https://servicessigeduca-sudo.github.io/sigeduca/assets/img/compartir.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SIG EDUCA · Tutoriales de ArcGIS Pro, QGIS y Google Earth Engine">
+<meta name="twitter:description" content="SIG EDUCA es una iniciativa educativa para fortalecer el aprendizaje de los SIG en español: ArcGIS Pro, QGIS y Google Earth Engine, paso a paso.">
+<meta name="twitter:image" content="https://servicessigeduca-sudo.github.io/sigeduca/assets/img/compartir.png">
+<!-- seo:fin -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css?v=f0097724">
+<script src="assets/theme.js?v=45ee55f4"></script>
+
+
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <button class="menu-btn" id="menuBtn" aria-label="Abrir menú" aria-expanded="false">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <a class="brand" aria-label="SIG EDUCA, inicio" href="#inicio"><img src="assets/img/logo-sig-educa.png" alt="" width="90" height="112"><span class="brand-txt">SIG <b>EDUCA</b></span></a>
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Buscar" aria-label="Buscar">
+    </div>
+    <button class="theme-btn" id="themeBtn" type="button" role="switch" aria-checked="false" aria-label="Modo oscuro"><span class="knob"><svg class="sun" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="moon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></span></button>
+    <a class="btn ghost" href="https://www.youtube.com/@SIG_EDUCA" target="_blank" rel="noopener">YouTube</a>
+    <a class="btn" href="#primeros-pasos">Empezar</a>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="side" id="side" aria-label="Secciones">
+    <ul>
+      <li><a href="#inicio">Inicio</a></li>
+      <li><a href="#primeros-pasos">Primeros pasos</a></li>
+      <li><a href="#ruta">Cursos</a></li>
+      <li class="grupo"><details>
+        <summary>Google Earth Engine</summary>
+        <ul>
+          <li class="grupo nivel"><details>
+            <summary>Nivel básico</summary>
+            <ul>
+              <li><a href="cursos/curso-gee.html">Presentación del curso</a></li>
+              <li><a href="tutoriales/registro-earth-engine.html" title="Creación y registro en Google Earth Engine">1. Creación y registro</a></li>
+              <li><a href="tutoriales/importar-shapefile.html" title="Importar shapefile en Google Earth Engine">2. Importar shapefile</a></li>
+              <li><a href="tutoriales/filtrar-shapefiles.html" title="Trabajar con shapefiles en Google Earth Engine">3. Filtrar shapefiles</a></li>
+              <li><a href="tutoriales/exportar-shapefile.html" title="Descargar shapefiles de Google Earth Engine">4. Descargar shapefiles</a></li>
+              <li><a href="tutoriales/descargar-dem.html" title="Descargar un DEM en Google Earth Engine">5. Descargar un DEM</a></li>
+              <li><a href="tutoriales/analisis-terreno.html" title="Análisis de terreno en Google Earth Engine">6. Análisis de terreno</a></li>
+              <li><a href="tutoriales/descargar-landsat-9.html" title="Descargar imagen satelital de Landsat 9 en Google Earth Engine">7. Imagen de Landsat 9</a></li>
+              <li><a href="tutoriales/descargar-sentinel-2.html" title="Descargar imagen satelital de Sentinel-2 en Google Earth Engine">8. Imagen de Sentinel-2</a></li>
+              <li><a href="tutoriales/composicion-landsat.html" title="Composición sin nubes con Landsat 9 en Google Earth Engine">9. Composición con Landsat 9</a></li>
+              <li><a href="tutoriales/composicion-sentinel-2.html" title="Composición sin nubes con Sentinel-2 en Google Earth Engine">10. Composición con Sentinel-2</a></li>
+              <li><a href="tutoriales/indices-vegetacion-landsat.html" title="Índices de vegetación con Landsat 9 en Google Earth Engine">11. Vegetación con Landsat 9</a></li>
+              <li><a href="tutoriales/indices-vegetacion-sentinel-2.html" title="Índices de vegetación con Sentinel-2 en Google Earth Engine">12. Vegetación con Sentinel-2</a></li>
+              <li><a href="tutoriales/deteccion-agua-landsat.html" title="Detección de agua con Landsat 9 en Google Earth Engine">13. Agua con Landsat 9</a></li>
+              <li><a href="tutoriales/deteccion-agua-sentinel-2.html" title="Detección de agua con Sentinel-2 en Google Earth Engine">14. Agua con Sentinel-2</a></li>
+              <li><a href="tutoriales/inundaciones-landsat.html" title="Mapeo de inundaciones con Landsat 9 en Google Earth Engine">15. Inundaciones con Landsat 9</a></li>
+              <li><a href="tutoriales/inundaciones-sentinel-2.html" title="Mapeo de inundaciones con Sentinel-2 en Google Earth Engine">16. Inundaciones con Sentinel-2</a></li>
+              <li><a href="tutoriales/cuerpos-agua-landsat.html" title="Extracción de cuerpos de agua con Landsat 9 en Google Earth Engine">17. Cuerpos de agua con Landsat 9</a></li>
+              <li><a href="tutoriales/cuerpos-agua-sentinel-2.html" title="Extracción de cuerpos de agua con Sentinel-2 en Google Earth Engine">18. Cuerpos de agua con Sentinel-2</a></li>
+            </ul>
+          </details></li>
+          <li class="grupo nivel"><details>
+            <summary>Nivel intermedio</summary>
+            <ul>
+              <li><a href="cursos/curso-gee-intermedio.html">Presentación del curso</a></li>
+              <li><a href="tutoriales/serie-tiempo-landsat.html" title="Series de tiempo con Landsat 4 a 9 en Google Earth Engine">1. Series de tiempo con Landsat</a></li>
+              <li><a href="tutoriales/serie-tiempo-sentinel-2.html" title="Series de tiempo con Sentinel-2 en Google Earth Engine">2. Series de tiempo con Sentinel-2</a></li>
+              <li><a href="tutoriales/indices-serie-tiempo.html" title="Índices espectrales en series de tiempo con Landsat en Google Earth Engine">3. Índices año a año</a></li>
+              <li><a href="tutoriales/agua-dswe.html" title="Agua superficial con DSWE (Jones, 2019) en Google Earth Engine">4. Agua con DSWE</a></li>
+              <li><a href="tutoriales/area-agua-dswe.html" title="Evolución del área de agua con DSWE en Google Earth Engine">5. Área de agua por año</a></li>
+              <li><a href="tutoriales/gif-serie-tiempo.html" title="Animación GIF de una serie de tiempo en Google Earth Engine">6. Animación GIF</a></li>
+            </ul>
+          </details></li>
+        </ul>
+      </details></li>
+      <li class="grupo"><details>
+        <summary>QGIS</summary>
+        <ul>
+          <li class="grupo nivel"><details>
+            <summary>Nivel básico</summary>
+            <ul>
+              <li><a href="cursos/curso-qgis.html">Presentación del curso</a></li>
+              <li><a href="tutoriales/descargar-qgis.html" title="Descargar e instalar QGIS">1. Instalar QGIS</a></li>
+            </ul>
+          </details></li>
+        </ul>
+      </details></li>
+      <li class="grupo"><details>
+        <summary>Apps</summary>
+        <ul>
+          <li><a href="apps/easy-download-dems.html">Easy Download DEMs</a></li>
+        </ul>
+      </details></li>
+      <li><a href="#contacto">Contacto</a></li>
+    </ul>
+  </nav>
+
+  <main id="inicio">
+    <div class="crumb">inicio / bienvenida</div>
+    <h1>Bienvenido a SIG EDUCA</h1>
+    <div class="badges">
+      <a class="badge" href="https://www.youtube.com/@SIG_EDUCA" target="_blank" rel="noopener"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>YouTube</b><i class="b-yt">tutoriales</i></a>
+      <span class="badge"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0a.84923.84923 0 0 0-.33766.07031l-8.5183 3.69444C2.1458 4.19776 1.4997 5.1816 1.4997 6.2697v13.2521l10.16264 4.40783c.21517.09333.46015.09407.67532.00073l8.5183-3.6959c.99824-.43301 1.64434-1.41685 1.64434-2.50495V4.47814L12.33766.06958C12.23007.02291 12.11516-.00005 12 0Zm0 4.83705c4.16294 0 7.53757 3.3746 7.53757 7.53757S16.163 19.91218 12 19.91218c-4.163 0-7.53757-3.37462-7.53757-7.53756S7.837 4.83705 12 4.83705zm-.3501 1.38871c-.89685-.02267-2.32742.2409-3.74645 1.6143.34958.55454.64544.97782.49 1.41801-.23127.65503-.5139.51378-1.07083.99466-.39567.34169.2067 1.01292-.31275 1.30595-.51945.29306-1.21315.6636-.94925 1.17557.2639.51196 1.4691.83013 1.95929 1.07522.49018.2451.92812.70605.6072 1.2371-.31403.51948-.53713 1.13083-.60134 1.60917 1.0549.94423 2.44706 1.51909 3.97423 1.51909 3.2928 0 5.81772-2.71048 5.96208-6.00017.04062-.92531-.93924-.93972-1.53447-.93972 0 0 .34061.92356.01831 1.43632-.3223.51278-.84968.76166-.83498 1.37699.01464.61533-.93743 1.5967-1.2598 1.9483-.32223.35163-.9228.74718-1.12796-.0586-.2051-.80579-.12596-1.47799.1084-2.04938.23442-.57136-.2174-.74707-.92068-.76174-.7032-.01463-1.0798-.10795-1.18656-1.19315-.08787-.89369 1.2429-1.84356 1.81426-1.84356.33406 0 1.45485.21963 1.50737-.34058.08056-.8593-.8204-1.04164-1.03934-1.60185C13.2877 7.58747 14.98596 6.60707 12 6.24993c-.10475-.01253-.22199-.02093-.3501-.02417z"/></svg>ArcGIS</b><i class="b-arc">Pro</i></span>
+      <span class="badge"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.879 13.006v3.65l-3.004-3.048v-3.495h3.582l2.852 2.893h-3.43zm10.886 7.606V24h-3.654l-5.73-5.9v-3.55h3.354l6.03 6.062zm-10.828-1.448l3.372 3.371c-1.309.442-2.557.726-4.325.726C5.136 23.26 0 18.243 0 11.565 0 4.92 5.136 0 11.984 0 18.864 0 24 4.952 24 11.565c0 2.12-.523 4.076-1.457 5.759l-3.625-3.725a8.393 8.393 0 0 0 .24-2.005c0-4.291-3.148-7.527-7.1-7.527-3.954 0-7.248 3.236-7.248 7.527s3.33 7.6 7.247 7.6c.548 0 .661.017.88-.03z"/></svg>QGIS</b><i class="b-qgis">LTR</i></span>
+      <span class="badge"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.853.717a1.19 1.19 0 00-.65.17L4.53 2.49c-.53.317-.732.984-.467 1.543l.93 1.958a9.217 9.217 0 00-1.745 3.076l-2.124.135A1.198 1.198 0 000 10.399v3.116a1.2 1.2 0 001.084 1.194l2.171.21a9.207 9.207 0 001.748 3.066l-.941 1.982a1.198 1.198 0 00.467 1.543l2.673 1.603a1.2 1.2 0 001.605-.347l1.22-1.771a9.22 9.22 0 001.971.216c.032 0 .064-.004.096-.004a9.245 9.245 0 001.876-.212l1.22 1.77a1.2 1.2 0 001.606.348l2.673-1.603c.53-.317.732-.984.467-1.543l-.941-1.982c.022-.025.048-.049.07-.076.066-.077.125-.159.188-.238a9.225 9.225 0 001.484-2.736l2.138-.137A1.198 1.198 0 0024 13.601v-3.116a1.2 1.2 0 00-1.084-1.194V9.29l-2.16-.21a9.182 9.182 0 00-1.501-2.786c-.063-.08-.124-.16-.19-.238-.018-.022-.039-.043-.058-.065l.93-1.958a1.198 1.198 0 00-.467-1.543L16.797.887a1.2 1.2 0 00-1.605.347L13.99 2.976a9.169 9.169 0 00-1.896-.219c-.033 0-.064-.004-.096-.004a9.2 9.2 0 00-1.992.223L8.808 1.234a1.2 1.2 0 00-.955-.517zm4.148 3.882c.574 0 1.13.072 1.668.197a7.41 7.41 0 015.384 4.993 7.36 7.36 0 01.332 2.193c0 .764-.116 1.5-.332 2.193a7.407 7.407 0 01-5.384 4.992 7.393 7.393 0 01-1.668.199c-4.071 0-7.384-3.313-7.384-7.384 0-4.07 3.313-7.383 7.384-7.383zM11.907 6C9.558 6 8.429 7.207 8.429 7.207c3.501-1.577 5.23 2.986 6.702 4.386 1.472 1.4 2.887.203 2.887.203-.012-.787-.252-1.533-.252-1.533-.968.168-1.398-.494-1.97-1.252C15.224 8.253 13.561 6 11.907 6zm-3.84 3.228c-.705.015-1.3.35-1.653 1-.868 1.601-.096 3.64-.096 3.64s.3-1.532 1.537-1.309c1.238.224 1.754 1.208 2.504 1.985.75.776 1.895 2.064 3.978 2.064 2.082 0 3.018-1.516 3.435-2.937v-.002l-.053.04c-1.265.98-3.335.882-4.548-.275-.89-.846-1.403-1.908-2.135-2.68-.981-1.038-2.065-1.545-2.97-1.526z"/></svg>Earth Engine</b><i class="b-gee">JavaScript</i></span>
+      <span class="badge"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0c-1.326 0-2.597.22-3.787.613 4.94-1.243 8.575 1.72 11.096 5.606 1.725 2.695 2.813 2.83 4.207 2.412A11.956 11.956 0 0012 0zM7.658 2.156c-1.644.019-3.295.775-4.931 2.207A11.967 11.967 0 000 12c.184-2.823 2.163-5.128 4.87-5.07 2.104.044 4.648 1.518 7.13 5.289 4.87 7.468 10.917 5.483 11.863 1.51.081-.566.137-1.14.137-1.729 0-.176-.02-.347-.027-.521-1.645 1.725-4.899 2.35-8.264-2.97-2.59-4.363-5.31-6.383-8.05-6.353zM3.33 13.236c-1.675.13-2.657 1.804-2.242 3.756A11.955 11.955 0 0012 24c4.215 0 7.898-2.149 10.037-5.412v-.043c-2.836 3.49-8.946 4.255-13.855-2.182-1.814-2.386-3.544-3.228-4.852-3.127Z"/></svg>Google Earth</b><i class="b-ge">Pro</i></span>
+      <span class="badge"><b>idioma</b><i class="b-es">español</i></span>
+    </div>
+    <p class="lead">SIG EDUCA es una iniciativa educativa que busca fortalecer el aprendizaje de los Sistemas de Información Geográfica en español. Queremos que estudiantes, docentes y profesionales de cualquier lugar puedan usar ArcGIS Pro, QGIS y Google Earth Engine para responder preguntas reales sobre su territorio.</p>
+
+    <div class="map" aria-label="Mapa decorativo con curvas de nivel">
+      <canvas id="hero"></canvas>
+      <span class="coord" id="coord">4.7110° N, 74.0721° O · EPSG:4326</span>
+      <span class="scale"><span></span>2 km</span>
+    </div>
+
+    <h2 id="por-que">¿Por qué SIG EDUCA? <a class="anchor" href="#por-que" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Los datos geoespaciales están en todas partes, en el ordenamiento de una ciudad, en el monitoreo de un bosque, en la prevención de un deslizamiento o en la planificación de una cosecha. Saber usarlos abre puertas, pero muchas veces el conocimiento está disperso, en otro idioma o detrás de cursos costosos. SIG EDUCA nace para cerrar esa brecha.</p>
+    <div class="pilares">
+      <div class="pilar p-arc">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="M6 10.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-5.5"/></svg></div>
+        <h3>Aprender haciendo</h3>
+        <p>Cada tema parte de un problema concreto y termina con un resultado que de verdad puedes usar, ya sea un mapa, una capa o una imagen lista para analizar.</p>
+      </div>
+      <div class="pilar p-qgis">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
+        <h3>Conocimiento abierto</h3>
+        <p>Contenido en español, con herramientas libres o de acceso académico, pensado para que nadie se quede por fuera.</p>
+      </div>
+      <div class="pilar p-gee">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg></div>
+        <h3>SIG con código, más fácil que nunca</h3>
+        <p>Aprender Sistemas de Información Geográfica desde la programación nunca fue tan fácil. Con unas pocas líneas en Google Earth Engine analizas imágenes satelitales de cualquier lugar del planeta, y te explicamos cada línea.</p>
+      </div>
+      <div class="pilar p-yt">
+        <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.3-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.7 2.5 3 5.2"/></svg></div>
+        <h3>Una comunidad que crece</h3>
+        <p>Pensado para estudiantes de geología, geografía, ingeniería y ciencias ambientales, y para cualquier persona curiosa por los mapas.</p>
+      </div>
+    </div>
+
+    <h2 id="primeros-pasos">Primeros pasos <a class="anchor" href="#primeros-pasos" aria-label="Enlace a esta sección">#</a></h2>
+    <p>¿Primera vez con Google Earth Engine? Empieza por aquí y en tres pasos tendrás tu cuenta lista, tus propios datos en la plataforma y tu primer análisis en el mapa.</p>
+    <ol class="steps">
+      <li><div><h3>Regístrate en Earth Engine</h3><p>Sigue el tutorial <a href="tutoriales/registro-earth-engine.html">Creación y registro en Earth Engine</a>.</p></div></li>
+      <li><div><h3>Importa tus datos</h3><p>Aprende a subir y ver un shapefile con <a href="tutoriales/importar-shapefile.html">Importar shapefile en Earth Engine</a>.</p></div></li>
+      <li><div><h3>Filtra y visualiza</h3><p>Selecciona solo lo que necesitas con <a href="tutoriales/filtrar-shapefiles.html">Trabajar con shapefiles en Earth Engine</a>.</p></div></li>
+    </ol>
+
+    <h2 id="ruta">Cursos <a class="anchor" href="#ruta" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Cada curso reúne sus lecciones en orden, desde lo esencial hasta la teledetección. Elige uno para empezar o usa el buscador de arriba para encontrar un tema concreto.</p>
+<!-- cursos:inicio -->
+    <div class="rutas" id="cursos">
+      <section class="ruta c-gee" aria-label="Google Earth Engine">
+        <header class="ruta-cab"><span class="curso-logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.853.717a1.19 1.19 0 00-.65.17L4.53 2.49c-.53.317-.732.984-.467 1.543l.93 1.958a9.217 9.217 0 00-1.745 3.076l-2.124.135A1.198 1.198 0 000 10.399v3.116a1.2 1.2 0 001.084 1.194l2.171.21a9.207 9.207 0 001.748 3.066l-.941 1.982a1.198 1.198 0 00.467 1.543l2.673 1.603a1.2 1.2 0 001.605-.347l1.22-1.771a9.22 9.22 0 001.971.216c.032 0 .064-.004.096-.004a9.245 9.245 0 001.876-.212l1.22 1.77a1.2 1.2 0 001.606.348l2.673-1.603c.53-.317.732-.984.467-1.543l-.941-1.982c.022-.025.048-.049.07-.076.066-.077.125-.159.188-.238a9.225 9.225 0 001.484-2.736l2.138-.137A1.198 1.198 0 0024 13.601v-3.116a1.2 1.2 0 00-1.084-1.194V9.29l-2.16-.21a9.182 9.182 0 00-1.501-2.786c-.063-.08-.124-.16-.19-.238-.018-.022-.039-.043-.058-.065l.93-1.958a1.198 1.198 0 00-.467-1.543L16.797.887a1.2 1.2 0 00-1.605.347L13.99 2.976a9.169 9.169 0 00-1.896-.219c-.033 0-.064-.004-.096-.004a9.2 9.2 0 00-1.992.223L8.808 1.234a1.2 1.2 0 00-.955-.517zm4.148 3.882c.574 0 1.13.072 1.668.197a7.41 7.41 0 015.384 4.993 7.36 7.36 0 01.332 2.193c0 .764-.116 1.5-.332 2.193a7.407 7.407 0 01-5.384 4.992 7.393 7.393 0 01-1.668.199c-4.071 0-7.384-3.313-7.384-7.384 0-4.07 3.313-7.383 7.384-7.383zM11.907 6C9.558 6 8.429 7.207 8.429 7.207c3.501-1.577 5.23 2.986 6.702 4.386 1.472 1.4 2.887.203 2.887.203-.012-.787-.252-1.533-.252-1.533-.968.168-1.398-.494-1.97-1.252C15.224 8.253 13.561 6 11.907 6zm-3.84 3.228c-.705.015-1.3.35-1.653 1-.868 1.601-.096 3.64-.096 3.64s.3-1.532 1.537-1.309c1.238.224 1.754 1.208 2.504 1.985.75.776 1.895 2.064 3.978 2.064 2.082 0 3.018-1.516 3.435-2.937v-.002l-.053.04c-1.265.98-3.335.882-4.548-.275-.89-.846-1.403-1.908-2.135-2.68-.981-1.038-2.065-1.545-2.97-1.526z"/></svg></span><div><h3>Google Earth Engine</h3><p>Teledetección y análisis geoespacial en la nube, programando en JavaScript.</p></div></header>
+        <div class="cursos">
+          <article class="curso-card c-gee" data-k="registro cuenta crear proyecto google cloud earth engine inicio creación y registro en google earth engine shapefile shp importar subir asset featurecollection vector importar shapefile en google earth engine filtrar filter filtermetadata feature collection shapefile colombia bogota addlayer trabajar con shapefiles en google earth engine exportar descargar shapefile shp export table todrive drive bogota descargar shapefiles de google earth engine dem modelo digital elevacion alos srtm descargar export image geotiff descargar un dem en google earth engine terreno pendiente slope aspecto aspect sombreado hillshade morfometria dem terrain análisis de terreno en google earth engine landsat 9 imagen satelital path row wrs descargar reflectancia descargar imagen satelital de landsat 9 en google earth engine sentinel 2 imagen satelital copernicus esa descargar nubes descargar imagen satelital de sentinel-2 en google earth engine composicion mediana median nubes mascara cloud mask qa_pixel factor escala landsat 9 composición sin nubes con landsat 9 en google earth engine composicion mediana median nubes mascara cloud mask scl sentinel 2 calendarrange composición sin nubes con sentinel-2 en google earth engine indices espectrales vegetacion ndvi evi savi msavi ndmi nbr nbr2 landsat 9 expression normalizeddifference índices de vegetación con landsat 9 en google earth engine indices espectrales vegetacion ndvi evi savi msavi ndmi nbr nbr2 sentinel 2 índices de vegetación con sentinel-2 en google earth engine agua deteccion ndwi mndwi awei aweinsh rios cienagas lagos landsat 9 detección de agua con landsat 9 en google earth engine agua deteccion ndwi mndwi awei aweinsh rios canales sentinel 2 detección de agua con sentinel-2 en google earth engine inundacion inundaciones flood mapeo area km2 pixelarea antes despues landsat 9 pakistan mapeo de inundaciones con landsat 9 en google earth engine inundacion inundaciones flood mapeo area km2 pixelarea sentinel 2 monteria sinu cordoba mapeo de inundaciones con sentinel-2 en google earth engine cuerpos de agua extraer vectorizar reducetovectors poligonos shapefile shp connectedpixelcount landsat 9 extracción de cuerpos de agua con landsat 9 en google earth engine cuerpos de agua extraer vectorizar reducetovectors poligonos shapefile shp connectedpixelcount sentinel 2 extracción de cuerpos de agua con sentinel-2 en google earth engine">
+            <span class="nivel-paso">Nivel 1 · básico</span>
+            <h4><a class="stretch" href="cursos/curso-gee.html">Google Earth Engine básico</a></h4>
+            <p>Del registro en la plataforma a la teledetección: vectores, DEM, Landsat, Sentinel-2, índices de vegetación, agua e inundaciones.</p>
+            <div class="curso-meta"><span class="tag gratis">gratis</span><span>18 lecciones</span><span>194 min</span></div>
+          </article>
+          <article class="curso-card c-gee" data-k="series de tiempo serie temporal multitemporal landsat 4 5 7 8 9 merge mediana anual coleccion imagecollection series de tiempo con landsat 4 a 9 en google earth engine series de tiempo serie temporal multitemporal sentinel 2 harmonized mediana anual coleccion series de tiempo con sentinel-2 en google earth engine indices espectrales series de tiempo ndvi evi ndmi mndwi grafico chart tendencia cambio landsat índices espectrales en series de tiempo con landsat en google earth engine dswe dynamic surface water extent jones 2019 usgs agua superficial humedales clasificacion landsat agua superficial con dswe (jones, 2019) en google earth engine area de agua km2 pixelarea grafico evolucion dswe csv embalse cienaga sequia evolución del área de agua con dswe en google earth engine gif animacion timelapse getvideothumburl serie de tiempo texto año dswe animación gif de una serie de tiempo en google earth engine">
+            <span class="nivel-paso">Nivel 2 · intermedio</span>
+            <h4><a class="stretch" href="cursos/curso-gee-intermedio.html">Google Earth Engine intermedio</a></h4>
+            <p>Analiza colecciones completas: series de tiempo de Landsat y Sentinel-2, índices año a año, agua con DSWE y animaciones.</p>
+            <div class="curso-meta"><span class="tag gratis">gratis</span><span>6 lecciones</span><span>105 min</span></div>
+          </article>
+          <article class="curso-card prox" aria-disabled="true">
+            <span class="nivel-paso">Nivel 3 · avanzado</span>
+            <h4>Google Earth Engine avanzado</h4>
+            <p>Estamos preparando este curso. Mientras tanto, completa el nivel anterior.</p>
+            <div class="curso-meta"><span>próximamente</span></div>
+          </article>
+        </div>
+      </section>
+      <section class="ruta c-qgis" aria-label="QGIS">
+        <header class="ruta-cab"><span class="curso-logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.879 13.006v3.65l-3.004-3.048v-3.495h3.582l2.852 2.893h-3.43zm10.886 7.606V24h-3.654l-5.73-5.9v-3.55h3.354l6.03 6.062zm-10.828-1.448l3.372 3.371c-1.309.442-2.557.726-4.325.726C5.136 23.26 0 18.243 0 11.565 0 4.92 5.136 0 11.984 0 18.864 0 24 4.952 24 11.565c0 2.12-.523 4.076-1.457 5.759l-3.625-3.725a8.393 8.393 0 0 0 .24-2.005c0-4.291-3.148-7.527-7.1-7.527-3.954 0-7.248 3.236-7.248 7.527s3.33 7.6 7.247 7.6c.548 0 .661.017.88-.03z"/></svg></span><div><h3>QGIS</h3><p>El SIG de escritorio libre para crear, editar y analizar mapas.</p></div></header>
+        <div class="cursos">
+          <article class="curso-card c-qgis" data-k="qgis instalar descargar windows mac macos linux ltr descargar e instalar qgis">
+            <span class="nivel-paso">Nivel 1 · básico</span>
+            <h4><a class="stretch" href="cursos/curso-qgis.html">QGIS básico</a></h4>
+            <p>Instala el SIG de escritorio libre más usado del mundo. Muy pronto llegan nuevas lecciones.</p>
+            <div class="curso-meta"><span class="tag gratis">gratis</span><span>1 lección</span><span>10 min</span></div>
+          </article>
+        </div>
+      </section>
+    </div>
+    <ol class="lecciones" id="busqueda" hidden>
+        <li class="leccion" data-k="registro cuenta crear proyecto google cloud earth engine inicio"><span class="l-num">01</span><a href="tutoriales/registro-earth-engine.html"><span class="l-tit">Creación y registro en Google Earth Engine</span><span class="l-res">Crea tu cuenta, registra el proyecto y abre el Code Editor.</span></a><span class="l-dur">15 min</span></li>
+        <li class="leccion" data-k="shapefile shp importar subir asset featurecollection vector"><span class="l-num">02</span><a href="tutoriales/importar-shapefile.html"><span class="l-tit">Importar shapefile en Google Earth Engine</span><span class="l-res">Sube un shapefile a tus assets y muéstralo en el mapa.</span></a><span class="l-dur">10 min</span></li>
+        <li class="leccion" data-k="filtrar filter filtermetadata feature collection shapefile colombia bogota addlayer"><span class="l-num">03</span><a href="tutoriales/filtrar-shapefiles.html"><span class="l-tit">Trabajar con shapefiles en Google Earth Engine</span><span class="l-res">Filtra con filter y filterMetadata y visualiza el resultado en el mapa.</span></a><span class="l-dur">10 min</span></li>
+        <li class="leccion" data-k="exportar descargar shapefile shp export table todrive drive bogota"><span class="l-num">04</span><a href="tutoriales/exportar-shapefile.html"><span class="l-tit">Descargar shapefiles de Google Earth Engine</span><span class="l-res">Exporta una Feature Collection a Google Drive en formato SHP.</span></a><span class="l-dur">5 min</span></li>
+        <li class="leccion" data-k="dem modelo digital elevacion alos srtm descargar export image geotiff"><span class="l-num">05</span><a href="tutoriales/descargar-dem.html"><span class="l-tit">Descargar un DEM en Google Earth Engine</span><span class="l-res">Selecciona, recorta, visualiza y exporta un modelo digital de elevación.</span></a><span class="l-dur">5 min</span></li>
+        <li class="leccion" data-k="terreno pendiente slope aspecto aspect sombreado hillshade morfometria dem terrain"><span class="l-num">06</span><a href="tutoriales/analisis-terreno.html"><span class="l-tit">Análisis de terreno en Google Earth Engine</span><span class="l-res">Calcula pendiente, aspecto y sombreado con ee.Terrain.products.</span></a><span class="l-dur">6 min</span></li>
+        <li class="leccion" data-k="landsat 9 imagen satelital path row wrs descargar reflectancia"><span class="l-num">07</span><a href="tutoriales/descargar-landsat-9.html"><span class="l-tit">Descargar imagen satelital de Landsat 9 en Google Earth Engine</span><span class="l-res">Filtra por fecha, nubes y Path/Row, y exporta la imagen a Drive.</span></a><span class="l-dur">8 min</span></li>
+        <li class="leccion" data-k="sentinel 2 imagen satelital copernicus esa descargar nubes"><span class="l-num">08</span><a href="tutoriales/descargar-sentinel-2.html"><span class="l-tit">Descargar imagen satelital de Sentinel-2 en Google Earth Engine</span><span class="l-res">Filtra la colección Sentinel-2 y exporta una imagen a 10 m.</span></a><span class="l-dur">5 min</span></li>
+        <li class="leccion" data-k="composicion mediana median nubes mascara cloud mask qa_pixel factor escala landsat 9"><span class="l-num">09</span><a href="tutoriales/composicion-landsat.html"><span class="l-tit">Composición sin nubes con Landsat 9 en Google Earth Engine</span><span class="l-res">Combina muchas escenas de Landsat 9 en una mediana limpia de nubes.</span></a><span class="l-dur">10 min</span></li>
+        <li class="leccion" data-k="composicion mediana median nubes mascara cloud mask scl sentinel 2 calendarrange"><span class="l-num">10</span><a href="tutoriales/composicion-sentinel-2.html"><span class="l-tit">Composición sin nubes con Sentinel-2 en Google Earth Engine</span><span class="l-res">Crea una mediana sin nubes de Sentinel-2 con la máscara SCL.</span></a><span class="l-dur">10 min</span></li>
+        <li class="leccion" data-k="indices espectrales vegetacion ndvi evi savi msavi ndmi nbr nbr2 landsat 9 expression normalizeddifference"><span class="l-num">11</span><a href="tutoriales/indices-vegetacion-landsat.html"><span class="l-tit">Índices de vegetación con Landsat 9 en Google Earth Engine</span><span class="l-res">Calcula NDVI, EVI, SAVI, MSAVI, NDMI, NBR y NBR2 con Landsat 9.</span></a><span class="l-dur">15 min</span></li>
+        <li class="leccion" data-k="indices espectrales vegetacion ndvi evi savi msavi ndmi nbr nbr2 sentinel 2"><span class="l-num">12</span><a href="tutoriales/indices-vegetacion-sentinel-2.html"><span class="l-tit">Índices de vegetación con Sentinel-2 en Google Earth Engine</span><span class="l-res">Calcula siete índices de vegetación a 10 m con Sentinel-2.</span></a><span class="l-dur">15 min</span></li>
+        <li class="leccion" data-k="agua deteccion ndwi mndwi awei aweinsh rios cienagas lagos landsat 9"><span class="l-num">13</span><a href="tutoriales/deteccion-agua-landsat.html"><span class="l-tit">Detección de agua con Landsat 9 en Google Earth Engine</span><span class="l-res">Detecta el agua con NDWI, MNDWI y AWEInsh en Landsat 9.</span></a><span class="l-dur">10 min</span></li>
+        <li class="leccion" data-k="agua deteccion ndwi mndwi awei aweinsh rios canales sentinel 2"><span class="l-num">14</span><a href="tutoriales/deteccion-agua-sentinel-2.html"><span class="l-tit">Detección de agua con Sentinel-2 en Google Earth Engine</span><span class="l-res">Detecta ríos y canales estrechos con NDWI, MNDWI y AWEInsh a 10 m.</span></a><span class="l-dur">10 min</span></li>
+        <li class="leccion" data-k="inundacion inundaciones flood mapeo area km2 pixelarea antes despues landsat 9 pakistan"><span class="l-num">15</span><a href="tutoriales/inundaciones-landsat.html"><span class="l-tit">Mapeo de inundaciones con Landsat 9 en Google Earth Engine</span><span class="l-res">Compara el agua antes y después de una inundación y calcula el área en km².</span></a><span class="l-dur">15 min</span></li>
+        <li class="leccion" data-k="inundacion inundaciones flood mapeo area km2 pixelarea sentinel 2 monteria sinu cordoba"><span class="l-num">16</span><a href="tutoriales/inundaciones-sentinel-2.html"><span class="l-tit">Mapeo de inundaciones con Sentinel-2 en Google Earth Engine</span><span class="l-res">Mide el agua durante y después de una inundación con Sentinel-2.</span></a><span class="l-dur">15 min</span></li>
+        <li class="leccion" data-k="cuerpos de agua extraer vectorizar reducetovectors poligonos shapefile shp connectedpixelcount landsat 9"><span class="l-num">17</span><a href="tutoriales/cuerpos-agua-landsat.html"><span class="l-tit">Extracción de cuerpos de agua con Landsat 9 en Google Earth Engine</span><span class="l-res">Convierte una máscara de agua de Landsat 9 en polígonos y expórtalos como shapefile.</span></a><span class="l-dur">15 min</span></li>
+        <li class="leccion" data-k="cuerpos de agua extraer vectorizar reducetovectors poligonos shapefile shp connectedpixelcount sentinel 2"><span class="l-num">18</span><a href="tutoriales/cuerpos-agua-sentinel-2.html"><span class="l-tit">Extracción de cuerpos de agua con Sentinel-2 en Google Earth Engine</span><span class="l-res">Extrae cuerpos de agua a 10 m y expórtalos como shapefile.</span></a><span class="l-dur">15 min</span></li>
+        <li class="leccion" data-k="series de tiempo serie temporal multitemporal landsat 4 5 7 8 9 merge mediana anual coleccion imagecollection"><span class="l-num">01</span><a href="tutoriales/serie-tiempo-landsat.html"><span class="l-tit">Series de tiempo con Landsat 4 a 9 en Google Earth Engine</span><span class="l-res">Une Landsat 4, 5, 7, 8 y 9 y crea una mediana sin nubes por año desde 1984.</span></a><span class="l-dur">20 min</span></li>
+        <li class="leccion" data-k="series de tiempo serie temporal multitemporal sentinel 2 harmonized mediana anual coleccion"><span class="l-num">02</span><a href="tutoriales/serie-tiempo-sentinel-2.html"><span class="l-tit">Series de tiempo con Sentinel-2 en Google Earth Engine</span><span class="l-res">Crea una mediana anual sin nubes de Sentinel-2 a 10 m y exporta cada año.</span></a><span class="l-dur">15 min</span></li>
+        <li class="leccion" data-k="indices espectrales series de tiempo ndvi evi ndmi mndwi grafico chart tendencia cambio landsat"><span class="l-num">03</span><a href="tutoriales/indices-serie-tiempo.html"><span class="l-tit">Índices espectrales en series de tiempo con Landsat en Google Earth Engine</span><span class="l-res">Calcula NDVI, EVI, NDMI y MNDWI para cada año, grafícalos y mapea el cambio.</span></a><span class="l-dur">20 min</span></li>
+        <li class="leccion" data-k="dswe dynamic surface water extent jones 2019 usgs agua superficial humedales clasificacion landsat"><span class="l-num">04</span><a href="tutoriales/agua-dswe.html"><span class="l-tit">Agua superficial con DSWE (Jones, 2019) en Google Earth Engine</span><span class="l-res">Aplica las cinco pruebas del método DSWE del USGS a una serie anual de Landsat.</span></a><span class="l-dur">20 min</span></li>
+        <li class="leccion" data-k="area de agua km2 pixelarea grafico evolucion dswe csv embalse cienaga sequia"><span class="l-num">05</span><a href="tutoriales/area-agua-dswe.html"><span class="l-tit">Evolución del área de agua con DSWE en Google Earth Engine</span><span class="l-res">Calcula los km² de agua de cada año, grafica su evolución y expórtala a CSV.</span></a><span class="l-dur">15 min</span></li>
+        <li class="leccion" data-k="gif animacion timelapse getvideothumburl serie de tiempo texto año dswe"><span class="l-num">06</span><a href="tutoriales/gif-serie-tiempo.html"><span class="l-tit">Animación GIF de una serie de tiempo en Google Earth Engine</span><span class="l-res">Convierte la serie anual y la máscara de agua en GIF con el año en cada cuadro.</span></a><span class="l-dur">15 min</span></li>
+        <li class="leccion" data-k="qgis instalar descargar windows mac macos linux ltr"><span class="l-num">01</span><a href="tutoriales/descargar-qgis.html"><span class="l-tit">Descargar e instalar QGIS</span><span class="l-res">Instala QGIS LTR en Windows, macOS o Linux paso a paso.</span></a><span class="l-dur">10 min</span></li>
+    </ol>
+    <!-- cursos:fin -->
+    <p id="noRes" class="lead" hidden>No encontramos lecciones con ese término. Prueba con “shapefile”, “DEM”, “Landsat” o “QGIS”.</p>
+
+    <h2 id="apps">Apps desarrolladas <a class="anchor" href="#apps" aria-label="Enlace a esta sección">#</a></h2>
+    <p class="lead">Herramientas interactivas creadas por SIG EDUCA. Se usan desde el navegador, sin escribir código.</p>
+    <!-- apps:inicio -->
+    <div class="apps">
+      <article class="app">
+        <div class="app-shot"><img src="assets/img/apps/easy-download-dems.jpg" alt="Vista previa de Easy Download DEMs" loading="lazy" width="960" height="540"></div>
+        <div class="app-body">
+          <span class="app-tipo">App de Google Earth Engine</span>
+          <h3><a class="stretch" href="apps/easy-download-dems.html">Easy Download DEMs</a></h3>
+          <p>Descarga un modelo digital de elevación de cualquier lugar del mundo sin registrarte ni programar.</p>
+          <ul class="app-chips" aria-label="Datos disponibles"><li>SRTM</li><li>NASADEM</li><li>ALOS</li><li>ASTER GED</li><li>ETOPO1</li><li>GTOPO30</li></ul>
+          <span class="btn app-cta">Conoce la app →</span>
+        </div>
+      </article>
+    </div>
+    <!-- apps:fin -->
+
+    <h2 id="comunidad">Únete a la comunidad <a class="anchor" href="#comunidad" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="canal">
+      <dl class="cifras" id="cifras" hidden>
+        <div><dt>suscriptores</dt><dd data-k="suscriptores">–</dd></div>
+        <div><dt>visualizaciones</dt><dd data-k="vistas">–</dd></div>
+        <div><dt>videos</dt><dd data-k="videos">–</dd></div>
+      </dl>
+      <div class="canal-txt">
+        <p>Cada semana más personas aprenden SIG con nosotros. Suscríbete al canal y no te pierdas los próximos tutoriales.</p>
+        <a class="btn yt" href="https://www.youtube.com/@SIG_EDUCA?sub_confirmation=1" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .6 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .4-4.8 31 31 0 0 0-.4-4.8ZM9.7 15.1V8.9l5.8 3.1Z"/></svg>Suscribirme al canal</a>
+      </div>
+    </div>
+
+    <h2 id="contacto">Contacto <a class="anchor" href="#contacto" aria-label="Enlace a esta sección">#</a></h2>
+    <!-- contacto:inicio -->
+    <p>¿Tienes preguntas, sugerencias o quieres proponer un tema para un próximo tutorial? Escríbenos al correo o por cualquiera de nuestras redes.</p>
+    <div class="redes-grid">
+      <a class="red r-mail" href="mailto:servicessigeduca@gmail.com"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="m3 6 9 7 9-7"/></svg></span><span><strong>Correo</strong><small>servicessigeduca@gmail.com</small></span></a>
+      <a class="red r-youtube" href="https://www.youtube.com/@SIG_EDUCA" target="_blank" rel="noopener"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .6 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .4-4.8 31 31 0 0 0-.4-4.8ZM9.7 15.1V8.9l5.8 3.1Z"/></svg></span><span><strong>YouTube</strong><small>@SIG_EDUCA</small></span></a>
+      <a class="red r-instagram" href="https://www.instagram.com/sig_educa" target="_blank" rel="noopener"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></span><span><strong>Instagram</strong><small>@sig_educa</small></span></a>
+      <a class="red r-linkedin" href="https://www.linkedin.com/in/sig-educa" target="_blank" rel="noopener"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9.5h4V21H3Zm7 0h3.8v1.6h.1c.5-1 1.8-2 3.8-2 4 0 4.8 2.6 4.8 6V21h-4v-5.2c0-1.2 0-2.8-1.7-2.8s-2 1.3-2 2.7V21h-4Z"/></svg></span><span><strong>LinkedIn</strong><small>in/sig-educa</small></span></a>
+    </div>
+    <!-- contacto:fin -->
+
+    <div class="pager"><a href="tutoriales/registro-earth-engine.html"><small>Empieza aquí</small>Creación y registro en Earth Engine →</a></div>
+    <footer class="foot"><span>© 2026 SIG EDUCA</span><span class="redes"><a href="https://www.youtube.com/@SIG_EDUCA" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .6 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .4-4.8 31 31 0 0 0-.4-4.8ZM9.7 15.1V8.9l5.8 3.1Z"/></svg></a><a href="https://www.instagram.com/sig_educa" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a><a href="https://www.linkedin.com/in/sig-educa" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9.5h4V21H3Zm7 0h3.8v1.6h.1c.5-1 1.8-2 3.8-2 4 0 4.8 2.6 4.8 6V21h-4v-5.2c0-1.2 0-2.8-1.7-2.8s-2 1.3-2 2.7V21h-4Z"/></svg></a></span></footer>
+  </main>
+
+  <aside class="toc" aria-label="En esta página">
+    <h4>En esta página</h4>
+    <ul id="toc"></ul>
+  </aside>
+</div>
+
+<script src="assets/inicio.js?v=d2a791c7"></script>
+</body>
+</html>

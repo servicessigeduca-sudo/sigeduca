@@ -1,0 +1,37 @@
+name: Estadísticas de YouTube
+
+on:
+  schedule:
+    - cron: "0 11 * * *"   # todos los días, 6:00 a. m. hora de Colombia
+  workflow_dispatch:
+    inputs:
+      depurar:
+        description: Mostrar fragmentos de la página
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Obtener cifras del canal
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          DEPURAR: ${{ inputs.depurar }}
+        run: python3 _herramientas/estadisticas_youtube.py
+      - name: Guardar si cambiaron (commit firmado por GitHub)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- assets/datos/canal.json; then
+            echo "Sin cambios"; exit 0
+          fi
+          sha=$(gh api "repos/${{ github.repository }}/contents/assets/datos/canal.json" --jq .sha 2>/dev/null || true)
+          gh api -X PUT "repos/${{ github.repository }}/contents/assets/datos/canal.json" \
+            -f message="Actualizar estadísticas del canal" \
+            -f content="$(base64 -w0 assets/datos/canal.json)" \
+            ${sha:+-f sha="$sha"}
