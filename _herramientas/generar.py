@@ -104,8 +104,9 @@ APPS = [
      "presentacion": "Conseguir un modelo digital de elevación suele exigir crear una cuenta en un portal, buscar las teselas de tu zona y unirlas a mano. Easy Download DEMs resuelve todo eso en el navegador, a partir del catálogo de Google Earth Engine. Dibujas tu área sobre el mapa y eliges el modelo. Antes de descargar, ves su ficha técnica, el relieve con sombreado y las estadísticas de tu área. Obtienes un GeoTIFF recortado, listo para abrir en QGIS o ArcGIS Pro. No necesitas registrarte ni saber programar.",
      "pasos": ["<strong>Paso 1, dibuja el área de interés.</strong> Elige <strong>Rectángulo</strong> o <strong>Polígono</strong> y dibuja sobre el mapa. Con <strong>Editar área</strong> la ajustas y con <strong>Limpiar</strong> empiezas de nuevo.",
                "<strong>Paso 2, elige el modelo de elevación.</strong> El predeterminado es SRTM de 30 m. Debajo de la lista aparece la ficha del modelo: resolución, tipo, origen, cobertura, precisión, para qué se recomienda y su ID en Earth Engine. Si no sabes cuál usar, pulsa <strong>Ver guía para elegir el modelo</strong>.",
-               "<strong>Paso 3, revisa el resultado.</strong> El mapa muestra el modelo con sombreado, una leyenda con la elevación mínima y máxima, y las estadísticas de tu área: elevación media y pendiente media y máxima.",
-               "<strong>Descarga el GeoTIFF</strong> desde el final del panel. Lo abres directamente en QGIS o ArcGIS Pro."],
+               "<strong>Paso 3, revisa el resultado.</strong> El mapa muestra el modelo con sombreado, una leyenda con la elevación mínima y máxima, y las estadísticas de tu área: elevación media, pendiente media y máxima, y superficie en km².",
+               "<strong>Paso 4, descarga la capa.</strong> Elige la capa, por ejemplo <strong>Elevación (m)</strong>, y el formato: <strong>GeoTIFF directo</strong> o <strong>ZIP</strong>. La app te muestra el tamaño estimado del archivo. Pulsa <strong>Preparar descarga</strong> y luego el enlace <strong>Descargar</strong> que aparece debajo.",
+               "Recibirás un GeoTIFF en coordenadas geográficas (EPSG:4326, WGS 84) a la resolución original del modelo, listo para abrir en QGIS o ArcGIS Pro."],
      "datos": [["SRTM", "30 m", "NASA y USGS, misión del transbordador Endeavour (2000)"],
                ["NASADEM", "30 m", "NASA, reprocesamiento de SRTM con menos vacíos"],
                ["Copernicus GLO-30", "30 m", "ESA, modelo de superficie a partir de TanDEM-X"],
@@ -115,6 +116,7 @@ APPS = [
                ["ETOPO1", "1,8 km", "NOAA, relieve terrestre con batimetría de los océanos"]],
      "notas": ["Para áreas muy grandes con modelos de 30 m, el archivo puede superar el límite de descarga directa de Earth Engine. Si pasa, divide el área o elige un modelo de menor resolución.",
                "Los modelos de 30 m son de superficie: en bosques densos y ciudades registran parte de la altura de árboles y edificios. Copernicus GLO-30 y ALOS AW3D30 la registran más que SRTM y NASADEM.",
+               "El GeoTIFF directo no hay que descomprimirlo, pero Google le pone un nombre aleatorio que termina en _getPixels.tiff. Cámbialo por el nombre que sugiere la app, por ejemplo SRTM30_elevacion_30m.tif, o elige ZIP para que conserve el nombre del modelo, la capa y la resolución.",
                "ETOPO1 es el único que incluye el fondo del mar. Úsalo si tu área abarca costa y océano."]},
 ]
 
