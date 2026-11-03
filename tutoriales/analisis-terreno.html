@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<link rel="stylesheet" href="../assets/style.css?v=417096c9">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -184,10 +184,10 @@
 
     <h2 id="paso-2">Paso 2: Seleccionar el DEM <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>Usamos el dataset ALOS de JAXA, con una resolución espacial de 30 metros.</p>
-    <div class="codebox"><pre><span class="k">var</span> DEM = ee.Image('JAXA/ALOS/AW3D30_V1_1').select(['AVE'], ['elevation']);</pre></div>
+    <div class="codebox"><pre><span class="k">var</span> DEM = <span class="g">ee</span>.<span class="f">Image</span>(<span class="s">'JAXA/ALOS/AW3D30_V1_1'</span>).<span class="f">select</span>([<span class="s">'AVE'</span>], [<span class="s">'elevation'</span>]);</pre></div>
 
     <h2 id="paso-3">Paso 3: Recortar con la región de interés <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
-    <div class="codebox"><pre><span class="k">var</span> dem_clip = DEM.clip(AOI);</pre></div>
+    <div class="codebox"><pre><span class="k">var</span> dem_clip = DEM.<span class="f">clip</span>(AOI);</pre></div>
 
     <h2 id="paso-4">Paso 4: Calcular pendiente, aspecto y sombreado <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
     <p>Para estos cálculos usamos <code>ee.Terrain.products()</code>, que recibe un DEM y devuelve una imagen con varias bandas, cada una con una característica del terreno.</p>
@@ -197,41 +197,41 @@
       <li>El <strong>sombreado</strong> (hillshade) simula el efecto de la luz solar sobre el terreno y da una sensación tridimensional del relieve.</li>
     </ul>
     <div class="codebox"><pre><span class="c">// Aplicación de la función ee.Terrain.products() al DEM</span>
-<span class="k">var</span> products = ee.Terrain.products(DEM);
+<span class="k">var</span> products = <span class="g">ee</span>.Terrain.<span class="f">products</span>(DEM);
 
 <span class="c">// Selección de las bandas resultantes para su visualización</span>
-<span class="k">var</span> slope = products.select(['slope']);
-<span class="k">var</span> aspect = products.select(['aspect']);
-<span class="k">var</span> hill = products.select(['hillshade']);</pre></div>
+<span class="k">var</span> slope = products.<span class="f">select</span>([<span class="s">'slope'</span>]);
+<span class="k">var</span> aspect = products.<span class="f">select</span>([<span class="s">'aspect'</span>]);
+<span class="k">var</span> hill = products.<span class="f">select</span>([<span class="s">'hillshade'</span>]);</pre></div>
 
     <h2 id="paso-5">Paso 5: Visualizar las variables <a class="anchor" href="#paso-5" aria-label="Enlace a esta sección">#</a></h2>
     <div class="codebox"><pre><span class="c">// Paleta de visualización para el DEM</span>
-<span class="k">var</span> vis_dem = {min: 0, max: 5000,
+<span class="k">var</span> vis_dem = {min: <span class="n">0</span>, max: <span class="n">5000</span>,
   palette: [
-    '0602ff', '235cb1', '307ef3', '269db1', '30c8e2', '32d3ef', '3ae237', 'b5e22e', 'd6e21f',
-    'fff705', 'ffd611', 'ffb613', 'ff8b13', 'ff6e08', 'ff500d', 'ff0000', 'de0101', 'c21301'
+    <span class="s">'0602ff'</span>, <span class="s">'235cb1'</span>, <span class="s">'307ef3'</span>, <span class="s">'269db1'</span>, <span class="s">'30c8e2'</span>, <span class="s">'32d3ef'</span>, <span class="s">'3ae237'</span>, <span class="s">'b5e22e'</span>, <span class="s">'d6e21f'</span>,
+    <span class="s">'fff705'</span>, <span class="s">'ffd611'</span>, <span class="s">'ffb613'</span>, <span class="s">'ff8b13'</span>, <span class="s">'ff6e08'</span>, <span class="s">'ff500d'</span>, <span class="s">'ff0000'</span>, <span class="s">'de0101'</span>, <span class="s">'c21301'</span>
   ]};
 
 <span class="c">// Paleta de visualización para la pendiente</span>
-<span class="k">var</span> vis_slope = {min: 0, max: 60, opacity: 1,
-  palette: ['00ad45', '00ff1f', 'ffeb00', 'ffa500', 'ff0000']};
+<span class="k">var</span> vis_slope = {min: <span class="n">0</span>, max: <span class="n">60</span>, opacity: <span class="n">1</span>,
+  palette: [<span class="s">'00ad45'</span>, <span class="s">'00ff1f'</span>, <span class="s">'ffeb00'</span>, <span class="s">'ffa500'</span>, <span class="s">'ff0000'</span>]};
 
 <span class="c">// Paleta de visualización para el aspecto</span>
-<span class="k">var</span> vis_aspect = {min: 0, max: 360,
+<span class="k">var</span> vis_aspect = {min: <span class="n">0</span>, max: <span class="n">360</span>,
   palette: [
-    '0602ff', '235cb1', '307ef3', '269db1', '30c8e2', '32d3ef', '3ae237', 'b5e22e', 'd6e21f',
-    'fff705', 'ffd611', 'ffb613', 'ff8b13', 'ff6e08', 'ff500d', 'ff0000', 'de0101', 'c21301'
+    <span class="s">'0602ff'</span>, <span class="s">'235cb1'</span>, <span class="s">'307ef3'</span>, <span class="s">'269db1'</span>, <span class="s">'30c8e2'</span>, <span class="s">'32d3ef'</span>, <span class="s">'3ae237'</span>, <span class="s">'b5e22e'</span>, <span class="s">'d6e21f'</span>,
+    <span class="s">'fff705'</span>, <span class="s">'ffd611'</span>, <span class="s">'ffb613'</span>, <span class="s">'ff8b13'</span>, <span class="s">'ff6e08'</span>, <span class="s">'ff500d'</span>, <span class="s">'ff0000'</span>, <span class="s">'de0101'</span>, <span class="s">'c21301'</span>
   ]};
 
 <span class="c">// Parámetros de visualización para el sombreado</span>
-<span class="k">var</span> vis_hill = {min: 0, max: 255, opacity: 0.46};
+<span class="k">var</span> vis_hill = {min: <span class="n">0</span>, max: <span class="n">255</span>, opacity: <span class="n">0.46</span>};
 
 <span class="c">// Añadir las variables al mapa</span>
-Map.addLayer(DEM, vis_dem, "elevation", 1);
-Map.addLayer(slope, vis_slope, "slope", 1);
-Map.addLayer(aspect, vis_aspect, "aspect", 1);
-Map.addLayer(hill, vis_hill, "hillshade", 1);
-Map.centerObject(AOI, 12);</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(DEM, vis_dem, <span class="s">"elevation"</span>, <span class="n">1</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(slope, vis_slope, <span class="s">"slope"</span>, <span class="n">1</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(aspect, vis_aspect, <span class="s">"aspect"</span>, <span class="n">1</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(hill, vis_hill, <span class="s">"hillshade"</span>, <span class="n">1</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">12</span>);</pre></div>
     <div class="shots-2">
     <figure class="shot"><img src="../assets/img/analisis-terreno/dem.jpg" alt="DEM con paleta de colores" loading="lazy" width="446" height="386"><figcaption>Elevación (DEM)</figcaption></figure>
     <figure class="shot"><img src="../assets/img/analisis-terreno/pendiente.jpg" alt="Pendiente en verde, amarillo y rojo" loading="lazy" width="438" height="386"><figcaption>Pendiente (slope)</figcaption></figure>
@@ -241,16 +241,16 @@ Map.centerObject(AOI, 12);</pre></div>
 
     <h2 id="paso-6">Paso 6: Exportar las variables a Google Drive <a class="anchor" href="#paso-6" aria-label="Enlace a esta sección">#</a></h2>
     <p>Exporta cada variable a Google Drive en formato GeoTIFF con <code>Export.image.toDrive()</code>. Este ejemplo exporta la pendiente; para las demás cambia <code>image</code>, <code>description</code> y <code>fileNamePrefix</code>.</p>
-    <div class="codebox"><pre>Export.image.toDrive({
+    <div class="codebox"><pre><span class="g">Export</span>.image.<span class="f">toDrive</span>({
   image: slope,
-  description: 'Terrain variables',
-  folder: "Digital Elevation Model",
-  fileNamePrefix: 'DEM',
-  scale: 30,
+  description: <span class="s">'Terrain variables'</span>,
+  folder: <span class="s">"Digital Elevation Model"</span>,
+  fileNamePrefix: <span class="s">'DEM'</span>,
+  scale: <span class="n">30</span>,
   region: AOI,
-  fileFormat: 'GeoTIFF',
+  fileFormat: <span class="s">'GeoTIFF'</span>,
   formatOptions: {
-    cloudOptimized: <span class="k">true</span>
+    cloudOptimized: <span class="n">true</span>
   }
 });</pre></div>
 
@@ -260,59 +260,59 @@ Map.centerObject(AOI, 12);</pre></div>
 <span class="c">// y nómbrala "AOI" en el panel de importaciones.</span>
 
 <span class="c">// Seleccionar el DEM (ALOS, 30 m)</span>
-<span class="k">var</span> DEM = ee.Image('JAXA/ALOS/AW3D30_V1_1').select(['AVE'], ['elevation']);
+<span class="k">var</span> DEM = <span class="g">ee</span>.<span class="f">Image</span>(<span class="s">'JAXA/ALOS/AW3D30_V1_1'</span>).<span class="f">select</span>([<span class="s">'AVE'</span>], [<span class="s">'elevation'</span>]);
 
 <span class="c">// Recortar con la región de interés</span>
-<span class="k">var</span> dem_clip = DEM.clip(AOI);
+<span class="k">var</span> dem_clip = DEM.<span class="f">clip</span>(AOI);
 
 <span class="c">// Aplicación de la función ee.Terrain.products() al DEM</span>
-<span class="k">var</span> products = ee.Terrain.products(DEM);
+<span class="k">var</span> products = <span class="g">ee</span>.Terrain.<span class="f">products</span>(DEM);
 
 <span class="c">// Selección de las bandas resultantes para su visualización</span>
-<span class="k">var</span> slope = products.select(['slope']);
-<span class="k">var</span> aspect = products.select(['aspect']);
-<span class="k">var</span> hill = products.select(['hillshade']);
+<span class="k">var</span> slope = products.<span class="f">select</span>([<span class="s">'slope'</span>]);
+<span class="k">var</span> aspect = products.<span class="f">select</span>([<span class="s">'aspect'</span>]);
+<span class="k">var</span> hill = products.<span class="f">select</span>([<span class="s">'hillshade'</span>]);
 
 <span class="c">// Paleta de visualización para el DEM</span>
-<span class="k">var</span> vis_dem = {min: 0, max: 5000,
+<span class="k">var</span> vis_dem = {min: <span class="n">0</span>, max: <span class="n">5000</span>,
   palette: [
-    '0602ff', '235cb1', '307ef3', '269db1', '30c8e2', '32d3ef', '3ae237', 'b5e22e', 'd6e21f',
-    'fff705', 'ffd611', 'ffb613', 'ff8b13', 'ff6e08', 'ff500d', 'ff0000', 'de0101', 'c21301'
+    <span class="s">'0602ff'</span>, <span class="s">'235cb1'</span>, <span class="s">'307ef3'</span>, <span class="s">'269db1'</span>, <span class="s">'30c8e2'</span>, <span class="s">'32d3ef'</span>, <span class="s">'3ae237'</span>, <span class="s">'b5e22e'</span>, <span class="s">'d6e21f'</span>,
+    <span class="s">'fff705'</span>, <span class="s">'ffd611'</span>, <span class="s">'ffb613'</span>, <span class="s">'ff8b13'</span>, <span class="s">'ff6e08'</span>, <span class="s">'ff500d'</span>, <span class="s">'ff0000'</span>, <span class="s">'de0101'</span>, <span class="s">'c21301'</span>
   ]};
 
 <span class="c">// Paleta de visualización para la pendiente</span>
-<span class="k">var</span> vis_slope = {min: 0, max: 60, opacity: 1,
-  palette: ['00ad45', '00ff1f', 'ffeb00', 'ffa500', 'ff0000']};
+<span class="k">var</span> vis_slope = {min: <span class="n">0</span>, max: <span class="n">60</span>, opacity: <span class="n">1</span>,
+  palette: [<span class="s">'00ad45'</span>, <span class="s">'00ff1f'</span>, <span class="s">'ffeb00'</span>, <span class="s">'ffa500'</span>, <span class="s">'ff0000'</span>]};
 
 <span class="c">// Paleta de visualización para el aspecto</span>
-<span class="k">var</span> vis_aspect = {min: 0, max: 360,
+<span class="k">var</span> vis_aspect = {min: <span class="n">0</span>, max: <span class="n">360</span>,
   palette: [
-    '0602ff', '235cb1', '307ef3', '269db1', '30c8e2', '32d3ef', '3ae237', 'b5e22e', 'd6e21f',
-    'fff705', 'ffd611', 'ffb613', 'ff8b13', 'ff6e08', 'ff500d', 'ff0000', 'de0101', 'c21301'
+    <span class="s">'0602ff'</span>, <span class="s">'235cb1'</span>, <span class="s">'307ef3'</span>, <span class="s">'269db1'</span>, <span class="s">'30c8e2'</span>, <span class="s">'32d3ef'</span>, <span class="s">'3ae237'</span>, <span class="s">'b5e22e'</span>, <span class="s">'d6e21f'</span>,
+    <span class="s">'fff705'</span>, <span class="s">'ffd611'</span>, <span class="s">'ffb613'</span>, <span class="s">'ff8b13'</span>, <span class="s">'ff6e08'</span>, <span class="s">'ff500d'</span>, <span class="s">'ff0000'</span>, <span class="s">'de0101'</span>, <span class="s">'c21301'</span>
   ]};
 
 <span class="c">// Parámetros de visualización para el sombreado</span>
-<span class="k">var</span> vis_hill = {min: 0, max: 255, opacity: 0.46};
+<span class="k">var</span> vis_hill = {min: <span class="n">0</span>, max: <span class="n">255</span>, opacity: <span class="n">0.46</span>};
 
 <span class="c">// Añadir las variables al mapa</span>
-Map.addLayer(DEM, vis_dem, "elevation", 1);
-Map.addLayer(slope, vis_slope, "slope", 1);
-Map.addLayer(aspect, vis_aspect, "aspect", 1);
-Map.addLayer(hill, vis_hill, "hillshade", 1);
-Map.centerObject(AOI, 12);
+<span class="g">Map</span>.<span class="f">addLayer</span>(DEM, vis_dem, <span class="s">"elevation"</span>, <span class="n">1</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(slope, vis_slope, <span class="s">"slope"</span>, <span class="n">1</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(aspect, vis_aspect, <span class="s">"aspect"</span>, <span class="n">1</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(hill, vis_hill, <span class="s">"hillshade"</span>, <span class="n">1</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">12</span>);
 
 <span class="c">// Exportar la pendiente a Google Drive</span>
 <span class="c">// (para exportar aspect o hillshade, cambia image, description y fileNamePrefix)</span>
-Export.image.toDrive({
+<span class="g">Export</span>.image.<span class="f">toDrive</span>({
   image: slope,
-  description: 'Terrain variables',
-  folder: "Digital Elevation Model",
-  fileNamePrefix: 'DEM',
-  scale: 30,
+  description: <span class="s">'Terrain variables'</span>,
+  folder: <span class="s">"Digital Elevation Model"</span>,
+  fileNamePrefix: <span class="s">'DEM'</span>,
+  scale: <span class="n">30</span>,
   region: AOI,
-  fileFormat: 'GeoTIFF',
+  fileFormat: <span class="s">'GeoTIFF'</span>,
   formatOptions: {
-    cloudOptimized: <span class="k">true</span>
+    cloudOptimized: <span class="n">true</span>
   }
 });</pre></div>
 

@@ -2,6 +2,7 @@
 :root{
   --bg:#f5f7fb; --surface:#ffffff; --fg:#141a26; --muted:#5a6478; --line:#dbe1ec;
   --accent:#1a5bd6; --accent-soft:#e3ecfc; --contour:#d0631c; --code:#eef2f8;
+  --hl-k:#8a2fc9; --hl-s:#0b7a3e; --hl-n:#b4530a; --hl-f:#1a5bd6; --hl-g:#0b7285; --hl-c:#6b7488;
   --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
@@ -9,10 +10,10 @@
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0e121a; --surface:#151b26; --fg:#e6eaf2; --muted:#9aa4b8; --line:#262f3f;
-  --accent:#6fa0ff; --accent-soft:#1b2a48; --contour:#e8925a; --code:#1a2130; color-scheme:dark}}
+  --accent:#6fa0ff; --accent-soft:#1b2a48; --contour:#e8925a; --code:#1a2130; --hl-k:#c7a2ff; --hl-s:#8fd6a1; --hl-n:#f2b56b; --hl-f:#82b1ff; --hl-g:#5fd3dc; --hl-c:#8d97ab; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0e121a; --surface:#151b26; --fg:#e6eaf2; --muted:#9aa4b8; --line:#262f3f;
-  --accent:#6fa0ff; --accent-soft:#1b2a48; --contour:#e8925a; --code:#1a2130; color-scheme:dark}
+  --accent:#6fa0ff; --accent-soft:#1b2a48; --contour:#e8925a; --code:#1a2130; --hl-k:#c7a2ff; --hl-s:#8fd6a1; --hl-n:#f2b56b; --hl-f:#82b1ff; --hl-g:#5fd3dc; --hl-c:#8d97ab; color-scheme:dark}
 
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:calc(var(--header-h) + 16px)}
@@ -100,7 +101,7 @@ a.badge:hover{filter:brightness(1.1)}
 
 /* Bloque de código / entregables */
 pre{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:.85rem/1.6 var(--mono);margin:14px 0}
-pre .k{color:var(--accent)} pre .c{color:var(--muted)}
+pre .k{color:var(--hl-k)} pre .s{color:var(--hl-s)} pre .n{color:var(--hl-n)} pre .f{color:var(--hl-f)} pre .g{color:var(--hl-g)} pre .c{color:var(--hl-c);font-style:italic}
 .tabs{display:flex;gap:4px;margin-top:14px}
 .tabs button{border:1px solid var(--line);border-bottom:none;background:var(--bg);color:var(--muted);font:500 .82rem var(--mono);padding:6px 12px;border-radius:6px 6px 0 0;cursor:pointer}
 .tabs button[aria-selected="true"]{background:var(--code);color:var(--fg)}

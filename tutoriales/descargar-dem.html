@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<link rel="stylesheet" href="../assets/style.css?v=417096c9">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -178,38 +178,38 @@
 
     <h2 id="paso-2">Paso 2: Seleccionar el DEM <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>Selecciona uno de los DEM disponibles en Earth Engine. En este caso usamos el dataset de la misión ALOS de JAXA, con una resolución espacial de 30 metros.</p>
-    <div class="codebox"><pre><span class="k">var</span> DEM = ee.Image('JAXA/ALOS/AW3D30_V1_1').select(['AVE'], ['elevation']);</pre></div>
+    <div class="codebox"><pre><span class="k">var</span> DEM = <span class="g">ee</span>.<span class="f">Image</span>(<span class="s">'JAXA/ALOS/AW3D30_V1_1'</span>).<span class="f">select</span>([<span class="s">'AVE'</span>], [<span class="s">'elevation'</span>]);</pre></div>
 
     <h2 id="paso-3">Paso 3: Recortar con la región de interés <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
     <p>Recorta el DEM con el AOI para limitar el área de trabajo, usando el método <code>.clip()</code>.</p>
-    <div class="codebox"><pre><span class="k">var</span> dem_clip = DEM.clip(AOI);</pre></div>
+    <div class="codebox"><pre><span class="k">var</span> dem_clip = DEM.<span class="f">clip</span>(AOI);</pre></div>
 
     <h2 id="paso-4">Paso 4: Visualizar el DEM <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
     <p>Visualiza el DEM recortado con una paleta de colores que resalta la elevación y agrégalo al mapa con <code>Map.addLayer()</code>.</p>
     <div class="codebox"><pre><span class="c">// Generación de la paleta de visualización</span>
-<span class="k">var</span> vis_dem = {min: 0, max: 5000,
+<span class="k">var</span> vis_dem = {min: <span class="n">0</span>, max: <span class="n">5000</span>,
   palette: [
-    '0602ff', '235cb1', '307ef3', '269db1', '30c8e2', '32d3ef', '3ae237', 'b5e22e', 'd6e21f',
-    'fff705', 'ffd611', 'ffb613', 'ff8b13', 'ff6e08', 'ff500d', 'ff0000', 'de0101', 'c21301'
+    <span class="s">'0602ff'</span>, <span class="s">'235cb1'</span>, <span class="s">'307ef3'</span>, <span class="s">'269db1'</span>, <span class="s">'30c8e2'</span>, <span class="s">'32d3ef'</span>, <span class="s">'3ae237'</span>, <span class="s">'b5e22e'</span>, <span class="s">'d6e21f'</span>,
+    <span class="s">'fff705'</span>, <span class="s">'ffd611'</span>, <span class="s">'ffb613'</span>, <span class="s">'ff8b13'</span>, <span class="s">'ff6e08'</span>, <span class="s">'ff500d'</span>, <span class="s">'ff0000'</span>, <span class="s">'de0101'</span>, <span class="s">'c21301'</span>
   ]};
 
 <span class="c">// Añadir el DEM al mapa con los parámetros de visualización</span>
-Map.addLayer(dem_clip, vis_dem, "DEM CLIPPED");
-Map.centerObject(AOI, 8);</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(dem_clip, vis_dem, <span class="s">"DEM CLIPPED"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">8</span>);</pre></div>
     <figure class="shot"><img src="../assets/img/descargar-dem/resultado.jpg" alt="DEM recortado con la paleta de colores sobre el mapa" loading="lazy" width="943" height="517"><figcaption>DEM recortado y visualizado en el mapa.</figcaption></figure>
 
     <h2 id="paso-5">Paso 5: Exportar el DEM a Google Drive <a class="anchor" href="#paso-5" aria-label="Enlace a esta sección">#</a></h2>
     <p>Exporta el DEM a Google Drive en formato GeoTIFF con <code>Export.image.toDrive()</code>, indicando la resolución y las opciones de formato. Después ejecuta la tarea desde la pestaña <strong>Tasks</strong>.</p>
-    <div class="codebox"><pre>Export.image.toDrive({
+    <div class="codebox"><pre><span class="g">Export</span>.image.<span class="f">toDrive</span>({
   image: DEM,
-  description: 'DEM',
-  folder: "Digital Elevation Model",
-  fileNamePrefix: 'DEM',
-  scale: 30,
+  description: <span class="s">'DEM'</span>,
+  folder: <span class="s">"Digital Elevation Model"</span>,
+  fileNamePrefix: <span class="s">'DEM'</span>,
+  scale: <span class="n">30</span>,
   region: AOI,
-  fileFormat: 'GeoTIFF',
+  fileFormat: <span class="s">'GeoTIFF'</span>,
   formatOptions: {
-    cloudOptimized: <span class="k">true</span>
+    cloudOptimized: <span class="n">true</span>
   }
 });</pre></div>
     <div class="callout"><p>Gracias a <code>region: AOI</code>, el archivo exportado cubre solo tu región de interés. La opción <code>cloudOptimized</code> genera un GeoTIFF optimizado para la nube (COG).</p></div>
@@ -220,33 +220,33 @@ Map.centerObject(AOI, 8);</pre></div>
 <span class="c">// y nómbrala "AOI" en el panel de importaciones.</span>
 
 <span class="c">// Seleccionar el DEM (ALOS, 30 m)</span>
-<span class="k">var</span> DEM = ee.Image('JAXA/ALOS/AW3D30_V1_1').select(['AVE'], ['elevation']);
+<span class="k">var</span> DEM = <span class="g">ee</span>.<span class="f">Image</span>(<span class="s">'JAXA/ALOS/AW3D30_V1_1'</span>).<span class="f">select</span>([<span class="s">'AVE'</span>], [<span class="s">'elevation'</span>]);
 
 <span class="c">// Recortar con la región de interés</span>
-<span class="k">var</span> dem_clip = DEM.clip(AOI);
+<span class="k">var</span> dem_clip = DEM.<span class="f">clip</span>(AOI);
 
 <span class="c">// Generación de la paleta de visualización</span>
-<span class="k">var</span> vis_dem = {min: 0, max: 5000,
+<span class="k">var</span> vis_dem = {min: <span class="n">0</span>, max: <span class="n">5000</span>,
   palette: [
-    '0602ff', '235cb1', '307ef3', '269db1', '30c8e2', '32d3ef', '3ae237', 'b5e22e', 'd6e21f',
-    'fff705', 'ffd611', 'ffb613', 'ff8b13', 'ff6e08', 'ff500d', 'ff0000', 'de0101', 'c21301'
+    <span class="s">'0602ff'</span>, <span class="s">'235cb1'</span>, <span class="s">'307ef3'</span>, <span class="s">'269db1'</span>, <span class="s">'30c8e2'</span>, <span class="s">'32d3ef'</span>, <span class="s">'3ae237'</span>, <span class="s">'b5e22e'</span>, <span class="s">'d6e21f'</span>,
+    <span class="s">'fff705'</span>, <span class="s">'ffd611'</span>, <span class="s">'ffb613'</span>, <span class="s">'ff8b13'</span>, <span class="s">'ff6e08'</span>, <span class="s">'ff500d'</span>, <span class="s">'ff0000'</span>, <span class="s">'de0101'</span>, <span class="s">'c21301'</span>
   ]};
 
 <span class="c">// Añadir el DEM al mapa con los parámetros de visualización</span>
-Map.addLayer(dem_clip, vis_dem, "DEM CLIPPED");
-Map.centerObject(AOI, 8);
+<span class="g">Map</span>.<span class="f">addLayer</span>(dem_clip, vis_dem, <span class="s">"DEM CLIPPED"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">8</span>);
 
 <span class="c">// Exportar el DEM a Google Drive</span>
-Export.image.toDrive({
+<span class="g">Export</span>.image.<span class="f">toDrive</span>({
   image: DEM,
-  description: 'DEM',
-  folder: "Digital Elevation Model",
-  fileNamePrefix: 'DEM',
-  scale: 30,
+  description: <span class="s">'DEM'</span>,
+  folder: <span class="s">"Digital Elevation Model"</span>,
+  fileNamePrefix: <span class="s">'DEM'</span>,
+  scale: <span class="n">30</span>,
   region: AOI,
-  fileFormat: 'GeoTIFF',
+  fileFormat: <span class="s">'GeoTIFF'</span>,
   formatOptions: {
-    cloudOptimized: <span class="k">true</span>
+    cloudOptimized: <span class="n">true</span>
   }
 });</pre></div>
 

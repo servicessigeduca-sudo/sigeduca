@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<link rel="stylesheet" href="../assets/style.css?v=417096c9">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -144,7 +144,7 @@
 
     <h2 id="filter">Función filter <a class="anchor" href="#filter" aria-label="Enlace a esta sección">#</a></h2>
     <p>La función <code>filter</code> permite filtrar una Feature Collection utilizando una condición específica. Su sintaxis general es la siguiente.</p>
-    <div class="codebox"><pre><span class="k">var</span> nuevaColeccion = featureCollection.filter(ee.Filter.operador(atributo, valor));</pre></div>
+    <div class="codebox"><pre><span class="k">var</span> nuevaColeccion = featureCollection.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">operador</span>(atributo, valor));</pre></div>
     <ul class="check">
       <li><code>featureCollection</code> es la colección que queremos filtrar.</li>
       <li><code>atributo</code> es el nombre del campo sobre el que aplicamos la condición.</li>
@@ -165,7 +165,7 @@
 
     <h2 id="filtermetadata">Función filterMetadata <a class="anchor" href="#filtermetadata" aria-label="Enlace a esta sección">#</a></h2>
     <p>La función <code>filterMetadata</code> permite filtrar una Feature Collection usando los metadatos asociados a las entidades. Su sintaxis general es la siguiente.</p>
-    <div class="codebox"><pre><span class="k">var</span> nuevaColeccion = featureCollection.filterMetadata(nombreMetadato, operador, valor);</pre></div>
+    <div class="codebox"><pre><span class="k">var</span> nuevaColeccion = featureCollection.<span class="f">filterMetadata</span>(nombreMetadato, operador, valor);</pre></div>
     <ul class="check">
       <li><code>featureCollection</code> es la colección que queremos filtrar.</li>
       <li><code>nombreMetadato</code> es el nombre del metadato que usamos para filtrar.</li>
@@ -194,24 +194,24 @@
     <h2 id="paso-1">Paso 1: Filtrar con filter <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
     <p>Con <code>filter</code> nos quedamos solo con Colombia dentro de la colección de países.</p>
     <div class="codebox"><pre><span class="c">// Cargar la Feature Collection de países</span>
-<span class="k">var</span> Countries = ee.FeatureCollection("FAO/GAUL/2015/level0");
+<span class="k">var</span> Countries = <span class="g">ee</span>.<span class="f">FeatureCollection</span>(<span class="s">"FAO/GAUL/2015/level0"</span>);
 
 <span class="c">// Filtrar la Feature Collection para obtener solo Colombia</span>
-<span class="k">var</span> Colombia = Countries.filter(ee.Filter.eq("ADM0_NAME", "Colombia"));</pre></div>
+<span class="k">var</span> Colombia = Countries.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">"ADM0_NAME"</span>, <span class="s">"Colombia"</span>));</pre></div>
     <p>La condición de igualdad se aplica al atributo <code>ADM0_NAME</code> (nombre del país), que debe ser igual a "Colombia", y el resultado es una nueva colección que contiene solo ese país.</p>
 
     <h2 id="paso-2">Paso 2: Filtrar con filterMetadata <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>Con <code>filterMetadata</code> hacemos lo mismo con la colección de ciudades para quedarnos con Bogotá.</p>
     <div class="codebox"><pre><span class="c">// Cargar la Feature Collection de ciudades</span>
-<span class="k">var</span> cities = ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level2");
+<span class="k">var</span> cities = <span class="g">ee</span>.<span class="f">FeatureCollection</span>(<span class="s">"FAO/GAUL_SIMPLIFIED_500m/2015/level2"</span>);
 
 <span class="c">// Filtrar la Feature Collection para obtener solo Bogotá</span>
-<span class="k">var</span> Bogota = cities.filterMetadata("ADM2_NAME", "equals", "Santafe De Bogota D.c.");</pre></div>
+<span class="k">var</span> Bogota = cities.<span class="f">filterMetadata</span>(<span class="s">"ADM2_NAME"</span>, <span class="s">"equals"</span>, <span class="s">"Santafe De Bogota D.c."</span>);</pre></div>
     <p>La condición se aplica al metadato <code>ADM2_NAME</code> (nombre de la ciudad), que debe ser igual a "Santafe De Bogota D.c.", así que el resultado contiene solo Bogotá.</p>
 
     <h2 id="paso-3">Paso 3: Visualizar en el mapa <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
     <p>Una vez filtrados, mostramos los shapefiles en el mapa con <code>Map.addLayer</code>, cuya sintaxis general es esta.</p>
-    <div class="codebox"><pre>Map.addLayer(eeObject, visParams, name, shown);</pre></div>
+    <div class="codebox"><pre><span class="g">Map</span>.<span class="f">addLayer</span>(eeObject, visParams, name, shown);</pre></div>
     <ul class="check">
       <li><code>eeObject</code> es el objeto que queremos ver, ya sea una Image, una FeatureCollection, una Geometry u otro.</li>
       <li><code>visParams</code> reúne los parámetros de visualización, como el color, la opacidad o la escala.</li>
@@ -220,27 +220,27 @@
     </ul>
     <p>Así queda aplicado a nuestras capas.</p>
     <div class="codebox"><pre><span class="c">// Centrar el mapa en Colombia</span>
-Map.centerObject(Colombia, 5);
+<span class="g">Map</span>.<span class="f">centerObject</span>(Colombia, <span class="n">5</span>);
 
 <span class="c">// Añadir los shapefiles al mapa</span>
-Map.addLayer(Colombia, {color: "red"}, "Colombia", <span class="k">true</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(Colombia, {color: <span class="s">"red"</span>}, <span class="s">"Colombia"</span>, <span class="n">true</span>);
 
 <span class="c">// Añadir Bogotá al mapa</span>
-Map.addLayer(Bogota, {color: "white"}, "Bogotá", <span class="k">true</span>);</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(Bogota, {color: <span class="s">"white"</span>}, <span class="s">"Bogotá"</span>, <span class="n">true</span>);</pre></div>
     <figure class="shot"><img src="../assets/img/filtrar-shapefiles/resultado.jpg" alt="Colombia en rojo y Bogotá en blanco en el mapa de Earth Engine" loading="lazy" width="826" height="565"><figcaption>Colombia en rojo y Bogotá en blanco.</figcaption></figure>
 
     <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Este es el script completo del tutorial. Cópialo, pégalo en el Code Editor y presiona <kbd>Run</kbd>.</p>
     <div class="codebox"><pre><span class="c">// see this web link for countries --&gt; https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_2015_level0</span>
 <span class="c">// see this web link for cities  --&gt; https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_2015_level2</span>
-<span class="c">
-// More shapefiles: https://developers.google.com/earth-engine/datasets/tags/borders </span>
-<span class="c">
-///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// More shapefiles: https://developers.google.com/earth-engine/datasets/tags/borders </span>
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">// PROCESS</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
-<span class="c">
-// 1 --&gt; Filter Feature collections with filter</span>
+
+<span class="c">// 1 --&gt; Filter Feature collections with filter</span>
 <span class="c">// 1.1 --&gt; Visualization of feauture collections on map</span>
 <span class="c">// 2 --&gt; Filter Feature collections with filterMetadata</span>
 <span class="c">// 2.1 --&gt; Visualization of feauture collections on map</span>
@@ -249,32 +249,32 @@ Map.addLayer(Bogota, {color: "white"}, "Bogotá", <span class="k">true</span>);<
 <span class="c">// 1 --&gt; Filter Feature collections with filter</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">//// Load countries  feature collections </span>
-<span class="k">var</span> Countries = ee.FeatureCollection("FAO/GAUL/2015/level0");
-print("paises: ", Countries.limit(10));
+<span class="k">var</span> Countries = <span class="g">ee</span>.<span class="f">FeatureCollection</span>(<span class="s">"FAO/GAUL/2015/level0"</span>);
+<span class="g">print</span>(<span class="s">"paises: "</span>, Countries.<span class="f">limit</span>(<span class="n">10</span>));
 
-<span class="k">var</span> Colombia=Countries.filter(ee.Filter.eq("ADM0_NAME","Colombia"));
-<span class="c">
-///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="k">var</span> Colombia=Countries.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">"ADM0_NAME"</span>,<span class="s">"Colombia"</span>));
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">// 2 --&gt; Visualization of feature collections on map</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
-Map.centerObject(Colombia,5);
-Map.addLayer(Colombia,{color:"red"},"Colombia", true);
-<span class="c">
-///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="g">Map</span>.<span class="f">centerObject</span>(Colombia,<span class="n">5</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(Colombia,{color:<span class="s">"red"</span>},<span class="s">"Colombia"</span>, <span class="n">true</span>);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">// 1 --&gt; Filter Feature collections with filterMetadata</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">//// Load cities feature collections </span>
-<span class="k">var</span> cities =ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level2");
-print("Ciudades: ", cities.limit(10));
+<span class="k">var</span> cities =<span class="g">ee</span>.<span class="f">FeatureCollection</span>(<span class="s">"FAO/GAUL_SIMPLIFIED_500m/2015/level2"</span>);
+<span class="g">print</span>(<span class="s">"Ciudades: "</span>, cities.<span class="f">limit</span>(<span class="n">10</span>));
 
 
-<span class="k">var</span> Bogota=cities.filterMetadata("ADM2_NAME", "equals", "Santafe De Bogota D.c.");
-<span class="c">
-///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="k">var</span> Bogota=cities.<span class="f">filterMetadata</span>(<span class="s">"ADM2_NAME"</span>, <span class="s">"equals"</span>, <span class="s">"Santafe De Bogota D.c."</span>);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">// 2 --&gt; Visualization of feature collections on map</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-Map.addLayer(Bogota,{color:"white"},"Bogotá", true);</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(Bogota,{color:<span class="s">"white"</span>},<span class="s">"Bogotá"</span>, <span class="n">true</span>);</pre></div>
 
     <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
     <p>En este taller aprendimos a trabajar con shapefiles en Google Earth Engine, desde filtrarlos hasta verlos en un mapa interactivo y hacer análisis básicos. Estas habilidades son fundamentales para cualquier proyecto de análisis espacial en GEE.</p>

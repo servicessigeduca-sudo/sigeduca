@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<link rel="stylesheet" href="../assets/style.css?v=417096c9">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -171,119 +171,119 @@
     <p>Aplicamos la máscara de nubes y tomamos la primera escena con poca nubosidad sobre el AOI.</p>
     <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
     <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
-<span class="k">function</span> maskS2clouds(img) {
-  <span class="k">var</span> scl = img.select('SCL');
-  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
-    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
-    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
-    .and(scl.neq(10));<span class="c">     // cirros</span>
-  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+<span class="k">function</span> <span class="f">maskS2clouds</span>(img) {
+  <span class="k">var</span> scl = img.<span class="f">select</span>(<span class="s">'SCL'</span>);
+  <span class="k">var</span> mask = scl.<span class="f">neq</span>(<span class="n">3</span>)    <span class="c">// sombra de nubes</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">8</span>))       <span class="c">// nubes, probabilidad media</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">9</span>))       <span class="c">// nubes, probabilidad alta</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">10</span>));     <span class="c">// cirros</span>
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask).<span class="f">select</span>(<span class="s">'B.*'</span>).<span class="f">divide</span>(<span class="n">10000</span>);
 }</pre></div>
     <div class="codebox"><pre><span class="c">// Primera imagen de Sentinel-2 con poca nubosidad sobre el AOI</span>
-<span class="k">var</span> s2_image = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
-  .filterDate("2023-01-01", "2023-12-01")
-  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 10))
-  .filterBounds(AOI)
-  .map(maskS2clouds)
-  .first()
-  .clip(AOI);
-print(s2_image);</pre></div>
+<span class="k">var</span> s2_image = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"COPERNICUS/S2_SR_HARMONIZED"</span>)
+  .<span class="f">filterDate</span>(<span class="s">"2023-01-01"</span>, <span class="s">"2023-12-01"</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, <span class="n">10</span>))
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">map</span>(maskS2clouds)
+  .<span class="f">first</span>()
+  .<span class="f">clip</span>(AOI);
+<span class="g">print</span>(s2_image);</pre></div>
     <div class="codebox"><pre><span class="c">// Imagen en color verdadero</span>
-Map.addLayer(s2_image, {bands: "B4,B3,B2", min: 0, max: 0.3, gamma: 1}, "Sentinel-2");
-Map.centerObject(AOI, 11);</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(s2_image, {bands: <span class="s">"B4,B3,B2"</span>, min: <span class="n">0</span>, max: <span class="n">0.3</span>, gamma: <span class="n">1</span>}, <span class="s">"Sentinel-2"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">11</span>);</pre></div>
 
     <h2 id="paso-2">Paso 2: Calcular los índices para detectar agua <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>NDWI y MNDWI son diferencias normalizadas entre dos bandas, así que basta con <code>normalizedDifference()</code>, que recibe primero la banda verde y después la infrarroja. AWEInsh combina cuatro bandas con coeficientes fijos, de modo que lo escribimos con <code>expression()</code> y asignamos un nombre a cada banda dentro de la fórmula.</p>
     <div class="codebox"><pre><span class="c">// Índices para detectar agua con las bandas de Sentinel-2</span>
-<span class="k">var</span> NDWI = s2_image.normalizedDifference(['B3', 'B8']).rename('NDWI');
-<span class="k">var</span> MNDWI = s2_image.normalizedDifference(['B3', 'B11']).rename('MNDWI');
-<span class="k">var</span> AWEInsh = s2_image.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
-  'GREEN': s2_image.select('B3'),
-  'SWIR1': s2_image.select('B11'),
-  'SWIR2': s2_image.select('B12'),
-  'NIR': s2_image.select('B8')
-}).rename('AWEInsh');</pre></div>
+<span class="k">var</span> NDWI = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B3'</span>, <span class="s">'B8'</span>]).<span class="f">rename</span>(<span class="s">'NDWI'</span>);
+<span class="k">var</span> MNDWI = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B3'</span>, <span class="s">'B11'</span>]).<span class="f">rename</span>(<span class="s">'MNDWI'</span>);
+<span class="k">var</span> AWEInsh = s2_image.<span class="f">expression</span>(<span class="s">'4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)'</span>, {
+  <span class="s">'GREEN'</span>: s2_image.<span class="f">select</span>(<span class="s">'B3'</span>),
+  <span class="s">'SWIR1'</span>: s2_image.<span class="f">select</span>(<span class="s">'B11'</span>),
+  <span class="s">'SWIR2'</span>: s2_image.<span class="f">select</span>(<span class="s">'B12'</span>),
+  <span class="s">'NIR'</span>: s2_image.<span class="f">select</span>(<span class="s">'B8'</span>)
+}).<span class="f">rename</span>(<span class="s">'AWEInsh'</span>);</pre></div>
 
     <h2 id="paso-3">Paso 3: Visualizar los índices <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
     <p>Usamos una paleta de −1 a 1 que va del rojo al azul. Los cuerpos de agua quedan en tonos cian y azul, y el suelo y la vegetación en rojo, amarillo o verde. NDWI y MNDWI siempre caen entre −1 y 1. AWEInsh no está acotado a ese rango, pero su umbral también es 0, así que la misma paleta separa bien el agua de lo demás.</p>
     <div class="codebox"><pre><span class="c">// Simbología: rojo para lo seco, azul para el agua</span>
-<span class="k">var</span> waterPalette = {min: -1, max: 1, palette: ['red', 'yellow', 'green', 'cyan', 'blue']};
+<span class="k">var</span> waterPalette = {min: -<span class="n">1</span>, max: <span class="n">1</span>, palette: [<span class="s">'red'</span>, <span class="s">'yellow'</span>, <span class="s">'green'</span>, <span class="s">'cyan'</span>, <span class="s">'blue'</span>]};
 
-Map.addLayer(NDWI, waterPalette, 'NDWI');
-Map.addLayer(MNDWI, waterPalette, 'MNDWI');
-Map.addLayer(AWEInsh, waterPalette, 'AWEInsh');</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(NDWI, waterPalette, <span class="s">'NDWI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(MNDWI, waterPalette, <span class="s">'MNDWI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(AWEInsh, waterPalette, <span class="s">'AWEInsh'</span>);</pre></div>
 
     <h2 id="paso-4">Paso 4: Exportar los índices <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
     <p>Unimos los tres índices con <code>addBands()</code> para que el GeoTIFF tenga una banda por índice, en el mismo orden en que aparecen en el mapa, y lo enviamos a Google Drive desde la pestaña <strong>Tasks</strong>.</p>
     <div class="codebox"><pre><span class="c">// Unir los índices y exportarlos</span>
-<span class="k">var</span> index = NDWI.addBands([MNDWI, AWEInsh]).toFloat();
+<span class="k">var</span> index = NDWI.<span class="f">addBands</span>([MNDWI, AWEInsh]).<span class="f">toFloat</span>();
 
-Export.image.toDrive({
+<span class="g">Export</span>.image.<span class="f">toDrive</span>({
   image: index,
-  description: "sentinel_2_water_index",
-  folder: "index",
+  description: <span class="s">"sentinel_2_water_index"</span>,
+  folder: <span class="s">"index"</span>,
   region: AOI,
-  scale: 10,
-  maxPixels: 1e13,
-  fileFormat: "TIFF",
-  formatOptions: {cloudOptimized: <span class="k">true</span>}
+  scale: <span class="n">10</span>,
+  maxPixels: <span class="n">1e13</span>,
+  fileFormat: <span class="s">"TIFF"</span>,
+  formatOptions: {cloudOptimized: <span class="n">true</span>}
 });</pre></div>
 
     <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
     <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
-<span class="k">function</span> maskS2clouds(img) {
-  <span class="k">var</span> scl = img.select('SCL');
-  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
-    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
-    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
-    .and(scl.neq(10));<span class="c">     // cirros</span>
-  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+<span class="k">function</span> <span class="f">maskS2clouds</span>(img) {
+  <span class="k">var</span> scl = img.<span class="f">select</span>(<span class="s">'SCL'</span>);
+  <span class="k">var</span> mask = scl.<span class="f">neq</span>(<span class="n">3</span>)    <span class="c">// sombra de nubes</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">8</span>))       <span class="c">// nubes, probabilidad media</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">9</span>))       <span class="c">// nubes, probabilidad alta</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">10</span>));     <span class="c">// cirros</span>
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask).<span class="f">select</span>(<span class="s">'B.*'</span>).<span class="f">divide</span>(<span class="n">10000</span>);
 }
 
 <span class="c">// Primera imagen de Sentinel-2 con poca nubosidad sobre el AOI</span>
-<span class="k">var</span> s2_image = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
-  .filterDate("2023-01-01", "2023-12-01")
-  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 10))
-  .filterBounds(AOI)
-  .map(maskS2clouds)
-  .first()
-  .clip(AOI);
-print(s2_image);
+<span class="k">var</span> s2_image = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"COPERNICUS/S2_SR_HARMONIZED"</span>)
+  .<span class="f">filterDate</span>(<span class="s">"2023-01-01"</span>, <span class="s">"2023-12-01"</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, <span class="n">10</span>))
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">map</span>(maskS2clouds)
+  .<span class="f">first</span>()
+  .<span class="f">clip</span>(AOI);
+<span class="g">print</span>(s2_image);
 
 <span class="c">// Imagen en color verdadero</span>
-Map.addLayer(s2_image, {bands: "B4,B3,B2", min: 0, max: 0.3, gamma: 1}, "Sentinel-2");
-Map.centerObject(AOI, 11);
+<span class="g">Map</span>.<span class="f">addLayer</span>(s2_image, {bands: <span class="s">"B4,B3,B2"</span>, min: <span class="n">0</span>, max: <span class="n">0.3</span>, gamma: <span class="n">1</span>}, <span class="s">"Sentinel-2"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">11</span>);
 
 <span class="c">// Índices para detectar agua con las bandas de Sentinel-2</span>
-<span class="k">var</span> NDWI = s2_image.normalizedDifference(['B3', 'B8']).rename('NDWI');
-<span class="k">var</span> MNDWI = s2_image.normalizedDifference(['B3', 'B11']).rename('MNDWI');
-<span class="k">var</span> AWEInsh = s2_image.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
-  'GREEN': s2_image.select('B3'),
-  'SWIR1': s2_image.select('B11'),
-  'SWIR2': s2_image.select('B12'),
-  'NIR': s2_image.select('B8')
-}).rename('AWEInsh');
+<span class="k">var</span> NDWI = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B3'</span>, <span class="s">'B8'</span>]).<span class="f">rename</span>(<span class="s">'NDWI'</span>);
+<span class="k">var</span> MNDWI = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B3'</span>, <span class="s">'B11'</span>]).<span class="f">rename</span>(<span class="s">'MNDWI'</span>);
+<span class="k">var</span> AWEInsh = s2_image.<span class="f">expression</span>(<span class="s">'4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)'</span>, {
+  <span class="s">'GREEN'</span>: s2_image.<span class="f">select</span>(<span class="s">'B3'</span>),
+  <span class="s">'SWIR1'</span>: s2_image.<span class="f">select</span>(<span class="s">'B11'</span>),
+  <span class="s">'SWIR2'</span>: s2_image.<span class="f">select</span>(<span class="s">'B12'</span>),
+  <span class="s">'NIR'</span>: s2_image.<span class="f">select</span>(<span class="s">'B8'</span>)
+}).<span class="f">rename</span>(<span class="s">'AWEInsh'</span>);
 
 <span class="c">// Simbología: rojo para lo seco, azul para el agua</span>
-<span class="k">var</span> waterPalette = {min: -1, max: 1, palette: ['red', 'yellow', 'green', 'cyan', 'blue']};
+<span class="k">var</span> waterPalette = {min: -<span class="n">1</span>, max: <span class="n">1</span>, palette: [<span class="s">'red'</span>, <span class="s">'yellow'</span>, <span class="s">'green'</span>, <span class="s">'cyan'</span>, <span class="s">'blue'</span>]};
 
-Map.addLayer(NDWI, waterPalette, 'NDWI');
-Map.addLayer(MNDWI, waterPalette, 'MNDWI');
-Map.addLayer(AWEInsh, waterPalette, 'AWEInsh');
+<span class="g">Map</span>.<span class="f">addLayer</span>(NDWI, waterPalette, <span class="s">'NDWI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(MNDWI, waterPalette, <span class="s">'MNDWI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(AWEInsh, waterPalette, <span class="s">'AWEInsh'</span>);
 
 <span class="c">// Unir los índices y exportarlos</span>
-<span class="k">var</span> index = NDWI.addBands([MNDWI, AWEInsh]).toFloat();
+<span class="k">var</span> index = NDWI.<span class="f">addBands</span>([MNDWI, AWEInsh]).<span class="f">toFloat</span>();
 
-Export.image.toDrive({
+<span class="g">Export</span>.image.<span class="f">toDrive</span>({
   image: index,
-  description: "sentinel_2_water_index",
-  folder: "index",
+  description: <span class="s">"sentinel_2_water_index"</span>,
+  folder: <span class="s">"index"</span>,
   region: AOI,
-  scale: 10,
-  maxPixels: 1e13,
-  fileFormat: "TIFF",
-  formatOptions: {cloudOptimized: <span class="k">true</span>}
+  scale: <span class="n">10</span>,
+  maxPixels: <span class="n">1e13</span>,
+  fileFormat: <span class="s">"TIFF"</span>,
+  formatOptions: {cloudOptimized: <span class="n">true</span>}
 });</pre></div>
 
     <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>

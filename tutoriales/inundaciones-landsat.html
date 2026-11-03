@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<link rel="stylesheet" href="../assets/style.css?v=417096c9">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -154,188 +154,188 @@
     <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
     <p>Usamos las funciones de factor de escala y máscara de nubes. Para el periodo posterior aceptamos más nubosidad porque en temporada de lluvias es difícil encontrar escenas despejadas. El falso color SWIR1-NIR-Rojo hace que el agua se vea casi negra.</p>
     <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> scaler(img) {
-  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
-  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
-  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+<span class="k">function</span> <span class="f">scaler</span>(img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
+  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
+  <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
 }
 
 <span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> mask_clouds(img) {
-  <span class="k">var</span> qa = img.select('QA_PIXEL');
-  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
-  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
-    .and(qa.bitwiseAnd(cloud).eq(0))
-    .and(qa.bitwiseAnd(cloudShadow).eq(0))
-    .and(qa.bitwiseAnd(snow).eq(0));
-  <span class="k">return</span> img.updateMask(mask);
+<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
+  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
+  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
 }</pre></div>
     <div class="codebox"><pre><span class="c">// Imagen antes de la inundación</span>
-<span class="k">var</span> ls9_pre = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
-  .filterDate('2022-03-01', '2022-06-01')
-  .filter(ee.Filter.lt("CLOUD_COVER_LAND", 20))
-  .filterBounds(AOI)
-  .map(mask_clouds)
-  .map(scaler)
-  .first()
-  .clip(AOI);
+<span class="k">var</span> ls9_pre = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>)
+  .<span class="f">filterDate</span>(<span class="s">'2022-03-01'</span>, <span class="s">'2022-06-01'</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lt</span>(<span class="s">"CLOUD_COVER_LAND"</span>, <span class="n">20</span>))
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">map</span>(mask_clouds)
+  .<span class="f">map</span>(scaler)
+  .<span class="f">first</span>()
+  .<span class="f">clip</span>(AOI);
 
 <span class="c">// Imagen después de la inundación</span>
-<span class="k">var</span> ls9_post = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
-  .filterDate('2022-08-01', '2022-12-31')
-  .filter(ee.Filter.lt("CLOUD_COVER_LAND", 50))
-  .filterBounds(AOI)
-  .map(mask_clouds)
-  .map(scaler)
-  .first()
-  .clip(AOI);
-print(ls9_pre, ls9_post);
+<span class="k">var</span> ls9_post = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>)
+  .<span class="f">filterDate</span>(<span class="s">'2022-08-01'</span>, <span class="s">'2022-12-31'</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lt</span>(<span class="s">"CLOUD_COVER_LAND"</span>, <span class="n">50</span>))
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">map</span>(mask_clouds)
+  .<span class="f">map</span>(scaler)
+  .<span class="f">first</span>()
+  .<span class="f">clip</span>(AOI);
+<span class="g">print</span>(ls9_pre, ls9_post);
 
 <span class="c">// Falso color SWIR1-NIR-Rojo, donde el agua se ve muy oscura</span>
-<span class="k">var</span> visFalse = {bands: "SR_B6,SR_B5,SR_B4", min: 0.003, max: 0.42, gamma: 1};
-Map.addLayer(ls9_pre, visFalse, "Landsat 9 antes");
-Map.addLayer(ls9_post, visFalse, "Landsat 9 después");
-Map.centerObject(AOI, 10);</pre></div>
+<span class="k">var</span> visFalse = {bands: <span class="s">"SR_B6,SR_B5,SR_B4"</span>, min: <span class="n">0.003</span>, max: <span class="n">0.42</span>, gamma: <span class="n">1</span>};
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_pre, visFalse, <span class="s">"Landsat 9 antes"</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_post, visFalse, <span class="s">"Landsat 9 después"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);</pre></div>
 
     <h2 id="paso-2">Paso 2: Índices para detectar agua como funciones <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>Al escribir los índices como funciones podemos aplicarlos a las dos imágenes sin repetir código.</p>
     <div class="codebox"><pre><span class="c">// Funciones de índices para detectar agua: se pueden aplicar a cualquier imagen</span>
 <span class="k">var</span> NDWI = <span class="k">function</span>(img) {
-  <span class="k">return</span> img.normalizedDifference(['SR_B3', 'SR_B5']).rename('NDWI');
+  <span class="k">return</span> img.<span class="f">normalizedDifference</span>([<span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>]).<span class="f">rename</span>(<span class="s">'NDWI'</span>);
 };
 <span class="k">var</span> MNDWI = <span class="k">function</span>(img) {
-  <span class="k">return</span> img.normalizedDifference(['SR_B3', 'SR_B6']).rename('MNDWI');
+  <span class="k">return</span> img.<span class="f">normalizedDifference</span>([<span class="s">'SR_B3'</span>, <span class="s">'SR_B6'</span>]).<span class="f">rename</span>(<span class="s">'MNDWI'</span>);
 };
 
-<span class="k">var</span> index_pre = NDWI(ls9_pre).addBands(MNDWI(ls9_pre));
-<span class="k">var</span> index_post = NDWI(ls9_post).addBands(MNDWI(ls9_post));</pre></div>
+<span class="k">var</span> index_pre = <span class="f">NDWI</span>(ls9_pre).<span class="f">addBands</span>(<span class="f">MNDWI</span>(ls9_pre));
+<span class="k">var</span> index_post = <span class="f">NDWI</span>(ls9_post).<span class="f">addBands</span>(<span class="f">MNDWI</span>(ls9_post));</pre></div>
 
     <h2 id="paso-3">Paso 3: Máscara de agua <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
     <p>Convertimos los índices en una imagen binaria donde 1 es agua y 0 no lo es. Con <code>selfMask()</code> ocultamos los ceros para ver solo el agua. Todo lo que aparece en azul alrededor del agua de antes corresponde a la zona inundada.</p>
     <div class="codebox"><pre><span class="c">// Un píxel es agua si cualquiera de los índices es mayor que 0</span>
 <span class="k">var</span> waterMask = <span class="k">function</span>(img) {
-  <span class="k">var</span> water = img.select('NDWI').gt(0).or(img.select('MNDWI').gt(0));
-  <span class="k">return</span> water.rename('waterMask');
+  <span class="k">var</span> water = img.<span class="f">select</span>(<span class="s">'NDWI'</span>).<span class="f">gt</span>(<span class="n">0</span>).<span class="f">or</span>(img.<span class="f">select</span>(<span class="s">'MNDWI'</span>).<span class="f">gt</span>(<span class="n">0</span>));
+  <span class="k">return</span> water.<span class="f">rename</span>(<span class="s">'waterMask'</span>);
 };
 
-<span class="k">var</span> mask_pre = waterMask(index_pre);
-<span class="k">var</span> mask_post = waterMask(index_post);
+<span class="k">var</span> mask_pre = <span class="f">waterMask</span>(index_pre);
+<span class="k">var</span> mask_post = <span class="f">waterMask</span>(index_post);
 
 <span class="c">// Rojo para el agua antes y azul para el agua después</span>
-Map.addLayer(mask_post.selfMask(), {palette: ["3274f1"]}, 'Agua después');
-Map.addLayer(mask_pre.selfMask(), {palette: ["db0202"]}, 'Agua antes');</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(mask_post.<span class="f">selfMask</span>(), {palette: [<span class="s">"3274f1"</span>]}, <span class="s">'Agua después'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(mask_pre.<span class="f">selfMask</span>(), {palette: [<span class="s">"db0202"</span>]}, <span class="s">'Agua antes'</span>);</pre></div>
 
     <h2 id="paso-4">Paso 4: Calcular el área inundada <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
     <p>Sumamos el área de los píxeles de agua en cada fecha. La diferencia entre ambos valores es una estimación del área que cubrió la inundación.</p>
     <div class="codebox"><pre><span class="c">// Área de agua en km² dentro del AOI</span>
 <span class="k">var</span> waterArea = <span class="k">function</span>(mask) {
-  <span class="k">var</span> area = mask.eq(1).multiply(ee.Image.pixelArea()).divide(1e6).rename('area');
-  <span class="k">var</span> stats = area.reduceRegion({
-    reducer: ee.Reducer.sum(),
+  <span class="k">var</span> area = mask.<span class="f">eq</span>(<span class="n">1</span>).<span class="f">multiply</span>(<span class="g">ee</span>.Image.<span class="f">pixelArea</span>()).<span class="f">divide</span>(<span class="n">1e6</span>).<span class="f">rename</span>(<span class="s">'area'</span>);
+  <span class="k">var</span> stats = area.<span class="f">reduceRegion</span>({
+    reducer: <span class="g">ee</span>.Reducer.<span class="f">sum</span>(),
     geometry: AOI,
-    scale: 30,
-    bestEffort: <span class="k">true</span>,
-    maxPixels: 1e13
+    scale: <span class="n">30</span>,
+    bestEffort: <span class="n">true</span>,
+    maxPixels: <span class="n">1e13</span>
   });
-  <span class="k">return</span> ee.Number(stats.get('area'));
+  <span class="k">return</span> <span class="g">ee</span>.<span class="g">Number</span>(stats.<span class="f">get</span>(<span class="s">'area'</span>));
 };
 
-print("Área de agua antes de la inundación (km²):", waterArea(mask_pre));
-print("Área de agua después de la inundación (km²):", waterArea(mask_post));</pre></div>
+<span class="g">print</span>(<span class="s">"Área de agua antes de la inundación (km²):"</span>, <span class="f">waterArea</span>(mask_pre));
+<span class="g">print</span>(<span class="s">"Área de agua después de la inundación (km²):"</span>, <span class="f">waterArea</span>(mask_post));</pre></div>
     <div class="callout"><p><strong>Revisa las imágenes antes de comparar cifras.</strong> Los píxeles cubiertos por nubes quedan enmascarados y no se cuentan como agua. Si una de las fechas tiene muchas nubes, el área de agua saldrá más baja de lo real.</p></div>
 
     <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
     <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> scaler(img) {
-  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
-  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
-  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+<span class="k">function</span> <span class="f">scaler</span>(img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
+  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
+  <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
 }
 
 <span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> mask_clouds(img) {
-  <span class="k">var</span> qa = img.select('QA_PIXEL');
-  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
-  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
-    .and(qa.bitwiseAnd(cloud).eq(0))
-    .and(qa.bitwiseAnd(cloudShadow).eq(0))
-    .and(qa.bitwiseAnd(snow).eq(0));
-  <span class="k">return</span> img.updateMask(mask);
+<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
+  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
+  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
 }
 
 <span class="c">// Imagen antes de la inundación</span>
-<span class="k">var</span> ls9_pre = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
-  .filterDate('2022-03-01', '2022-06-01')
-  .filter(ee.Filter.lt("CLOUD_COVER_LAND", 20))
-  .filterBounds(AOI)
-  .map(mask_clouds)
-  .map(scaler)
-  .first()
-  .clip(AOI);
+<span class="k">var</span> ls9_pre = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>)
+  .<span class="f">filterDate</span>(<span class="s">'2022-03-01'</span>, <span class="s">'2022-06-01'</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lt</span>(<span class="s">"CLOUD_COVER_LAND"</span>, <span class="n">20</span>))
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">map</span>(mask_clouds)
+  .<span class="f">map</span>(scaler)
+  .<span class="f">first</span>()
+  .<span class="f">clip</span>(AOI);
 
 <span class="c">// Imagen después de la inundación</span>
-<span class="k">var</span> ls9_post = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
-  .filterDate('2022-08-01', '2022-12-31')
-  .filter(ee.Filter.lt("CLOUD_COVER_LAND", 50))
-  .filterBounds(AOI)
-  .map(mask_clouds)
-  .map(scaler)
-  .first()
-  .clip(AOI);
-print(ls9_pre, ls9_post);
+<span class="k">var</span> ls9_post = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>)
+  .<span class="f">filterDate</span>(<span class="s">'2022-08-01'</span>, <span class="s">'2022-12-31'</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lt</span>(<span class="s">"CLOUD_COVER_LAND"</span>, <span class="n">50</span>))
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">map</span>(mask_clouds)
+  .<span class="f">map</span>(scaler)
+  .<span class="f">first</span>()
+  .<span class="f">clip</span>(AOI);
+<span class="g">print</span>(ls9_pre, ls9_post);
 
 <span class="c">// Falso color SWIR1-NIR-Rojo, donde el agua se ve muy oscura</span>
-<span class="k">var</span> visFalse = {bands: "SR_B6,SR_B5,SR_B4", min: 0.003, max: 0.42, gamma: 1};
-Map.addLayer(ls9_pre, visFalse, "Landsat 9 antes");
-Map.addLayer(ls9_post, visFalse, "Landsat 9 después");
-Map.centerObject(AOI, 10);
+<span class="k">var</span> visFalse = {bands: <span class="s">"SR_B6,SR_B5,SR_B4"</span>, min: <span class="n">0.003</span>, max: <span class="n">0.42</span>, gamma: <span class="n">1</span>};
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_pre, visFalse, <span class="s">"Landsat 9 antes"</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_post, visFalse, <span class="s">"Landsat 9 después"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);
 
 <span class="c">// Funciones de índices para detectar agua: se pueden aplicar a cualquier imagen</span>
 <span class="k">var</span> NDWI = <span class="k">function</span>(img) {
-  <span class="k">return</span> img.normalizedDifference(['SR_B3', 'SR_B5']).rename('NDWI');
+  <span class="k">return</span> img.<span class="f">normalizedDifference</span>([<span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>]).<span class="f">rename</span>(<span class="s">'NDWI'</span>);
 };
 <span class="k">var</span> MNDWI = <span class="k">function</span>(img) {
-  <span class="k">return</span> img.normalizedDifference(['SR_B3', 'SR_B6']).rename('MNDWI');
+  <span class="k">return</span> img.<span class="f">normalizedDifference</span>([<span class="s">'SR_B3'</span>, <span class="s">'SR_B6'</span>]).<span class="f">rename</span>(<span class="s">'MNDWI'</span>);
 };
 
-<span class="k">var</span> index_pre = NDWI(ls9_pre).addBands(MNDWI(ls9_pre));
-<span class="k">var</span> index_post = NDWI(ls9_post).addBands(MNDWI(ls9_post));
+<span class="k">var</span> index_pre = <span class="f">NDWI</span>(ls9_pre).<span class="f">addBands</span>(<span class="f">MNDWI</span>(ls9_pre));
+<span class="k">var</span> index_post = <span class="f">NDWI</span>(ls9_post).<span class="f">addBands</span>(<span class="f">MNDWI</span>(ls9_post));
 
 <span class="c">// Un píxel es agua si cualquiera de los índices es mayor que 0</span>
 <span class="k">var</span> waterMask = <span class="k">function</span>(img) {
-  <span class="k">var</span> water = img.select('NDWI').gt(0).or(img.select('MNDWI').gt(0));
-  <span class="k">return</span> water.rename('waterMask');
+  <span class="k">var</span> water = img.<span class="f">select</span>(<span class="s">'NDWI'</span>).<span class="f">gt</span>(<span class="n">0</span>).<span class="f">or</span>(img.<span class="f">select</span>(<span class="s">'MNDWI'</span>).<span class="f">gt</span>(<span class="n">0</span>));
+  <span class="k">return</span> water.<span class="f">rename</span>(<span class="s">'waterMask'</span>);
 };
 
-<span class="k">var</span> mask_pre = waterMask(index_pre);
-<span class="k">var</span> mask_post = waterMask(index_post);
+<span class="k">var</span> mask_pre = <span class="f">waterMask</span>(index_pre);
+<span class="k">var</span> mask_post = <span class="f">waterMask</span>(index_post);
 
 <span class="c">// Rojo para el agua antes y azul para el agua después</span>
-Map.addLayer(mask_post.selfMask(), {palette: ["3274f1"]}, 'Agua después');
-Map.addLayer(mask_pre.selfMask(), {palette: ["db0202"]}, 'Agua antes');
+<span class="g">Map</span>.<span class="f">addLayer</span>(mask_post.<span class="f">selfMask</span>(), {palette: [<span class="s">"3274f1"</span>]}, <span class="s">'Agua después'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(mask_pre.<span class="f">selfMask</span>(), {palette: [<span class="s">"db0202"</span>]}, <span class="s">'Agua antes'</span>);
 
 <span class="c">// Área de agua en km² dentro del AOI</span>
 <span class="k">var</span> waterArea = <span class="k">function</span>(mask) {
-  <span class="k">var</span> area = mask.eq(1).multiply(ee.Image.pixelArea()).divide(1e6).rename('area');
-  <span class="k">var</span> stats = area.reduceRegion({
-    reducer: ee.Reducer.sum(),
+  <span class="k">var</span> area = mask.<span class="f">eq</span>(<span class="n">1</span>).<span class="f">multiply</span>(<span class="g">ee</span>.Image.<span class="f">pixelArea</span>()).<span class="f">divide</span>(<span class="n">1e6</span>).<span class="f">rename</span>(<span class="s">'area'</span>);
+  <span class="k">var</span> stats = area.<span class="f">reduceRegion</span>({
+    reducer: <span class="g">ee</span>.Reducer.<span class="f">sum</span>(),
     geometry: AOI,
-    scale: 30,
-    bestEffort: <span class="k">true</span>,
-    maxPixels: 1e13
+    scale: <span class="n">30</span>,
+    bestEffort: <span class="n">true</span>,
+    maxPixels: <span class="n">1e13</span>
   });
-  <span class="k">return</span> ee.Number(stats.get('area'));
+  <span class="k">return</span> <span class="g">ee</span>.<span class="g">Number</span>(stats.<span class="f">get</span>(<span class="s">'area'</span>));
 };
 
-print("Área de agua antes de la inundación (km²):", waterArea(mask_pre));
-print("Área de agua después de la inundación (km²):", waterArea(mask_post));</pre></div>
+<span class="g">print</span>(<span class="s">"Área de agua antes de la inundación (km²):"</span>, <span class="f">waterArea</span>(mask_pre));
+<span class="g">print</span>(<span class="s">"Área de agua después de la inundación (km²):"</span>, <span class="f">waterArea</span>(mask_post));</pre></div>
 
     <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
     <p>Con dos imágenes y un par de índices tienes un primer mapa de la inundación y una cifra de su extensión. Es un análisis rápido, ideal para una primera evaluación del evento.</p>

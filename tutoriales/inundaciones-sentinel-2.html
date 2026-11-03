@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<link rel="stylesheet" href="../assets/style.css?v=417096c9">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -153,156 +153,156 @@
     <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
     <p>Usamos la máscara de nubes con la banda SCL y una mediana por periodo, que ayuda a rellenar los huecos que dejan las nubes en época de lluvias.</p>
     <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
-<span class="k">function</span> maskS2clouds(img) {
-  <span class="k">var</span> scl = img.select('SCL');
-  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
-    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
-    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
-    .and(scl.neq(10));<span class="c">     // cirros</span>
-  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+<span class="k">function</span> <span class="f">maskS2clouds</span>(img) {
+  <span class="k">var</span> scl = img.<span class="f">select</span>(<span class="s">'SCL'</span>);
+  <span class="k">var</span> mask = scl.<span class="f">neq</span>(<span class="n">3</span>)    <span class="c">// sombra de nubes</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">8</span>))       <span class="c">// nubes, probabilidad media</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">9</span>))       <span class="c">// nubes, probabilidad alta</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">10</span>));     <span class="c">// cirros</span>
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask).<span class="f">select</span>(<span class="s">'B.*'</span>).<span class="f">divide</span>(<span class="n">10000</span>);
 }</pre></div>
     <div class="codebox"><pre><span class="c">// Composiciones durante y después de la inundación</span>
-<span class="k">var</span> s2_pre = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
-  .filterDate("2026-01-01", "2026-02-01")
-  .filterBounds(AOI)
-  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 20))
-  .map(maskS2clouds)
-  .median()
-  .clip(AOI);
+<span class="k">var</span> s2_pre = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">'COPERNICUS/S2_SR_HARMONIZED'</span>)
+  .<span class="f">filterDate</span>(<span class="s">"2026-01-01"</span>, <span class="s">"2026-02-01"</span>)
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, <span class="n">20</span>))
+  .<span class="f">map</span>(maskS2clouds)
+  .<span class="f">median</span>()
+  .<span class="f">clip</span>(AOI);
 
-<span class="k">var</span> s2_post = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
-  .filterDate("2026-02-01", "2026-12-01")
-  .filterBounds(AOI)
-  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 20))
-  .map(maskS2clouds)
-  .median()
-  .clip(AOI);
+<span class="k">var</span> s2_post = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">'COPERNICUS/S2_SR_HARMONIZED'</span>)
+  .<span class="f">filterDate</span>(<span class="s">"2026-02-01"</span>, <span class="s">"2026-12-01"</span>)
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, <span class="n">20</span>))
+  .<span class="f">map</span>(maskS2clouds)
+  .<span class="f">median</span>()
+  .<span class="f">clip</span>(AOI);
 
-<span class="k">var</span> visRGB = {bands: "B4,B3,B2", min: 0, max: 0.3, gamma: 1};
-Map.addLayer(s2_pre, visRGB, "Sentinel-2 durante");
-Map.addLayer(s2_post, visRGB, "Sentinel-2 después");
-Map.centerObject(AOI, 10);</pre></div>
+<span class="k">var</span> visRGB = {bands: <span class="s">"B4,B3,B2"</span>, min: <span class="n">0</span>, max: <span class="n">0.3</span>, gamma: <span class="n">1</span>};
+<span class="g">Map</span>.<span class="f">addLayer</span>(s2_pre, visRGB, <span class="s">"Sentinel-2 durante"</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(s2_post, visRGB, <span class="s">"Sentinel-2 después"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);</pre></div>
 
     <h2 id="paso-2">Paso 2: Índices y máscara de agua <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>Agrupamos los tres índices en una función y otra función decide qué píxeles son agua. Así el mismo código sirve para las dos fechas.</p>
     <div class="codebox"><pre><span class="c">// Índices para detectar agua con bandas de Sentinel-2</span>
 <span class="k">var</span> waterIndex = <span class="k">function</span>(img) {
-  <span class="k">var</span> ndwi = img.normalizedDifference(['B3', 'B8']).rename('NDWI');
-  <span class="k">var</span> mndwi = img.normalizedDifference(['B3', 'B11']).rename('MNDWI');
-  <span class="k">var</span> awei = img.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
-    'GREEN': img.select('B3'), 'SWIR1': img.select('B11'),
-    'SWIR2': img.select('B12'), 'NIR': img.select('B8')
-  }).rename('AWEInsh');
-  <span class="k">return</span> ndwi.addBands([mndwi, awei]);
+  <span class="k">var</span> ndwi = img.<span class="f">normalizedDifference</span>([<span class="s">'B3'</span>, <span class="s">'B8'</span>]).<span class="f">rename</span>(<span class="s">'NDWI'</span>);
+  <span class="k">var</span> mndwi = img.<span class="f">normalizedDifference</span>([<span class="s">'B3'</span>, <span class="s">'B11'</span>]).<span class="f">rename</span>(<span class="s">'MNDWI'</span>);
+  <span class="k">var</span> awei = img.<span class="f">expression</span>(<span class="s">'4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)'</span>, {
+    <span class="s">'GREEN'</span>: img.<span class="f">select</span>(<span class="s">'B3'</span>), <span class="s">'SWIR1'</span>: img.<span class="f">select</span>(<span class="s">'B11'</span>),
+    <span class="s">'SWIR2'</span>: img.<span class="f">select</span>(<span class="s">'B12'</span>), <span class="s">'NIR'</span>: img.<span class="f">select</span>(<span class="s">'B8'</span>)
+  }).<span class="f">rename</span>(<span class="s">'AWEInsh'</span>);
+  <span class="k">return</span> ndwi.<span class="f">addBands</span>([mndwi, awei]);
 };
 
 <span class="c">// Agua si cualquiera de los tres índices es mayor que 0</span>
 <span class="k">var</span> waterMask = <span class="k">function</span>(img) {
-  <span class="k">var</span> idx = waterIndex(img);
-  <span class="k">var</span> water = idx.select('NDWI').gt(0)
-    .or(idx.select('MNDWI').gt(0))
-    .or(idx.select('AWEInsh').gt(0));
-  <span class="k">return</span> water.rename('waterMask');
+  <span class="k">var</span> idx = <span class="f">waterIndex</span>(img);
+  <span class="k">var</span> water = idx.<span class="f">select</span>(<span class="s">'NDWI'</span>).<span class="f">gt</span>(<span class="n">0</span>)
+    .<span class="f">or</span>(idx.<span class="f">select</span>(<span class="s">'MNDWI'</span>).<span class="f">gt</span>(<span class="n">0</span>))
+    .<span class="f">or</span>(idx.<span class="f">select</span>(<span class="s">'AWEInsh'</span>).<span class="f">gt</span>(<span class="n">0</span>));
+  <span class="k">return</span> water.<span class="f">rename</span>(<span class="s">'waterMask'</span>);
 };
 
-<span class="k">var</span> mask_pre = waterMask(s2_pre);
-<span class="k">var</span> mask_post = waterMask(s2_post);
-Map.addLayer(mask_pre.selfMask(), {palette: ["db0202"]}, 'Agua durante');
-Map.addLayer(mask_post.selfMask(), {palette: ["2dd4f1"]}, 'Agua después');</pre></div>
+<span class="k">var</span> mask_pre = <span class="f">waterMask</span>(s2_pre);
+<span class="k">var</span> mask_post = <span class="f">waterMask</span>(s2_post);
+<span class="g">Map</span>.<span class="f">addLayer</span>(mask_pre.<span class="f">selfMask</span>(), {palette: [<span class="s">"db0202"</span>]}, <span class="s">'Agua durante'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(mask_post.<span class="f">selfMask</span>(), {palette: [<span class="s">"2dd4f1"</span>]}, <span class="s">'Agua después'</span>);</pre></div>
 
     <h2 id="paso-3">Paso 3: Calcular el área de agua <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
     <p>Sumamos el área de los píxeles de agua en cada periodo. La diferencia entre ambos valores estima cuánto terreno estaba cubierto por la inundación.</p>
     <div class="codebox"><pre><span class="c">// Área de agua en km² dentro del AOI</span>
 <span class="k">var</span> waterArea = <span class="k">function</span>(mask) {
-  <span class="k">var</span> area = mask.eq(1).multiply(ee.Image.pixelArea()).divide(1e6).rename('area');
-  <span class="k">var</span> stats = area.reduceRegion({
-    reducer: ee.Reducer.sum(),
+  <span class="k">var</span> area = mask.<span class="f">eq</span>(<span class="n">1</span>).<span class="f">multiply</span>(<span class="g">ee</span>.Image.<span class="f">pixelArea</span>()).<span class="f">divide</span>(<span class="n">1e6</span>).<span class="f">rename</span>(<span class="s">'area'</span>);
+  <span class="k">var</span> stats = area.<span class="f">reduceRegion</span>({
+    reducer: <span class="g">ee</span>.Reducer.<span class="f">sum</span>(),
     geometry: AOI,
-    scale: 10,
-    bestEffort: <span class="k">true</span>,
-    maxPixels: 1e13
+    scale: <span class="n">10</span>,
+    bestEffort: <span class="n">true</span>,
+    maxPixels: <span class="n">1e13</span>
   });
-  <span class="k">return</span> ee.Number(stats.get('area'));
+  <span class="k">return</span> <span class="g">ee</span>.<span class="g">Number</span>(stats.<span class="f">get</span>(<span class="s">'area'</span>));
 };
 
-print("Área de agua durante la inundación (km²):", waterArea(mask_pre));
-print("Área de agua después de la inundación (km²):", waterArea(mask_post));</pre></div>
+<span class="g">print</span>(<span class="s">"Área de agua durante la inundación (km²):"</span>, <span class="f">waterArea</span>(mask_pre));
+<span class="g">print</span>(<span class="s">"Área de agua después de la inundación (km²):"</span>, <span class="f">waterArea</span>(mask_post));</pre></div>
     <div class="callout"><p><strong>Revisa las imágenes antes de comparar cifras.</strong> Los píxeles cubiertos por nubes quedan enmascarados y no se cuentan como agua. Si una de las fechas tiene muchas nubes, el área de agua saldrá más baja de lo real.</p></div>
 
     <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
     <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
-<span class="k">function</span> maskS2clouds(img) {
-  <span class="k">var</span> scl = img.select('SCL');
-  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
-    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
-    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
-    .and(scl.neq(10));<span class="c">     // cirros</span>
-  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+<span class="k">function</span> <span class="f">maskS2clouds</span>(img) {
+  <span class="k">var</span> scl = img.<span class="f">select</span>(<span class="s">'SCL'</span>);
+  <span class="k">var</span> mask = scl.<span class="f">neq</span>(<span class="n">3</span>)    <span class="c">// sombra de nubes</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">8</span>))       <span class="c">// nubes, probabilidad media</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">9</span>))       <span class="c">// nubes, probabilidad alta</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">10</span>));     <span class="c">// cirros</span>
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask).<span class="f">select</span>(<span class="s">'B.*'</span>).<span class="f">divide</span>(<span class="n">10000</span>);
 }
 
 <span class="c">// Composiciones durante y después de la inundación</span>
-<span class="k">var</span> s2_pre = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
-  .filterDate("2026-01-01", "2026-02-01")
-  .filterBounds(AOI)
-  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 20))
-  .map(maskS2clouds)
-  .median()
-  .clip(AOI);
+<span class="k">var</span> s2_pre = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">'COPERNICUS/S2_SR_HARMONIZED'</span>)
+  .<span class="f">filterDate</span>(<span class="s">"2026-01-01"</span>, <span class="s">"2026-02-01"</span>)
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, <span class="n">20</span>))
+  .<span class="f">map</span>(maskS2clouds)
+  .<span class="f">median</span>()
+  .<span class="f">clip</span>(AOI);
 
-<span class="k">var</span> s2_post = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
-  .filterDate("2026-02-01", "2026-12-01")
-  .filterBounds(AOI)
-  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 20))
-  .map(maskS2clouds)
-  .median()
-  .clip(AOI);
+<span class="k">var</span> s2_post = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">'COPERNICUS/S2_SR_HARMONIZED'</span>)
+  .<span class="f">filterDate</span>(<span class="s">"2026-02-01"</span>, <span class="s">"2026-12-01"</span>)
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, <span class="n">20</span>))
+  .<span class="f">map</span>(maskS2clouds)
+  .<span class="f">median</span>()
+  .<span class="f">clip</span>(AOI);
 
-<span class="k">var</span> visRGB = {bands: "B4,B3,B2", min: 0, max: 0.3, gamma: 1};
-Map.addLayer(s2_pre, visRGB, "Sentinel-2 durante");
-Map.addLayer(s2_post, visRGB, "Sentinel-2 después");
-Map.centerObject(AOI, 10);
+<span class="k">var</span> visRGB = {bands: <span class="s">"B4,B3,B2"</span>, min: <span class="n">0</span>, max: <span class="n">0.3</span>, gamma: <span class="n">1</span>};
+<span class="g">Map</span>.<span class="f">addLayer</span>(s2_pre, visRGB, <span class="s">"Sentinel-2 durante"</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(s2_post, visRGB, <span class="s">"Sentinel-2 después"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);
 
 <span class="c">// Índices para detectar agua con bandas de Sentinel-2</span>
 <span class="k">var</span> waterIndex = <span class="k">function</span>(img) {
-  <span class="k">var</span> ndwi = img.normalizedDifference(['B3', 'B8']).rename('NDWI');
-  <span class="k">var</span> mndwi = img.normalizedDifference(['B3', 'B11']).rename('MNDWI');
-  <span class="k">var</span> awei = img.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
-    'GREEN': img.select('B3'), 'SWIR1': img.select('B11'),
-    'SWIR2': img.select('B12'), 'NIR': img.select('B8')
-  }).rename('AWEInsh');
-  <span class="k">return</span> ndwi.addBands([mndwi, awei]);
+  <span class="k">var</span> ndwi = img.<span class="f">normalizedDifference</span>([<span class="s">'B3'</span>, <span class="s">'B8'</span>]).<span class="f">rename</span>(<span class="s">'NDWI'</span>);
+  <span class="k">var</span> mndwi = img.<span class="f">normalizedDifference</span>([<span class="s">'B3'</span>, <span class="s">'B11'</span>]).<span class="f">rename</span>(<span class="s">'MNDWI'</span>);
+  <span class="k">var</span> awei = img.<span class="f">expression</span>(<span class="s">'4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)'</span>, {
+    <span class="s">'GREEN'</span>: img.<span class="f">select</span>(<span class="s">'B3'</span>), <span class="s">'SWIR1'</span>: img.<span class="f">select</span>(<span class="s">'B11'</span>),
+    <span class="s">'SWIR2'</span>: img.<span class="f">select</span>(<span class="s">'B12'</span>), <span class="s">'NIR'</span>: img.<span class="f">select</span>(<span class="s">'B8'</span>)
+  }).<span class="f">rename</span>(<span class="s">'AWEInsh'</span>);
+  <span class="k">return</span> ndwi.<span class="f">addBands</span>([mndwi, awei]);
 };
 
 <span class="c">// Agua si cualquiera de los tres índices es mayor que 0</span>
 <span class="k">var</span> waterMask = <span class="k">function</span>(img) {
-  <span class="k">var</span> idx = waterIndex(img);
-  <span class="k">var</span> water = idx.select('NDWI').gt(0)
-    .or(idx.select('MNDWI').gt(0))
-    .or(idx.select('AWEInsh').gt(0));
-  <span class="k">return</span> water.rename('waterMask');
+  <span class="k">var</span> idx = <span class="f">waterIndex</span>(img);
+  <span class="k">var</span> water = idx.<span class="f">select</span>(<span class="s">'NDWI'</span>).<span class="f">gt</span>(<span class="n">0</span>)
+    .<span class="f">or</span>(idx.<span class="f">select</span>(<span class="s">'MNDWI'</span>).<span class="f">gt</span>(<span class="n">0</span>))
+    .<span class="f">or</span>(idx.<span class="f">select</span>(<span class="s">'AWEInsh'</span>).<span class="f">gt</span>(<span class="n">0</span>));
+  <span class="k">return</span> water.<span class="f">rename</span>(<span class="s">'waterMask'</span>);
 };
 
-<span class="k">var</span> mask_pre = waterMask(s2_pre);
-<span class="k">var</span> mask_post = waterMask(s2_post);
-Map.addLayer(mask_pre.selfMask(), {palette: ["db0202"]}, 'Agua durante');
-Map.addLayer(mask_post.selfMask(), {palette: ["2dd4f1"]}, 'Agua después');
+<span class="k">var</span> mask_pre = <span class="f">waterMask</span>(s2_pre);
+<span class="k">var</span> mask_post = <span class="f">waterMask</span>(s2_post);
+<span class="g">Map</span>.<span class="f">addLayer</span>(mask_pre.<span class="f">selfMask</span>(), {palette: [<span class="s">"db0202"</span>]}, <span class="s">'Agua durante'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(mask_post.<span class="f">selfMask</span>(), {palette: [<span class="s">"2dd4f1"</span>]}, <span class="s">'Agua después'</span>);
 
 <span class="c">// Área de agua en km² dentro del AOI</span>
 <span class="k">var</span> waterArea = <span class="k">function</span>(mask) {
-  <span class="k">var</span> area = mask.eq(1).multiply(ee.Image.pixelArea()).divide(1e6).rename('area');
-  <span class="k">var</span> stats = area.reduceRegion({
-    reducer: ee.Reducer.sum(),
+  <span class="k">var</span> area = mask.<span class="f">eq</span>(<span class="n">1</span>).<span class="f">multiply</span>(<span class="g">ee</span>.Image.<span class="f">pixelArea</span>()).<span class="f">divide</span>(<span class="n">1e6</span>).<span class="f">rename</span>(<span class="s">'area'</span>);
+  <span class="k">var</span> stats = area.<span class="f">reduceRegion</span>({
+    reducer: <span class="g">ee</span>.Reducer.<span class="f">sum</span>(),
     geometry: AOI,
-    scale: 10,
-    bestEffort: <span class="k">true</span>,
-    maxPixels: 1e13
+    scale: <span class="n">10</span>,
+    bestEffort: <span class="n">true</span>,
+    maxPixels: <span class="n">1e13</span>
   });
-  <span class="k">return</span> ee.Number(stats.get('area'));
+  <span class="k">return</span> <span class="g">ee</span>.<span class="g">Number</span>(stats.<span class="f">get</span>(<span class="s">'area'</span>));
 };
 
-print("Área de agua durante la inundación (km²):", waterArea(mask_pre));
-print("Área de agua después de la inundación (km²):", waterArea(mask_post));</pre></div>
+<span class="g">print</span>(<span class="s">"Área de agua durante la inundación (km²):"</span>, <span class="f">waterArea</span>(mask_pre));
+<span class="g">print</span>(<span class="s">"Área de agua después de la inundación (km²):"</span>, <span class="f">waterArea</span>(mask_post));</pre></div>
 
     <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
     <p>Sentinel-2 da mapas de inundación más detallados y con más fechas disponibles. Cuando las nubes no dejan ver nada durante días, el siguiente paso natural es trabajar con radar (Sentinel-1), que atraviesa las nubes.</p>

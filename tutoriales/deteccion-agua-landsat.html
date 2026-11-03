@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<link rel="stylesheet" href="../assets/style.css?v=417096c9">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -171,151 +171,151 @@
     <p>Partimos de una escena de Landsat 9 con máscara de nubes y factor de escala.</p>
     <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
     <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> scaler(img) {
-  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
-  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
-  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+<span class="k">function</span> <span class="f">scaler</span>(img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
+  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
+  <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
 }
 
 <span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> mask_clouds(img) {
-  <span class="k">var</span> qa = img.select('QA_PIXEL');
-  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
-  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
-    .and(qa.bitwiseAnd(cloud).eq(0))
-    .and(qa.bitwiseAnd(cloudShadow).eq(0))
-    .and(qa.bitwiseAnd(snow).eq(0));
-  <span class="k">return</span> img.updateMask(mask);
+<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
+  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
+  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
 }</pre></div>
     <div class="codebox"><pre><span class="c">// Primera imagen de Landsat 9 con poca nubosidad sobre el AOI</span>
-<span class="k">var</span> ls9_image = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
-  .filterDate('2023-01-01', '2023-12-31')
-  .filter(ee.Filter.lt("CLOUD_COVER_LAND", 10))
-  .filterBounds(AOI)
-  .map(mask_clouds)
-  .map(scaler)
-  .first()
-  .clip(AOI);
-print(ls9_image);</pre></div>
+<span class="k">var</span> ls9_image = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>)
+  .<span class="f">filterDate</span>(<span class="s">'2023-01-01'</span>, <span class="s">'2023-12-31'</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lt</span>(<span class="s">"CLOUD_COVER_LAND"</span>, <span class="n">10</span>))
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">map</span>(mask_clouds)
+  .<span class="f">map</span>(scaler)
+  .<span class="f">first</span>()
+  .<span class="f">clip</span>(AOI);
+<span class="g">print</span>(ls9_image);</pre></div>
     <div class="codebox"><pre><span class="c">// Imagen en color verdadero</span>
-Map.addLayer(ls9_image, {bands: "SR_B4,SR_B3,SR_B2", min: 0.003, max: 0.19, gamma: 1}, "Landsat 9");
-Map.centerObject(AOI, 8);</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_image, {bands: <span class="s">"SR_B4,SR_B3,SR_B2"</span>, min: <span class="n">0.003</span>, max: <span class="n">0.19</span>, gamma: <span class="n">1</span>}, <span class="s">"Landsat 9"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">8</span>);</pre></div>
 
     <h2 id="paso-2">Paso 2: Calcular los índices para detectar agua <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>NDWI y MNDWI son diferencias normalizadas entre dos bandas, así que basta con <code>normalizedDifference()</code>, que recibe primero la banda verde y después la infrarroja. AWEInsh combina cuatro bandas con coeficientes fijos, de modo que lo escribimos con <code>expression()</code> y asignamos un nombre a cada banda dentro de la fórmula.</p>
     <div class="codebox"><pre><span class="c">// NDWI: (Verde - NIR) / (Verde + NIR)</span>
-<span class="k">var</span> NDWI = ls9_image.normalizedDifference(['SR_B3', 'SR_B5']).rename('NDWI');
+<span class="k">var</span> NDWI = ls9_image.<span class="f">normalizedDifference</span>([<span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>]).<span class="f">rename</span>(<span class="s">'NDWI'</span>);
 
 <span class="c">// MNDWI: (Verde - SWIR1) / (Verde + SWIR1)</span>
-<span class="k">var</span> MNDWI = ls9_image.normalizedDifference(['SR_B3', 'SR_B6']).rename('MNDWI');
+<span class="k">var</span> MNDWI = ls9_image.<span class="f">normalizedDifference</span>([<span class="s">'SR_B3'</span>, <span class="s">'SR_B6'</span>]).<span class="f">rename</span>(<span class="s">'MNDWI'</span>);
 
 <span class="c">// AWEInsh: 4 * (Verde - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)</span>
-<span class="k">var</span> AWEInsh = ls9_image.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
-  'GREEN': ls9_image.select('SR_B3'),
-  'SWIR1': ls9_image.select('SR_B6'),
-  'SWIR2': ls9_image.select('SR_B7'),
-  'NIR': ls9_image.select('SR_B5')
-}).rename('AWEInsh');</pre></div>
+<span class="k">var</span> AWEInsh = ls9_image.<span class="f">expression</span>(<span class="s">'4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)'</span>, {
+  <span class="s">'GREEN'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B3'</span>),
+  <span class="s">'SWIR1'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B6'</span>),
+  <span class="s">'SWIR2'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B7'</span>),
+  <span class="s">'NIR'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B5'</span>)
+}).<span class="f">rename</span>(<span class="s">'AWEInsh'</span>);</pre></div>
 
     <h2 id="paso-3">Paso 3: Visualizar los índices <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
     <p>Usamos una paleta de −1 a 1 que va del rojo al azul. Los cuerpos de agua quedan en tonos cian y azul, y el suelo y la vegetación en rojo, amarillo o verde. NDWI y MNDWI siempre caen entre −1 y 1. AWEInsh no está acotado a ese rango, pero su umbral también es 0, así que la misma paleta separa bien el agua de lo demás.</p>
     <div class="codebox"><pre><span class="c">// Simbología: rojo para lo seco, azul para el agua</span>
-<span class="k">var</span> waterPalette = {min: -1, max: 1, palette: ['red', 'yellow', 'green', 'cyan', 'blue']};
+<span class="k">var</span> waterPalette = {min: -<span class="n">1</span>, max: <span class="n">1</span>, palette: [<span class="s">'red'</span>, <span class="s">'yellow'</span>, <span class="s">'green'</span>, <span class="s">'cyan'</span>, <span class="s">'blue'</span>]};
 
-Map.addLayer(NDWI, waterPalette, 'NDWI');
-Map.addLayer(MNDWI, waterPalette, 'MNDWI');
-Map.addLayer(AWEInsh, waterPalette, 'AWEInsh');</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(NDWI, waterPalette, <span class="s">'NDWI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(MNDWI, waterPalette, <span class="s">'MNDWI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(AWEInsh, waterPalette, <span class="s">'AWEInsh'</span>);</pre></div>
 
     <h2 id="paso-4">Paso 4: Exportar los índices <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
     <p>Unimos los tres índices con <code>addBands()</code> para que el GeoTIFF tenga una banda por índice, en el mismo orden en que aparecen en el mapa, y lo enviamos a Google Drive desde la pestaña <strong>Tasks</strong>.</p>
     <div class="codebox"><pre><span class="c">// Unir los índices y exportarlos</span>
-<span class="k">var</span> index = NDWI.addBands([MNDWI, AWEInsh]).toFloat();
+<span class="k">var</span> index = NDWI.<span class="f">addBands</span>([MNDWI, AWEInsh]).<span class="f">toFloat</span>();
 
-Export.image.toDrive({
+<span class="g">Export</span>.image.<span class="f">toDrive</span>({
   image: index,
-  description: "landsat_9_water_index",
-  folder: "index",
+  description: <span class="s">"landsat_9_water_index"</span>,
+  folder: <span class="s">"index"</span>,
   region: AOI,
-  scale: 30,
-  maxPixels: 1e13,
-  fileFormat: "TIFF",
-  formatOptions: {cloudOptimized: <span class="k">true</span>}
+  scale: <span class="n">30</span>,
+  maxPixels: <span class="n">1e13</span>,
+  fileFormat: <span class="s">"TIFF"</span>,
+  formatOptions: {cloudOptimized: <span class="n">true</span>}
 });</pre></div>
 
     <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
     <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> scaler(img) {
-  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
-  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
-  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+<span class="k">function</span> <span class="f">scaler</span>(img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
+  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
+  <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
 }
 
 <span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> mask_clouds(img) {
-  <span class="k">var</span> qa = img.select('QA_PIXEL');
-  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
-  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
-    .and(qa.bitwiseAnd(cloud).eq(0))
-    .and(qa.bitwiseAnd(cloudShadow).eq(0))
-    .and(qa.bitwiseAnd(snow).eq(0));
-  <span class="k">return</span> img.updateMask(mask);
+<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
+  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
+  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
 }
 
 <span class="c">// Primera imagen de Landsat 9 con poca nubosidad sobre el AOI</span>
-<span class="k">var</span> ls9_image = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
-  .filterDate('2023-01-01', '2023-12-31')
-  .filter(ee.Filter.lt("CLOUD_COVER_LAND", 10))
-  .filterBounds(AOI)
-  .map(mask_clouds)
-  .map(scaler)
-  .first()
-  .clip(AOI);
-print(ls9_image);
+<span class="k">var</span> ls9_image = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>)
+  .<span class="f">filterDate</span>(<span class="s">'2023-01-01'</span>, <span class="s">'2023-12-31'</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lt</span>(<span class="s">"CLOUD_COVER_LAND"</span>, <span class="n">10</span>))
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">map</span>(mask_clouds)
+  .<span class="f">map</span>(scaler)
+  .<span class="f">first</span>()
+  .<span class="f">clip</span>(AOI);
+<span class="g">print</span>(ls9_image);
 
 <span class="c">// Imagen en color verdadero</span>
-Map.addLayer(ls9_image, {bands: "SR_B4,SR_B3,SR_B2", min: 0.003, max: 0.19, gamma: 1}, "Landsat 9");
-Map.centerObject(AOI, 8);
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_image, {bands: <span class="s">"SR_B4,SR_B3,SR_B2"</span>, min: <span class="n">0.003</span>, max: <span class="n">0.19</span>, gamma: <span class="n">1</span>}, <span class="s">"Landsat 9"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">8</span>);
 
 <span class="c">// NDWI: (Verde - NIR) / (Verde + NIR)</span>
-<span class="k">var</span> NDWI = ls9_image.normalizedDifference(['SR_B3', 'SR_B5']).rename('NDWI');
+<span class="k">var</span> NDWI = ls9_image.<span class="f">normalizedDifference</span>([<span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>]).<span class="f">rename</span>(<span class="s">'NDWI'</span>);
 
 <span class="c">// MNDWI: (Verde - SWIR1) / (Verde + SWIR1)</span>
-<span class="k">var</span> MNDWI = ls9_image.normalizedDifference(['SR_B3', 'SR_B6']).rename('MNDWI');
+<span class="k">var</span> MNDWI = ls9_image.<span class="f">normalizedDifference</span>([<span class="s">'SR_B3'</span>, <span class="s">'SR_B6'</span>]).<span class="f">rename</span>(<span class="s">'MNDWI'</span>);
 
 <span class="c">// AWEInsh: 4 * (Verde - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)</span>
-<span class="k">var</span> AWEInsh = ls9_image.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
-  'GREEN': ls9_image.select('SR_B3'),
-  'SWIR1': ls9_image.select('SR_B6'),
-  'SWIR2': ls9_image.select('SR_B7'),
-  'NIR': ls9_image.select('SR_B5')
-}).rename('AWEInsh');
+<span class="k">var</span> AWEInsh = ls9_image.<span class="f">expression</span>(<span class="s">'4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)'</span>, {
+  <span class="s">'GREEN'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B3'</span>),
+  <span class="s">'SWIR1'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B6'</span>),
+  <span class="s">'SWIR2'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B7'</span>),
+  <span class="s">'NIR'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B5'</span>)
+}).<span class="f">rename</span>(<span class="s">'AWEInsh'</span>);
 
 <span class="c">// Simbología: rojo para lo seco, azul para el agua</span>
-<span class="k">var</span> waterPalette = {min: -1, max: 1, palette: ['red', 'yellow', 'green', 'cyan', 'blue']};
+<span class="k">var</span> waterPalette = {min: -<span class="n">1</span>, max: <span class="n">1</span>, palette: [<span class="s">'red'</span>, <span class="s">'yellow'</span>, <span class="s">'green'</span>, <span class="s">'cyan'</span>, <span class="s">'blue'</span>]};
 
-Map.addLayer(NDWI, waterPalette, 'NDWI');
-Map.addLayer(MNDWI, waterPalette, 'MNDWI');
-Map.addLayer(AWEInsh, waterPalette, 'AWEInsh');
+<span class="g">Map</span>.<span class="f">addLayer</span>(NDWI, waterPalette, <span class="s">'NDWI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(MNDWI, waterPalette, <span class="s">'MNDWI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(AWEInsh, waterPalette, <span class="s">'AWEInsh'</span>);
 
 <span class="c">// Unir los índices y exportarlos</span>
-<span class="k">var</span> index = NDWI.addBands([MNDWI, AWEInsh]).toFloat();
+<span class="k">var</span> index = NDWI.<span class="f">addBands</span>([MNDWI, AWEInsh]).<span class="f">toFloat</span>();
 
-Export.image.toDrive({
+<span class="g">Export</span>.image.<span class="f">toDrive</span>({
   image: index,
-  description: "landsat_9_water_index",
-  folder: "index",
+  description: <span class="s">"landsat_9_water_index"</span>,
+  folder: <span class="s">"index"</span>,
   region: AOI,
-  scale: 30,
-  maxPixels: 1e13,
-  fileFormat: "TIFF",
-  formatOptions: {cloudOptimized: <span class="k">true</span>}
+  scale: <span class="n">30</span>,
+  maxPixels: <span class="n">1e13</span>,
+  fileFormat: <span class="s">"TIFF"</span>,
+  formatOptions: {cloudOptimized: <span class="n">true</span>}
 });</pre></div>
 
     <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>

@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<link rel="stylesheet" href="../assets/style.css?v=417096c9">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -185,143 +185,143 @@
     <p>Aplicamos la máscara de nubes, que además convierte los valores en reflectancia, y tomamos la primera escena con poca nubosidad sobre el AOI.</p>
     <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
     <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
-<span class="k">function</span> maskS2clouds(img) {
-  <span class="k">var</span> scl = img.select('SCL');
-  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
-    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
-    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
-    .and(scl.neq(10));<span class="c">     // cirros</span>
-  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+<span class="k">function</span> <span class="f">maskS2clouds</span>(img) {
+  <span class="k">var</span> scl = img.<span class="f">select</span>(<span class="s">'SCL'</span>);
+  <span class="k">var</span> mask = scl.<span class="f">neq</span>(<span class="n">3</span>)    <span class="c">// sombra de nubes</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">8</span>))       <span class="c">// nubes, probabilidad media</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">9</span>))       <span class="c">// nubes, probabilidad alta</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">10</span>));     <span class="c">// cirros</span>
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask).<span class="f">select</span>(<span class="s">'B.*'</span>).<span class="f">divide</span>(<span class="n">10000</span>);
 }</pre></div>
     <div class="codebox"><pre><span class="c">// Primera imagen de Sentinel-2 con poca nubosidad sobre el AOI</span>
-<span class="k">var</span> s2_image = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
-  .filterDate("2023-01-01", "2023-12-01")
-  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 10))
-  .filterBounds(AOI)
-  .map(maskS2clouds)
-  .first()
-  .clip(AOI);
-print(s2_image);</pre></div>
+<span class="k">var</span> s2_image = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"COPERNICUS/S2_SR_HARMONIZED"</span>)
+  .<span class="f">filterDate</span>(<span class="s">"2023-01-01"</span>, <span class="s">"2023-12-01"</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, <span class="n">10</span>))
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">map</span>(maskS2clouds)
+  .<span class="f">first</span>()
+  .<span class="f">clip</span>(AOI);
+<span class="g">print</span>(s2_image);</pre></div>
     <div class="codebox"><pre><span class="c">// Imagen en color verdadero</span>
-Map.addLayer(s2_image, {bands: "B4,B3,B2", min: 0, max: 0.3, gamma: 1}, "Sentinel-2");
-Map.centerObject(AOI, 12);</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(s2_image, {bands: <span class="s">"B4,B3,B2"</span>, min: <span class="n">0</span>, max: <span class="n">0.3</span>, gamma: <span class="n">1</span>}, <span class="s">"Sentinel-2"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">12</span>);</pre></div>
 
     <h2 id="paso-2">Paso 2: Calcular los índices <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>Para los índices que son una diferencia normalizada entre dos bandas, <code>normalizedDifference()</code> es lo más corto. Para fórmulas con constantes o raíces usamos <code>expression()</code>, que asigna un nombre a cada banda dentro de la ecuación.</p>
     <div class="codebox"><pre><span class="c">// Índices con las bandas de Sentinel-2 (B2 azul, B4 rojo, B8 NIR, B11 SWIR1, B12 SWIR2)</span>
-<span class="k">var</span> NDVI = s2_image.normalizedDifference(['B8', 'B4']).rename('NDVI');
-<span class="k">var</span> EVI = s2_image.expression('2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))', {
-  'NIR': s2_image.select('B8'), 'RED': s2_image.select('B4'), 'BLUE': s2_image.select('B2')
-}).rename('EVI');
-<span class="k">var</span> SAVI = s2_image.expression('((NIR - RED) / (NIR + RED + 0.5)) * 1.5', {
-  'NIR': s2_image.select('B8'), 'RED': s2_image.select('B4')
-}).rename('SAVI');
-<span class="k">var</span> MSAVI = s2_image.expression('(2 * NIR + 1 - sqrt(pow((2 * NIR + 1), 2) - 8 * (NIR - RED))) / 2', {
-  'NIR': s2_image.select('B8'), 'RED': s2_image.select('B4')
-}).rename('MSAVI');
-<span class="k">var</span> NDMI = s2_image.normalizedDifference(['B8', 'B11']).rename('NDMI');
-<span class="k">var</span> NBR = s2_image.normalizedDifference(['B8', 'B12']).rename('NBR');
-<span class="k">var</span> NBR2 = s2_image.normalizedDifference(['B11', 'B12']).rename('NBR2');</pre></div>
+<span class="k">var</span> NDVI = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B8'</span>, <span class="s">'B4'</span>]).<span class="f">rename</span>(<span class="s">'NDVI'</span>);
+<span class="k">var</span> EVI = s2_image.<span class="f">expression</span>(<span class="s">'2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))'</span>, {
+  <span class="s">'NIR'</span>: s2_image.<span class="f">select</span>(<span class="s">'B8'</span>), <span class="s">'RED'</span>: s2_image.<span class="f">select</span>(<span class="s">'B4'</span>), <span class="s">'BLUE'</span>: s2_image.<span class="f">select</span>(<span class="s">'B2'</span>)
+}).<span class="f">rename</span>(<span class="s">'EVI'</span>);
+<span class="k">var</span> SAVI = s2_image.<span class="f">expression</span>(<span class="s">'((NIR - RED) / (NIR + RED + 0.5)) * 1.5'</span>, {
+  <span class="s">'NIR'</span>: s2_image.<span class="f">select</span>(<span class="s">'B8'</span>), <span class="s">'RED'</span>: s2_image.<span class="f">select</span>(<span class="s">'B4'</span>)
+}).<span class="f">rename</span>(<span class="s">'SAVI'</span>);
+<span class="k">var</span> MSAVI = s2_image.<span class="f">expression</span>(<span class="s">'(2 * NIR + 1 - sqrt(pow((2 * NIR + 1), 2) - 8 * (NIR - RED))) / 2'</span>, {
+  <span class="s">'NIR'</span>: s2_image.<span class="f">select</span>(<span class="s">'B8'</span>), <span class="s">'RED'</span>: s2_image.<span class="f">select</span>(<span class="s">'B4'</span>)
+}).<span class="f">rename</span>(<span class="s">'MSAVI'</span>);
+<span class="k">var</span> NDMI = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B8'</span>, <span class="s">'B11'</span>]).<span class="f">rename</span>(<span class="s">'NDMI'</span>);
+<span class="k">var</span> NBR = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B8'</span>, <span class="s">'B12'</span>]).<span class="f">rename</span>(<span class="s">'NBR'</span>);
+<span class="k">var</span> NBR2 = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B11'</span>, <span class="s">'B12'</span>]).<span class="f">rename</span>(<span class="s">'NBR2'</span>);</pre></div>
 
     <h2 id="paso-3">Paso 3: Visualizar los índices <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
     <p>Los índices de vegetación van de 0 (sin vegetación) a 1 (vegetación muy densa), así que comparten una paleta que pasa del café al verde oscuro. NDMI y NBR tienen paletas propias.</p>
     <div class="codebox"><pre><span class="c">// Simbologías</span>
-<span class="k">var</span> vegPalette = {min: 0, max: 1, palette: ['0000ff', 'DF923D', 'F1B555', 'FCD163', '99B718',
-  '74A901', '66A000', '529400', '3E8601', '207401', '056201', '004C00', '023B01', '012E01',
-  '011D01', '011301']};
-<span class="k">var</span> ndmiParams = {min: -0.5, max: 0.5, palette: ["ff0000", "ffa500", "ffff00", "00ff00", "187a07"]};
-<span class="k">var</span> nbrParams = {min: 0, max: 0.5, palette: ["e47f44", "ffe483", "5d61ed", "2902ff"]};
+<span class="k">var</span> vegPalette = {min: <span class="n">0</span>, max: <span class="n">1</span>, palette: [<span class="s">'0000ff'</span>, <span class="s">'DF923D'</span>, <span class="s">'F1B555'</span>, <span class="s">'FCD163'</span>, <span class="s">'99B718'</span>,
+  <span class="s">'74A901'</span>, <span class="s">'66A000'</span>, <span class="s">'529400'</span>, <span class="s">'3E8601'</span>, <span class="s">'207401'</span>, <span class="s">'056201'</span>, <span class="s">'004C00'</span>, <span class="s">'023B01'</span>, <span class="s">'012E01'</span>,
+  <span class="s">'011D01'</span>, <span class="s">'011301'</span>]};
+<span class="k">var</span> ndmiParams = {min: -<span class="n">0.5</span>, max: <span class="n">0.5</span>, palette: [<span class="s">"ff0000"</span>, <span class="s">"ffa500"</span>, <span class="s">"ffff00"</span>, <span class="s">"00ff00"</span>, <span class="s">"187a07"</span>]};
+<span class="k">var</span> nbrParams = {min: <span class="n">0</span>, max: <span class="n">0.5</span>, palette: [<span class="s">"e47f44"</span>, <span class="s">"ffe483"</span>, <span class="s">"5d61ed"</span>, <span class="s">"2902ff"</span>]};
 
-Map.addLayer(NDVI, vegPalette, 'NDVI');
-Map.addLayer(EVI, vegPalette, 'EVI');
-Map.addLayer(SAVI, vegPalette, 'SAVI');
-Map.addLayer(MSAVI, vegPalette, 'MSAVI');
-Map.addLayer(NDMI, ndmiParams, 'NDMI');
-Map.addLayer(NBR, nbrParams, 'NBR');
-Map.addLayer(NBR2, nbrParams, 'NBR2');</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(NDVI, vegPalette, <span class="s">'NDVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(EVI, vegPalette, <span class="s">'EVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(SAVI, vegPalette, <span class="s">'SAVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(MSAVI, vegPalette, <span class="s">'MSAVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(NDMI, ndmiParams, <span class="s">'NDMI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(NBR, nbrParams, <span class="s">'NBR'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(NBR2, nbrParams, <span class="s">'NBR2'</span>);</pre></div>
 
     <h2 id="paso-4">Paso 4: Exportar los índices <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
     <p>Unimos los siete índices en una sola imagen y la exportamos a 10 m.</p>
-    <div class="codebox"><pre><span class="k">var</span> index = NDVI.addBands([EVI, SAVI, MSAVI, NDMI, NBR, NBR2]).toFloat();
+    <div class="codebox"><pre><span class="k">var</span> index = NDVI.<span class="f">addBands</span>([EVI, SAVI, MSAVI, NDMI, NBR, NBR2]).<span class="f">toFloat</span>();
 
-Export.image.toDrive({
+<span class="g">Export</span>.image.<span class="f">toDrive</span>({
   image: index,
-  description: "sentinel_2_vegetation_index",
-  folder: "index",
+  description: <span class="s">"sentinel_2_vegetation_index"</span>,
+  folder: <span class="s">"index"</span>,
   region: AOI,
-  scale: 10,
-  maxPixels: 1e13,
-  fileFormat: "TIFF",
-  formatOptions: {cloudOptimized: <span class="k">true</span>}
+  scale: <span class="n">10</span>,
+  maxPixels: <span class="n">1e13</span>,
+  fileFormat: <span class="s">"TIFF"</span>,
+  formatOptions: {cloudOptimized: <span class="n">true</span>}
 });</pre></div>
 
     <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
     <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
-<span class="k">function</span> maskS2clouds(img) {
-  <span class="k">var</span> scl = img.select('SCL');
-  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
-    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
-    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
-    .and(scl.neq(10));<span class="c">     // cirros</span>
-  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+<span class="k">function</span> <span class="f">maskS2clouds</span>(img) {
+  <span class="k">var</span> scl = img.<span class="f">select</span>(<span class="s">'SCL'</span>);
+  <span class="k">var</span> mask = scl.<span class="f">neq</span>(<span class="n">3</span>)    <span class="c">// sombra de nubes</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">8</span>))       <span class="c">// nubes, probabilidad media</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">9</span>))       <span class="c">// nubes, probabilidad alta</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">10</span>));     <span class="c">// cirros</span>
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask).<span class="f">select</span>(<span class="s">'B.*'</span>).<span class="f">divide</span>(<span class="n">10000</span>);
 }
 
 <span class="c">// Primera imagen de Sentinel-2 con poca nubosidad sobre el AOI</span>
-<span class="k">var</span> s2_image = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
-  .filterDate("2023-01-01", "2023-12-01")
-  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 10))
-  .filterBounds(AOI)
-  .map(maskS2clouds)
-  .first()
-  .clip(AOI);
-print(s2_image);
+<span class="k">var</span> s2_image = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"COPERNICUS/S2_SR_HARMONIZED"</span>)
+  .<span class="f">filterDate</span>(<span class="s">"2023-01-01"</span>, <span class="s">"2023-12-01"</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, <span class="n">10</span>))
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">map</span>(maskS2clouds)
+  .<span class="f">first</span>()
+  .<span class="f">clip</span>(AOI);
+<span class="g">print</span>(s2_image);
 
 <span class="c">// Imagen en color verdadero</span>
-Map.addLayer(s2_image, {bands: "B4,B3,B2", min: 0, max: 0.3, gamma: 1}, "Sentinel-2");
-Map.centerObject(AOI, 12);
+<span class="g">Map</span>.<span class="f">addLayer</span>(s2_image, {bands: <span class="s">"B4,B3,B2"</span>, min: <span class="n">0</span>, max: <span class="n">0.3</span>, gamma: <span class="n">1</span>}, <span class="s">"Sentinel-2"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">12</span>);
 
 <span class="c">// Índices con las bandas de Sentinel-2 (B2 azul, B4 rojo, B8 NIR, B11 SWIR1, B12 SWIR2)</span>
-<span class="k">var</span> NDVI = s2_image.normalizedDifference(['B8', 'B4']).rename('NDVI');
-<span class="k">var</span> EVI = s2_image.expression('2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))', {
-  'NIR': s2_image.select('B8'), 'RED': s2_image.select('B4'), 'BLUE': s2_image.select('B2')
-}).rename('EVI');
-<span class="k">var</span> SAVI = s2_image.expression('((NIR - RED) / (NIR + RED + 0.5)) * 1.5', {
-  'NIR': s2_image.select('B8'), 'RED': s2_image.select('B4')
-}).rename('SAVI');
-<span class="k">var</span> MSAVI = s2_image.expression('(2 * NIR + 1 - sqrt(pow((2 * NIR + 1), 2) - 8 * (NIR - RED))) / 2', {
-  'NIR': s2_image.select('B8'), 'RED': s2_image.select('B4')
-}).rename('MSAVI');
-<span class="k">var</span> NDMI = s2_image.normalizedDifference(['B8', 'B11']).rename('NDMI');
-<span class="k">var</span> NBR = s2_image.normalizedDifference(['B8', 'B12']).rename('NBR');
-<span class="k">var</span> NBR2 = s2_image.normalizedDifference(['B11', 'B12']).rename('NBR2');
+<span class="k">var</span> NDVI = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B8'</span>, <span class="s">'B4'</span>]).<span class="f">rename</span>(<span class="s">'NDVI'</span>);
+<span class="k">var</span> EVI = s2_image.<span class="f">expression</span>(<span class="s">'2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))'</span>, {
+  <span class="s">'NIR'</span>: s2_image.<span class="f">select</span>(<span class="s">'B8'</span>), <span class="s">'RED'</span>: s2_image.<span class="f">select</span>(<span class="s">'B4'</span>), <span class="s">'BLUE'</span>: s2_image.<span class="f">select</span>(<span class="s">'B2'</span>)
+}).<span class="f">rename</span>(<span class="s">'EVI'</span>);
+<span class="k">var</span> SAVI = s2_image.<span class="f">expression</span>(<span class="s">'((NIR - RED) / (NIR + RED + 0.5)) * 1.5'</span>, {
+  <span class="s">'NIR'</span>: s2_image.<span class="f">select</span>(<span class="s">'B8'</span>), <span class="s">'RED'</span>: s2_image.<span class="f">select</span>(<span class="s">'B4'</span>)
+}).<span class="f">rename</span>(<span class="s">'SAVI'</span>);
+<span class="k">var</span> MSAVI = s2_image.<span class="f">expression</span>(<span class="s">'(2 * NIR + 1 - sqrt(pow((2 * NIR + 1), 2) - 8 * (NIR - RED))) / 2'</span>, {
+  <span class="s">'NIR'</span>: s2_image.<span class="f">select</span>(<span class="s">'B8'</span>), <span class="s">'RED'</span>: s2_image.<span class="f">select</span>(<span class="s">'B4'</span>)
+}).<span class="f">rename</span>(<span class="s">'MSAVI'</span>);
+<span class="k">var</span> NDMI = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B8'</span>, <span class="s">'B11'</span>]).<span class="f">rename</span>(<span class="s">'NDMI'</span>);
+<span class="k">var</span> NBR = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B8'</span>, <span class="s">'B12'</span>]).<span class="f">rename</span>(<span class="s">'NBR'</span>);
+<span class="k">var</span> NBR2 = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B11'</span>, <span class="s">'B12'</span>]).<span class="f">rename</span>(<span class="s">'NBR2'</span>);
 
 <span class="c">// Simbologías</span>
-<span class="k">var</span> vegPalette = {min: 0, max: 1, palette: ['0000ff', 'DF923D', 'F1B555', 'FCD163', '99B718',
-  '74A901', '66A000', '529400', '3E8601', '207401', '056201', '004C00', '023B01', '012E01',
-  '011D01', '011301']};
-<span class="k">var</span> ndmiParams = {min: -0.5, max: 0.5, palette: ["ff0000", "ffa500", "ffff00", "00ff00", "187a07"]};
-<span class="k">var</span> nbrParams = {min: 0, max: 0.5, palette: ["e47f44", "ffe483", "5d61ed", "2902ff"]};
+<span class="k">var</span> vegPalette = {min: <span class="n">0</span>, max: <span class="n">1</span>, palette: [<span class="s">'0000ff'</span>, <span class="s">'DF923D'</span>, <span class="s">'F1B555'</span>, <span class="s">'FCD163'</span>, <span class="s">'99B718'</span>,
+  <span class="s">'74A901'</span>, <span class="s">'66A000'</span>, <span class="s">'529400'</span>, <span class="s">'3E8601'</span>, <span class="s">'207401'</span>, <span class="s">'056201'</span>, <span class="s">'004C00'</span>, <span class="s">'023B01'</span>, <span class="s">'012E01'</span>,
+  <span class="s">'011D01'</span>, <span class="s">'011301'</span>]};
+<span class="k">var</span> ndmiParams = {min: -<span class="n">0.5</span>, max: <span class="n">0.5</span>, palette: [<span class="s">"ff0000"</span>, <span class="s">"ffa500"</span>, <span class="s">"ffff00"</span>, <span class="s">"00ff00"</span>, <span class="s">"187a07"</span>]};
+<span class="k">var</span> nbrParams = {min: <span class="n">0</span>, max: <span class="n">0.5</span>, palette: [<span class="s">"e47f44"</span>, <span class="s">"ffe483"</span>, <span class="s">"5d61ed"</span>, <span class="s">"2902ff"</span>]};
 
-Map.addLayer(NDVI, vegPalette, 'NDVI');
-Map.addLayer(EVI, vegPalette, 'EVI');
-Map.addLayer(SAVI, vegPalette, 'SAVI');
-Map.addLayer(MSAVI, vegPalette, 'MSAVI');
-Map.addLayer(NDMI, ndmiParams, 'NDMI');
-Map.addLayer(NBR, nbrParams, 'NBR');
-Map.addLayer(NBR2, nbrParams, 'NBR2');
+<span class="g">Map</span>.<span class="f">addLayer</span>(NDVI, vegPalette, <span class="s">'NDVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(EVI, vegPalette, <span class="s">'EVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(SAVI, vegPalette, <span class="s">'SAVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(MSAVI, vegPalette, <span class="s">'MSAVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(NDMI, ndmiParams, <span class="s">'NDMI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(NBR, nbrParams, <span class="s">'NBR'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(NBR2, nbrParams, <span class="s">'NBR2'</span>);
 
-<span class="k">var</span> index = NDVI.addBands([EVI, SAVI, MSAVI, NDMI, NBR, NBR2]).toFloat();
+<span class="k">var</span> index = NDVI.<span class="f">addBands</span>([EVI, SAVI, MSAVI, NDMI, NBR, NBR2]).<span class="f">toFloat</span>();
 
-Export.image.toDrive({
+<span class="g">Export</span>.image.<span class="f">toDrive</span>({
   image: index,
-  description: "sentinel_2_vegetation_index",
-  folder: "index",
+  description: <span class="s">"sentinel_2_vegetation_index"</span>,
+  folder: <span class="s">"index"</span>,
   region: AOI,
-  scale: 10,
-  maxPixels: 1e13,
-  fileFormat: "TIFF",
-  formatOptions: {cloudOptimized: <span class="k">true</span>}
+  scale: <span class="n">10</span>,
+  maxPixels: <span class="n">1e13</span>,
+  fileFormat: <span class="s">"TIFF"</span>,
+  formatOptions: {cloudOptimized: <span class="n">true</span>}
 });</pre></div>
 
     <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>

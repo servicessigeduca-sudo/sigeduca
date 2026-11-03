@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<link rel="stylesheet" href="../assets/style.css?v=417096c9">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -183,11 +183,11 @@
     <h2 id="paso-7">Paso 7: Carga el shapefile en el mapa <a class="anchor" href="#paso-7" aria-label="Enlace a esta sección">#</a></h2>
     <p>Pega este código en el Code Editor y presiona <kbd>Run</kbd>.</p>
     <div class="codebox"><pre><span class="c">// Cargar el Shapefile importado</span>
-<span class="k">var</span> shapefile = ee.FeatureCollection("projects/ee-sigeduca/assets/Mexico_Estados");
+<span class="k">var</span> shapefile = <span class="g">ee</span>.<span class="f">FeatureCollection</span>(<span class="s">"projects/ee-sigeduca/assets/Mexico_Estados"</span>);
 
 <span class="c">// Visualizar y centrar el Shapefile importado</span>
-Map.addLayer(shapefile, {color: "white"}, "México Estados");
-Map.centerObject(shapefile, 5);</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(shapefile, {color: <span class="s">"white"</span>}, <span class="s">"México Estados"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(shapefile, <span class="n">5</span>);</pre></div>
     <div class="callout"><p><strong>Cambia la ruta del asset.</strong> <code>projects/ee-sigeduca/assets/Mexico_Estados</code> es el asset de SIG EDUCA. Para usar la tuya, abre la pestaña Assets, haz clic en tu shapefile y copia el <em>Table ID</em>.</p></div>
     <figure class="shot"><img src="../assets/img/importar-shapefile/resultado.jpg" alt="Estados de México visualizados en el mapa de Earth Engine" loading="lazy" width="969" height="373"><figcaption>Los estados de México sobre el mapa.</figcaption></figure>
 

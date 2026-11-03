@@ -736,8 +736,50 @@ def video(t):
         return f'''<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/{t["video"]}" title="{html.escape(t["titulo"])}" loading="lazy" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>'''
     return ""
 
+
+# ---- Resaltado de sintaxis JavaScript (se hace al generar, sin scripts en el navegador) ----
+_JS_KW = {"var", "let", "const", "function", "return", "if", "else", "for", "while", "do",
+          "new", "typeof", "in", "of", "this", "break", "continue", "switch", "case", "default"}
+_JS_LIT = {"true", "false", "null", "undefined"}
+_JS_GLOBAL = {"ee", "Map", "Export", "print", "ui", "Math", "require", "JSON", "Number", "String"}
+_JS_TOKEN = re.compile(r"""(?P<c>//[^\n]*|/\*[\s\S]*?\*/)
+  |(?P<s>'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|`(?:\\.|[^`\\])*`)
+  |(?P<n>\b\d+(?:\.\d+)?(?:[eE][-+]?\d+)?\b|\.\d+\b)
+  |(?P<id>[A-Za-z_$][\w$]*)""", re.X)
+
+def _resaltar_js(texto):
+    salida, pos = [], 0
+    def span(clase, t):
+        return f'<span class="{clase}">{html.escape(t, quote=False)}</span>'
+    for m in _JS_TOKEN.finditer(texto):
+        salida.append(html.escape(texto[pos:m.start()], quote=False))
+        t = m.group()
+        if m.lastgroup == "id":
+            resto = texto[m.end():].lstrip(" ")
+            if t in _JS_KW:
+                salida.append(span("k", t))
+            elif t in _JS_LIT:
+                salida.append(span("n", t))
+            elif t in _JS_GLOBAL:
+                salida.append(span("g", t))
+            elif resto.startswith("("):
+                salida.append(span("f", t))
+            else:
+                salida.append(html.escape(t, quote=False))
+        else:
+            salida.append(span(m.lastgroup, t))
+        pos = m.end()
+    salida.append(html.escape(texto[pos:], quote=False))
+    return "".join(salida)
+
+def resaltar_codigo(contenido):
+    def un_bloque(m):
+        plano = html.unescape(re.sub(r"</?span[^>]*>", "", m.group(2)))
+        return m.group(1) + _resaltar_js(plano) + "</pre>"
+    return re.sub(r"(<pre>)(.*?)</pre>", un_bloque, contenido, flags=re.S)
+
 def pagina(slug, t):
-    contenido = (RAIZ / "_herramientas/contenido" / f"{slug}.html").read_text()
+    contenido = resaltar_codigo((RAIZ / "_herramientas/contenido" / f"{slug}.html").read_text())
     nivel, clase = t["nivel"]
     sig_t, sig_href = t["siguiente"]
     c, n, total = curso_de(slug)

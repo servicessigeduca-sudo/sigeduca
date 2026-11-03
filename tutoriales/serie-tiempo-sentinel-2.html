@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<link rel="stylesheet" href="../assets/style.css?v=417096c9">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -152,81 +152,81 @@
     <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
     <p>Usamos la misma función del curso básico. Oculta sombras, nubes y cirros con la banda <code>SCL</code> y pasa los valores a reflectancia, de 0 a 1.</p>
     <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
-<span class="k">function</span> maskS2clouds(img) {
-  <span class="k">var</span> scl = img.select('SCL');
-  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
-    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
-    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
-    .and(scl.neq(10));<span class="c">     // cirros</span>
-  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+<span class="k">function</span> <span class="f">maskS2clouds</span>(img) {
+  <span class="k">var</span> scl = img.<span class="f">select</span>(<span class="s">'SCL'</span>);
+  <span class="k">var</span> mask = scl.<span class="f">neq</span>(<span class="n">3</span>)    <span class="c">// sombra de nubes</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">8</span>))       <span class="c">// nubes, probabilidad media</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">9</span>))       <span class="c">// nubes, probabilidad alta</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">10</span>));     <span class="c">// cirros</span>
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask).<span class="f">select</span>(<span class="s">'B.*'</span>).<span class="f">divide</span>(<span class="n">10000</span>);
 }</pre></div>
 
     <h2 id="paso-2">Paso 2: Parámetros y colección <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>Filtramos por zona, años, meses y nubosidad, y aplicamos la máscara a cada imagen. Como Sentinel-2 pasa cada cinco días, un límite de 20 % de píxeles nubosos todavía deja muchas imágenes por año.</p>
     <div class="codebox"><pre><span class="c">// Parámetros de búsqueda</span>
-<span class="k">var</span> startYear = 2019;<span class="c">   // año inicial</span>
-<span class="k">var</span> endYear = 2025;<span class="c">     // año final</span>
-<span class="k">var</span> startMonth = 1;<span class="c">     // mes inicial</span>
-<span class="k">var</span> endMonth = 12;<span class="c">      // mes final</span>
-<span class="k">var</span> cloudcover = 20;<span class="c">    // porcentaje máximo de píxeles nubosos</span>
+<span class="k">var</span> startYear = <span class="n">2019</span>;   <span class="c">// año inicial</span>
+<span class="k">var</span> endYear = <span class="n">2025</span>;     <span class="c">// año final</span>
+<span class="k">var</span> startMonth = <span class="n">1</span>;     <span class="c">// mes inicial</span>
+<span class="k">var</span> endMonth = <span class="n">12</span>;      <span class="c">// mes final</span>
+<span class="k">var</span> cloudcover = <span class="n">20</span>;    <span class="c">// porcentaje máximo de píxeles nubosos</span>
 
 <span class="c">// Colección filtrada y sin nubes</span>
-<span class="k">var</span> collection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
-  .filterBounds(AOI)
-  .filterDate(startYear + '-01-01', (endYear + 1) + '-01-01')
-  .filter(ee.Filter.calendarRange(startMonth, endMonth, 'month'))
-  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', cloudcover))
-  .map(maskS2clouds);
-print('Imágenes disponibles', collection.size());</pre></div>
+<span class="k">var</span> collection = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">'COPERNICUS/S2_SR_HARMONIZED'</span>)
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, (endYear + <span class="n">1</span>) + <span class="s">'-01-01'</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, cloudcover))
+  .<span class="f">map</span>(maskS2clouds);
+<span class="g">print</span>(<span class="s">'Imágenes disponibles'</span>, collection.<span class="f">size</span>());</pre></div>
 
     <h2 id="paso-3">Paso 3: Crear una mediana por año <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
     <p>El método es el mismo de <a href="serie-tiempo-landsat.html">Series de tiempo con Landsat</a>: recorremos los años, calculamos una mediana para cada uno, guardamos el año y el número de imágenes, y eliminamos los años vacíos.</p>
     <div class="codebox"><pre><span class="c">// Una mediana por año</span>
-<span class="k">var</span> years = ee.List.sequence(startYear, endYear);
+<span class="k">var</span> years = <span class="g">ee</span>.List.<span class="f">sequence</span>(startYear, endYear);
 
-<span class="k">var</span> annual = ee.ImageCollection.fromImages(years.map(<span class="k">function</span> (year) {
-  <span class="k">var</span> start = ee.Date.fromYMD(year, 1, 1);
-  <span class="k">var</span> images = collection.filterDate(start, start.advance(1, 'year'));
-  <span class="k">return</span> images.median()
-    .clip(AOI)
-    .set('year', year)
-    .set('n_images', images.size());
+<span class="k">var</span> annual = <span class="g">ee</span>.ImageCollection.<span class="f">fromImages</span>(years.<span class="f">map</span>(<span class="k">function</span> (year) {
+  <span class="k">var</span> start = <span class="g">ee</span>.Date.<span class="f">fromYMD</span>(year, <span class="n">1</span>, <span class="n">1</span>);
+  <span class="k">var</span> images = collection.<span class="f">filterDate</span>(start, start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>));
+  <span class="k">return</span> images.<span class="f">median</span>()
+    .<span class="f">clip</span>(AOI)
+    .<span class="f">set</span>(<span class="s">'year'</span>, year)
+    .<span class="f">set</span>(<span class="s">'n_images'</span>, images.<span class="f">size</span>());
 }));
 
 <span class="c">// Quitar los años sin imágenes</span>
-annual = annual.filter(ee.Filter.gt('n_images', 0));
-print('Medianas anuales', annual);</pre></div>
+annual = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">gt</span>(<span class="s">'n_images'</span>, <span class="n">0</span>));
+<span class="g">print</span>(<span class="s">'Medianas anuales'</span>, annual);</pre></div>
 
     <h2 id="paso-4">Paso 4: Visualizar la serie <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
     <p>Agregamos una capa por año en color verdadero. Activa las capas una por una en el panel <strong>Layers</strong> para comparar los años.</p>
     <div class="codebox"><pre><span class="c">// Color verdadero, una capa por año</span>
-<span class="k">var</span> visRGB = {bands: ['B4', 'B3', 'B2'], min: 0.01, max: 0.22, gamma: 1};
-Map.centerObject(AOI, 11);
+<span class="k">var</span> visRGB = {bands: [<span class="s">'B4'</span>, <span class="s">'B3'</span>, <span class="s">'B2'</span>], min: <span class="n">0.01</span>, max: <span class="n">0.22</span>, gamma: <span class="n">1</span>};
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">11</span>);
 
-annual.aggregate_array('year').evaluate(<span class="k">function</span> (list) {
-  list.forEach(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = annual.filter(ee.Filter.eq('year', year)).first();
-    Map.addLayer(img, visRGB, 'RGB ' + year, <span class="k">false</span>);
+annual.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
+  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
+    <span class="k">var</span> img = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>();
+    <span class="g">Map</span>.<span class="f">addLayer</span>(img, visRGB, <span class="s">'RGB '</span> + year, <span class="n">false</span>);
   });
 });</pre></div>
 
     <h2 id="paso-5">Paso 5: Exportar cada año <a class="anchor" href="#paso-5" aria-label="Enlace a esta sección">#</a></h2>
     <p>Exportamos diez bandas a 10 m: las tres visibles, las tres del borde rojo, los dos infrarrojos cercanos (B8 y B8A) y los dos SWIR. Dejamos fuera B1 y B9, que sirven para medir aerosoles y vapor de agua en la atmósfera y tienen 60 m de resolución. Las bandas de 20 m se remuestrean a 10 m al exportar.</p>
     <div class="codebox"><pre><span class="c">// Bandas a exportar: visibles, borde rojo, NIR y SWIR</span>
-<span class="k">var</span> exportBands = ['B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B11', 'B12'];
+<span class="k">var</span> exportBands = [<span class="s">'B2'</span>, <span class="s">'B3'</span>, <span class="s">'B4'</span>, <span class="s">'B5'</span>, <span class="s">'B6'</span>, <span class="s">'B7'</span>, <span class="s">'B8'</span>, <span class="s">'B8A'</span>, <span class="s">'B11'</span>, <span class="s">'B12'</span>];
 
 <span class="c">// Una tarea de exportación por año</span>
-annual.aggregate_array('year').evaluate(<span class="k">function</span> (list) {
-  list.forEach(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = ee.Image(annual.filter(ee.Filter.eq('year', year)).first());
-    Export.image.toDrive({
-      image: img.select(exportBands).toFloat(),
-      description: 'Sentinel2_mediana_' + year,
-      folder: 'Sentinel_Median',
+annual.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
+  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
+    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>());
+    <span class="g">Export</span>.image.<span class="f">toDrive</span>({
+      image: img.<span class="f">select</span>(exportBands).<span class="f">toFloat</span>(),
+      description: <span class="s">'Sentinel2_mediana_'</span> + year,
+      folder: <span class="s">'Sentinel_Median'</span>,
       region: AOI,
-      scale: 10,
-      crs: 'EPSG:32618',<span class="c">  // UTM 18N, cámbiala por la zona de tu AOI</span>
-      maxPixels: 1e13
+      scale: <span class="n">10</span>,
+      crs: <span class="s">'EPSG:32618'</span>,  <span class="c">// UTM 18N, cámbiala por la zona de tu AOI</span>
+      maxPixels: <span class="n">1e13</span>
     });
   });
 });</pre></div>
@@ -234,73 +234,73 @@ annual.aggregate_array('year').evaluate(<span class="k">function</span> (list) {
     <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
     <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
-<span class="k">function</span> maskS2clouds(img) {
-  <span class="k">var</span> scl = img.select('SCL');
-  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
-    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
-    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
-    .and(scl.neq(10));<span class="c">     // cirros</span>
-  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+<span class="k">function</span> <span class="f">maskS2clouds</span>(img) {
+  <span class="k">var</span> scl = img.<span class="f">select</span>(<span class="s">'SCL'</span>);
+  <span class="k">var</span> mask = scl.<span class="f">neq</span>(<span class="n">3</span>)    <span class="c">// sombra de nubes</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">8</span>))       <span class="c">// nubes, probabilidad media</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">9</span>))       <span class="c">// nubes, probabilidad alta</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">10</span>));     <span class="c">// cirros</span>
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask).<span class="f">select</span>(<span class="s">'B.*'</span>).<span class="f">divide</span>(<span class="n">10000</span>);
 }
 
 <span class="c">// Parámetros de búsqueda</span>
-<span class="k">var</span> startYear = 2019;<span class="c">   // año inicial</span>
-<span class="k">var</span> endYear = 2025;<span class="c">     // año final</span>
-<span class="k">var</span> startMonth = 1;<span class="c">     // mes inicial</span>
-<span class="k">var</span> endMonth = 12;<span class="c">      // mes final</span>
-<span class="k">var</span> cloudcover = 20;<span class="c">    // porcentaje máximo de píxeles nubosos</span>
+<span class="k">var</span> startYear = <span class="n">2019</span>;   <span class="c">// año inicial</span>
+<span class="k">var</span> endYear = <span class="n">2025</span>;     <span class="c">// año final</span>
+<span class="k">var</span> startMonth = <span class="n">1</span>;     <span class="c">// mes inicial</span>
+<span class="k">var</span> endMonth = <span class="n">12</span>;      <span class="c">// mes final</span>
+<span class="k">var</span> cloudcover = <span class="n">20</span>;    <span class="c">// porcentaje máximo de píxeles nubosos</span>
 
 <span class="c">// Colección filtrada y sin nubes</span>
-<span class="k">var</span> collection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
-  .filterBounds(AOI)
-  .filterDate(startYear + '-01-01', (endYear + 1) + '-01-01')
-  .filter(ee.Filter.calendarRange(startMonth, endMonth, 'month'))
-  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', cloudcover))
-  .map(maskS2clouds);
-print('Imágenes disponibles', collection.size());
+<span class="k">var</span> collection = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">'COPERNICUS/S2_SR_HARMONIZED'</span>)
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, (endYear + <span class="n">1</span>) + <span class="s">'-01-01'</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, cloudcover))
+  .<span class="f">map</span>(maskS2clouds);
+<span class="g">print</span>(<span class="s">'Imágenes disponibles'</span>, collection.<span class="f">size</span>());
 
 <span class="c">// Una mediana por año</span>
-<span class="k">var</span> years = ee.List.sequence(startYear, endYear);
+<span class="k">var</span> years = <span class="g">ee</span>.List.<span class="f">sequence</span>(startYear, endYear);
 
-<span class="k">var</span> annual = ee.ImageCollection.fromImages(years.map(<span class="k">function</span> (year) {
-  <span class="k">var</span> start = ee.Date.fromYMD(year, 1, 1);
-  <span class="k">var</span> images = collection.filterDate(start, start.advance(1, 'year'));
-  <span class="k">return</span> images.median()
-    .clip(AOI)
-    .set('year', year)
-    .set('n_images', images.size());
+<span class="k">var</span> annual = <span class="g">ee</span>.ImageCollection.<span class="f">fromImages</span>(years.<span class="f">map</span>(<span class="k">function</span> (year) {
+  <span class="k">var</span> start = <span class="g">ee</span>.Date.<span class="f">fromYMD</span>(year, <span class="n">1</span>, <span class="n">1</span>);
+  <span class="k">var</span> images = collection.<span class="f">filterDate</span>(start, start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>));
+  <span class="k">return</span> images.<span class="f">median</span>()
+    .<span class="f">clip</span>(AOI)
+    .<span class="f">set</span>(<span class="s">'year'</span>, year)
+    .<span class="f">set</span>(<span class="s">'n_images'</span>, images.<span class="f">size</span>());
 }));
 
 <span class="c">// Quitar los años sin imágenes</span>
-annual = annual.filter(ee.Filter.gt('n_images', 0));
-print('Medianas anuales', annual);
+annual = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">gt</span>(<span class="s">'n_images'</span>, <span class="n">0</span>));
+<span class="g">print</span>(<span class="s">'Medianas anuales'</span>, annual);
 
 <span class="c">// Color verdadero, una capa por año</span>
-<span class="k">var</span> visRGB = {bands: ['B4', 'B3', 'B2'], min: 0.01, max: 0.22, gamma: 1};
-Map.centerObject(AOI, 11);
+<span class="k">var</span> visRGB = {bands: [<span class="s">'B4'</span>, <span class="s">'B3'</span>, <span class="s">'B2'</span>], min: <span class="n">0.01</span>, max: <span class="n">0.22</span>, gamma: <span class="n">1</span>};
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">11</span>);
 
-annual.aggregate_array('year').evaluate(<span class="k">function</span> (list) {
-  list.forEach(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = annual.filter(ee.Filter.eq('year', year)).first();
-    Map.addLayer(img, visRGB, 'RGB ' + year, <span class="k">false</span>);
+annual.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
+  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
+    <span class="k">var</span> img = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>();
+    <span class="g">Map</span>.<span class="f">addLayer</span>(img, visRGB, <span class="s">'RGB '</span> + year, <span class="n">false</span>);
   });
 });
 
 <span class="c">// Bandas a exportar: visibles, borde rojo, NIR y SWIR</span>
-<span class="k">var</span> exportBands = ['B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B11', 'B12'];
+<span class="k">var</span> exportBands = [<span class="s">'B2'</span>, <span class="s">'B3'</span>, <span class="s">'B4'</span>, <span class="s">'B5'</span>, <span class="s">'B6'</span>, <span class="s">'B7'</span>, <span class="s">'B8'</span>, <span class="s">'B8A'</span>, <span class="s">'B11'</span>, <span class="s">'B12'</span>];
 
 <span class="c">// Una tarea de exportación por año</span>
-annual.aggregate_array('year').evaluate(<span class="k">function</span> (list) {
-  list.forEach(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = ee.Image(annual.filter(ee.Filter.eq('year', year)).first());
-    Export.image.toDrive({
-      image: img.select(exportBands).toFloat(),
-      description: 'Sentinel2_mediana_' + year,
-      folder: 'Sentinel_Median',
+annual.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
+  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
+    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>());
+    <span class="g">Export</span>.image.<span class="f">toDrive</span>({
+      image: img.<span class="f">select</span>(exportBands).<span class="f">toFloat</span>(),
+      description: <span class="s">'Sentinel2_mediana_'</span> + year,
+      folder: <span class="s">'Sentinel_Median'</span>,
       region: AOI,
-      scale: 10,
-      crs: 'EPSG:32618',<span class="c">  // UTM 18N, cámbiala por la zona de tu AOI</span>
-      maxPixels: 1e13
+      scale: <span class="n">10</span>,
+      crs: <span class="s">'EPSG:32618'</span>,  <span class="c">// UTM 18N, cámbiala por la zona de tu AOI</span>
+      maxPixels: <span class="n">1e13</span>
     });
   });
 });</pre></div>

@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<link rel="stylesheet" href="../assets/style.css?v=417096c9">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -159,32 +159,32 @@
     <h2 id="paso-1">Paso 1: Filtrar con la región de interés <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
     <p>Con <code>filterBounds()</code> restringimos la colección a la región de interés, y filtramos por fecha y porcentaje de píxeles nubosos para obtener una imagen de buena calidad. Luego tomamos la primera imagen con <code>first()</code> y la recortamos al AOI con <code>clip()</code>.</p>
     <div class="callout"><p>Antes de ejecutar el código, dibuja tu zona de estudio con las herramientas de geometría del mapa y cámbiale el nombre a <code>AOI</code> en el panel de importaciones, porque así la llama el script.</p></div>
-    <div class="codebox"><pre><span class="k">var</span> s2 = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
-  .filterDate("2023-01-01", "2023-12-01")
-  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 5))
-  .filterBounds(AOI);
+    <div class="codebox"><pre><span class="k">var</span> s2 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"COPERNICUS/S2_SR_HARMONIZED"</span>)
+  .<span class="f">filterDate</span>(<span class="s">"2023-01-01"</span>, <span class="s">"2023-12-01"</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, <span class="n">5</span>))
+  .<span class="f">filterBounds</span>(AOI);
 
-<span class="k">var</span> firts_s2 = s2.first().clip(AOI);</pre></div>
+<span class="k">var</span> firts_s2 = s2.<span class="f">first</span>().<span class="f">clip</span>(AOI);</pre></div>
 
     <h2 id="paso-2">Paso 2: Visualizar la imagen <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>Creamos una variable con los parámetros de visualización usando las bandas B4, B3 y B2 (color verdadero), agregamos la imagen con <code>Map.addLayer()</code> y centramos el mapa en la región de interés con <code>Map.centerObject()</code>.</p>
-    <div class="codebox"><pre><span class="k">var</span> visArgs_SENT = {bands: 'B4,B3,B2', min: 130, max: 2360, gamma: 1};
-Map.addLayer(firts_s2, visArgs_SENT, "sentinel 2 first image");
-Map.centerObject(AOI, 10);</pre></div>
+    <div class="codebox"><pre><span class="k">var</span> visArgs_SENT = {bands: <span class="s">'B4,B3,B2'</span>, min: <span class="n">130</span>, max: <span class="n">2360</span>, gamma: <span class="n">1</span>};
+<span class="g">Map</span>.<span class="f">addLayer</span>(firts_s2, visArgs_SENT, <span class="s">"sentinel 2 first image"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);</pre></div>
     <figure class="shot"><img src="../assets/img/descargar-sentinel-2/resultado.jpg" alt="Imagen de Sentinel-2 en color verdadero recortada a la región de interés" loading="lazy" width="627" height="453"><figcaption>Imagen de Sentinel-2 recortada al AOI.</figcaption></figure>
 
     <h2 id="paso-3">Paso 3: Exportar la imagen a Google Drive <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
     <p>Con <code>Export.image.toDrive()</code> exportamos la imagen indicando la descripción, la carpeta de destino, la escala, la región y el formato. Usamos <code>toFloat()</code> para que todas las bandas tengan el mismo tipo de dato. Después ejecutamos la tarea desde la pestaña <strong>Tasks</strong>.</p>
-    <div class="codebox"><pre>Export.image.toDrive({
-  image: firts_s2.toFloat(),
-  description: 'sentinel_image',
-  folder: "sentinel collections",
-  scale: 10,
+    <div class="codebox"><pre><span class="g">Export</span>.image.<span class="f">toDrive</span>({
+  image: firts_s2.<span class="f">toFloat</span>(),
+  description: <span class="s">'sentinel_image'</span>,
+  folder: <span class="s">"sentinel collections"</span>,
+  scale: <span class="n">10</span>,
   region: AOI,
-  maxPixels: 1E13,
-  fileFormat: "TIFF",
+  maxPixels: <span class="n">1E13</span>,
+  fileFormat: <span class="s">"TIFF"</span>,
   formatOptions: {
-    cloudOptimized: <span class="k">true</span>
+    cloudOptimized: <span class="n">true</span>
   }
 });</pre></div>
 
@@ -194,30 +194,30 @@ Map.centerObject(AOI, 10);</pre></div>
 <span class="c">// y nómbrala "AOI" en el panel de importaciones.</span>
 
 <span class="c">// Filtrar la colección por fecha, nubosidad y región</span>
-<span class="k">var</span> s2 = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
-  .filterDate("2023-01-01", "2023-12-01")
-  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 5))
-  .filterBounds(AOI);
+<span class="k">var</span> s2 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"COPERNICUS/S2_SR_HARMONIZED"</span>)
+  .<span class="f">filterDate</span>(<span class="s">"2023-01-01"</span>, <span class="s">"2023-12-01"</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, <span class="n">5</span>))
+  .<span class="f">filterBounds</span>(AOI);
 
 <span class="c">// Primera imagen recortada con la región de interés</span>
-<span class="k">var</span> firts_s2 = s2.first().clip(AOI);
+<span class="k">var</span> firts_s2 = s2.<span class="f">first</span>().<span class="f">clip</span>(AOI);
 
 <span class="c">// Visualización</span>
-<span class="k">var</span> visArgs_SENT = {bands: 'B4,B3,B2', min: 130, max: 2360, gamma: 1};
-Map.addLayer(firts_s2, visArgs_SENT, "sentinel 2 first image");
-Map.centerObject(AOI, 10);
+<span class="k">var</span> visArgs_SENT = {bands: <span class="s">'B4,B3,B2'</span>, min: <span class="n">130</span>, max: <span class="n">2360</span>, gamma: <span class="n">1</span>};
+<span class="g">Map</span>.<span class="f">addLayer</span>(firts_s2, visArgs_SENT, <span class="s">"sentinel 2 first image"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);
 
 <span class="c">// Exportar la imagen a Google Drive</span>
-Export.image.toDrive({
-  image: firts_s2.toFloat(),
-  description: 'sentinel_image',
-  folder: "sentinel collections",
-  scale: 10,
+<span class="g">Export</span>.image.<span class="f">toDrive</span>({
+  image: firts_s2.<span class="f">toFloat</span>(),
+  description: <span class="s">'sentinel_image'</span>,
+  folder: <span class="s">"sentinel collections"</span>,
+  scale: <span class="n">10</span>,
   region: AOI,
-  maxPixels: 1E13,
-  fileFormat: "TIFF",
+  maxPixels: <span class="n">1E13</span>,
+  fileFormat: <span class="s">"TIFF"</span>,
   formatOptions: {
-    cloudOptimized: <span class="k">true</span>
+    cloudOptimized: <span class="n">true</span>
   }
 });</pre></div>
 

@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<link rel="stylesheet" href="../assets/style.css?v=417096c9">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -186,201 +186,201 @@
     <p>Reutilizamos las funciones de factor de escala y máscara de nubes. Filtramos Landsat 9 por fecha, región y nubosidad, y tomamos la primera escena con <code>first()</code>. Los índices deben calcularse siempre sobre reflectancia, nunca sobre los valores digitales.</p>
     <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
     <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> scaler(img) {
-  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
-  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
-  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+<span class="k">function</span> <span class="f">scaler</span>(img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
+  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
+  <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
 }
 
 <span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> mask_clouds(img) {
-  <span class="k">var</span> qa = img.select('QA_PIXEL');
-  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
-  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
-    .and(qa.bitwiseAnd(cloud).eq(0))
-    .and(qa.bitwiseAnd(cloudShadow).eq(0))
-    .and(qa.bitwiseAnd(snow).eq(0));
-  <span class="k">return</span> img.updateMask(mask);
+<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
+  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
+  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
 }</pre></div>
     <div class="codebox"><pre><span class="c">// Primera imagen de Landsat 9 con poca nubosidad sobre el AOI</span>
-<span class="k">var</span> ls9_image = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
-  .filterDate('2023-01-01', '2023-12-31')
-  .filter(ee.Filter.lt("CLOUD_COVER_LAND", 10))
-  .filterBounds(AOI)
-  .map(mask_clouds)
-  .map(scaler)
-  .first()
-  .clip(AOI);
-print(ls9_image);</pre></div>
+<span class="k">var</span> ls9_image = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>)
+  .<span class="f">filterDate</span>(<span class="s">'2023-01-01'</span>, <span class="s">'2023-12-31'</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lt</span>(<span class="s">"CLOUD_COVER_LAND"</span>, <span class="n">10</span>))
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">map</span>(mask_clouds)
+  .<span class="f">map</span>(scaler)
+  .<span class="f">first</span>()
+  .<span class="f">clip</span>(AOI);
+<span class="g">print</span>(ls9_image);</pre></div>
     <div class="codebox"><pre><span class="c">// Imagen en color verdadero</span>
-Map.addLayer(ls9_image, {bands: "SR_B4,SR_B3,SR_B2", min: 0.003, max: 0.19, gamma: 1}, "Landsat 9");
-Map.centerObject(AOI, 10);</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_image, {bands: <span class="s">"SR_B4,SR_B3,SR_B2"</span>, min: <span class="n">0.003</span>, max: <span class="n">0.19</span>, gamma: <span class="n">1</span>}, <span class="s">"Landsat 9"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);</pre></div>
 
     <h2 id="paso-2">Paso 2: Calcular los índices <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>Para los índices que son una diferencia normalizada entre dos bandas, <code>normalizedDifference()</code> es lo más corto. Para fórmulas con constantes o raíces usamos <code>expression()</code>, que asigna un nombre a cada banda dentro de la ecuación.</p>
     <div class="codebox"><pre><span class="c">// NDVI: (NIR - Rojo) / (NIR + Rojo)</span>
-<span class="k">var</span> NDVI = ls9_image.normalizedDifference(['SR_B5', 'SR_B4']).rename('NDVI');
+<span class="k">var</span> NDVI = ls9_image.<span class="f">normalizedDifference</span>([<span class="s">'SR_B5'</span>, <span class="s">'SR_B4'</span>]).<span class="f">rename</span>(<span class="s">'NDVI'</span>);
 
 <span class="c">// EVI: 2.5 * (NIR - Rojo) / (NIR + 6 * Rojo - 7.5 * Azul + 1)</span>
-<span class="k">var</span> EVI = ls9_image.expression('2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))', {
-  'NIR': ls9_image.select('SR_B5'),
-  'RED': ls9_image.select('SR_B4'),
-  'BLUE': ls9_image.select('SR_B2')
-}).rename('EVI');
+<span class="k">var</span> EVI = ls9_image.<span class="f">expression</span>(<span class="s">'2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))'</span>, {
+  <span class="s">'NIR'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B5'</span>),
+  <span class="s">'RED'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B4'</span>),
+  <span class="s">'BLUE'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B2'</span>)
+}).<span class="f">rename</span>(<span class="s">'EVI'</span>);
 
 <span class="c">// SAVI: (NIR - Rojo) / (NIR + Rojo + 0.5) * 1.5</span>
-<span class="k">var</span> SAVI = ls9_image.expression('((NIR - RED) / (NIR + RED + 0.5)) * 1.5', {
-  'NIR': ls9_image.select('SR_B5'),
-  'RED': ls9_image.select('SR_B4')
-}).rename('SAVI');
+<span class="k">var</span> SAVI = ls9_image.<span class="f">expression</span>(<span class="s">'((NIR - RED) / (NIR + RED + 0.5)) * 1.5'</span>, {
+  <span class="s">'NIR'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B5'</span>),
+  <span class="s">'RED'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B4'</span>)
+}).<span class="f">rename</span>(<span class="s">'SAVI'</span>);
 
 <span class="c">// MSAVI: (2 * NIR + 1 - raíz((2 * NIR + 1)^2 - 8 * (NIR - Rojo))) / 2</span>
-<span class="k">var</span> MSAVI = ls9_image.expression('(2 * NIR + 1 - sqrt(pow((2 * NIR + 1), 2) - 8 * (NIR - RED))) / 2', {
-  'NIR': ls9_image.select('SR_B5'),
-  'RED': ls9_image.select('SR_B4')
-}).rename('MSAVI');
+<span class="k">var</span> MSAVI = ls9_image.<span class="f">expression</span>(<span class="s">'(2 * NIR + 1 - sqrt(pow((2 * NIR + 1), 2) - 8 * (NIR - RED))) / 2'</span>, {
+  <span class="s">'NIR'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B5'</span>),
+  <span class="s">'RED'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B4'</span>)
+}).<span class="f">rename</span>(<span class="s">'MSAVI'</span>);
 
 <span class="c">// NDMI: (NIR - SWIR1) / (NIR + SWIR1)</span>
-<span class="k">var</span> NDMI = ls9_image.normalizedDifference(['SR_B5', 'SR_B6']).rename('NDMI');
+<span class="k">var</span> NDMI = ls9_image.<span class="f">normalizedDifference</span>([<span class="s">'SR_B5'</span>, <span class="s">'SR_B6'</span>]).<span class="f">rename</span>(<span class="s">'NDMI'</span>);
 
 <span class="c">// NBR: (NIR - SWIR2) / (NIR + SWIR2)</span>
-<span class="k">var</span> NBR = ls9_image.normalizedDifference(['SR_B5', 'SR_B7']).rename('NBR');
+<span class="k">var</span> NBR = ls9_image.<span class="f">normalizedDifference</span>([<span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>]).<span class="f">rename</span>(<span class="s">'NBR'</span>);
 
 <span class="c">// NBR2: (SWIR1 - SWIR2) / (SWIR1 + SWIR2)</span>
-<span class="k">var</span> NBR2 = ls9_image.normalizedDifference(['SR_B6', 'SR_B7']).rename('NBR2');</pre></div>
+<span class="k">var</span> NBR2 = ls9_image.<span class="f">normalizedDifference</span>([<span class="s">'SR_B6'</span>, <span class="s">'SR_B7'</span>]).<span class="f">rename</span>(<span class="s">'NBR2'</span>);</pre></div>
 
     <h2 id="paso-3">Paso 3: Visualizar los índices <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
     <p>Los índices de vegetación van de 0 (sin vegetación) a 1 (vegetación muy densa), así que comparten una paleta que pasa del café al verde oscuro. NDMI y NBR tienen paletas propias.</p>
     <div class="codebox"><pre><span class="c">// Simbologías</span>
-<span class="k">var</span> vegPalette = {min: 0, max: 1, palette: ['0000ff', 'DF923D', 'F1B555', 'FCD163', '99B718',
-  '74A901', '66A000', '529400', '3E8601', '207401', '056201', '004C00', '023B01', '012E01',
-  '011D01', '011301']};
-<span class="k">var</span> ndmiParams = {min: -0.5, max: 0.5, palette: ["ff0000", "ffa500", "ffff00", "00ff00", "187a07"]};
-<span class="k">var</span> nbrParams = {min: 0, max: 0.5, palette: ["e47f44", "ffe483", "5d61ed", "2902ff"]};
+<span class="k">var</span> vegPalette = {min: <span class="n">0</span>, max: <span class="n">1</span>, palette: [<span class="s">'0000ff'</span>, <span class="s">'DF923D'</span>, <span class="s">'F1B555'</span>, <span class="s">'FCD163'</span>, <span class="s">'99B718'</span>,
+  <span class="s">'74A901'</span>, <span class="s">'66A000'</span>, <span class="s">'529400'</span>, <span class="s">'3E8601'</span>, <span class="s">'207401'</span>, <span class="s">'056201'</span>, <span class="s">'004C00'</span>, <span class="s">'023B01'</span>, <span class="s">'012E01'</span>,
+  <span class="s">'011D01'</span>, <span class="s">'011301'</span>]};
+<span class="k">var</span> ndmiParams = {min: -<span class="n">0.5</span>, max: <span class="n">0.5</span>, palette: [<span class="s">"ff0000"</span>, <span class="s">"ffa500"</span>, <span class="s">"ffff00"</span>, <span class="s">"00ff00"</span>, <span class="s">"187a07"</span>]};
+<span class="k">var</span> nbrParams = {min: <span class="n">0</span>, max: <span class="n">0.5</span>, palette: [<span class="s">"e47f44"</span>, <span class="s">"ffe483"</span>, <span class="s">"5d61ed"</span>, <span class="s">"2902ff"</span>]};
 
-Map.addLayer(NDVI, vegPalette, 'NDVI');
-Map.addLayer(EVI, vegPalette, 'EVI');
-Map.addLayer(SAVI, vegPalette, 'SAVI');
-Map.addLayer(MSAVI, vegPalette, 'MSAVI');
-Map.addLayer(NDMI, ndmiParams, 'NDMI');
-Map.addLayer(NBR, nbrParams, 'NBR');
-Map.addLayer(NBR2, nbrParams, 'NBR2');</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(NDVI, vegPalette, <span class="s">'NDVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(EVI, vegPalette, <span class="s">'EVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(SAVI, vegPalette, <span class="s">'SAVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(MSAVI, vegPalette, <span class="s">'MSAVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(NDMI, ndmiParams, <span class="s">'NDMI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(NBR, nbrParams, <span class="s">'NBR'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(NBR2, nbrParams, <span class="s">'NBR2'</span>);</pre></div>
 
     <h2 id="paso-4">Paso 4: Exportar los índices <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
     <p>Unimos los siete índices con <code>addBands()</code> para que el GeoTIFF tenga una banda por índice, y lo enviamos a Google Drive.</p>
     <div class="codebox"><pre><span class="c">// Unir los índices en una sola imagen y exportarla</span>
-<span class="k">var</span> index = NDVI.addBands([EVI, SAVI, MSAVI, NDMI, NBR, NBR2]).toFloat();
+<span class="k">var</span> index = NDVI.<span class="f">addBands</span>([EVI, SAVI, MSAVI, NDMI, NBR, NBR2]).<span class="f">toFloat</span>();
 
-Export.image.toDrive({
+<span class="g">Export</span>.image.<span class="f">toDrive</span>({
   image: index,
-  description: "landsat_9_vegetation_index",
-  folder: "index",
+  description: <span class="s">"landsat_9_vegetation_index"</span>,
+  folder: <span class="s">"index"</span>,
   region: AOI,
-  scale: 30,
-  maxPixels: 1e13,
-  fileFormat: "TIFF",
-  formatOptions: {cloudOptimized: <span class="k">true</span>}
+  scale: <span class="n">30</span>,
+  maxPixels: <span class="n">1e13</span>,
+  fileFormat: <span class="s">"TIFF"</span>,
+  formatOptions: {cloudOptimized: <span class="n">true</span>}
 });</pre></div>
 
     <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
     <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> scaler(img) {
-  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
-  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
-  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+<span class="k">function</span> <span class="f">scaler</span>(img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
+  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
+  <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
 }
 
 <span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> mask_clouds(img) {
-  <span class="k">var</span> qa = img.select('QA_PIXEL');
-  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
-  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
-    .and(qa.bitwiseAnd(cloud).eq(0))
-    .and(qa.bitwiseAnd(cloudShadow).eq(0))
-    .and(qa.bitwiseAnd(snow).eq(0));
-  <span class="k">return</span> img.updateMask(mask);
+<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
+  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
+  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
 }
 
 <span class="c">// Primera imagen de Landsat 9 con poca nubosidad sobre el AOI</span>
-<span class="k">var</span> ls9_image = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
-  .filterDate('2023-01-01', '2023-12-31')
-  .filter(ee.Filter.lt("CLOUD_COVER_LAND", 10))
-  .filterBounds(AOI)
-  .map(mask_clouds)
-  .map(scaler)
-  .first()
-  .clip(AOI);
-print(ls9_image);
+<span class="k">var</span> ls9_image = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>)
+  .<span class="f">filterDate</span>(<span class="s">'2023-01-01'</span>, <span class="s">'2023-12-31'</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lt</span>(<span class="s">"CLOUD_COVER_LAND"</span>, <span class="n">10</span>))
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">map</span>(mask_clouds)
+  .<span class="f">map</span>(scaler)
+  .<span class="f">first</span>()
+  .<span class="f">clip</span>(AOI);
+<span class="g">print</span>(ls9_image);
 
 <span class="c">// Imagen en color verdadero</span>
-Map.addLayer(ls9_image, {bands: "SR_B4,SR_B3,SR_B2", min: 0.003, max: 0.19, gamma: 1}, "Landsat 9");
-Map.centerObject(AOI, 10);
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_image, {bands: <span class="s">"SR_B4,SR_B3,SR_B2"</span>, min: <span class="n">0.003</span>, max: <span class="n">0.19</span>, gamma: <span class="n">1</span>}, <span class="s">"Landsat 9"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);
 
 <span class="c">// NDVI: (NIR - Rojo) / (NIR + Rojo)</span>
-<span class="k">var</span> NDVI = ls9_image.normalizedDifference(['SR_B5', 'SR_B4']).rename('NDVI');
+<span class="k">var</span> NDVI = ls9_image.<span class="f">normalizedDifference</span>([<span class="s">'SR_B5'</span>, <span class="s">'SR_B4'</span>]).<span class="f">rename</span>(<span class="s">'NDVI'</span>);
 
 <span class="c">// EVI: 2.5 * (NIR - Rojo) / (NIR + 6 * Rojo - 7.5 * Azul + 1)</span>
-<span class="k">var</span> EVI = ls9_image.expression('2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))', {
-  'NIR': ls9_image.select('SR_B5'),
-  'RED': ls9_image.select('SR_B4'),
-  'BLUE': ls9_image.select('SR_B2')
-}).rename('EVI');
+<span class="k">var</span> EVI = ls9_image.<span class="f">expression</span>(<span class="s">'2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))'</span>, {
+  <span class="s">'NIR'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B5'</span>),
+  <span class="s">'RED'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B4'</span>),
+  <span class="s">'BLUE'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B2'</span>)
+}).<span class="f">rename</span>(<span class="s">'EVI'</span>);
 
 <span class="c">// SAVI: (NIR - Rojo) / (NIR + Rojo + 0.5) * 1.5</span>
-<span class="k">var</span> SAVI = ls9_image.expression('((NIR - RED) / (NIR + RED + 0.5)) * 1.5', {
-  'NIR': ls9_image.select('SR_B5'),
-  'RED': ls9_image.select('SR_B4')
-}).rename('SAVI');
+<span class="k">var</span> SAVI = ls9_image.<span class="f">expression</span>(<span class="s">'((NIR - RED) / (NIR + RED + 0.5)) * 1.5'</span>, {
+  <span class="s">'NIR'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B5'</span>),
+  <span class="s">'RED'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B4'</span>)
+}).<span class="f">rename</span>(<span class="s">'SAVI'</span>);
 
 <span class="c">// MSAVI: (2 * NIR + 1 - raíz((2 * NIR + 1)^2 - 8 * (NIR - Rojo))) / 2</span>
-<span class="k">var</span> MSAVI = ls9_image.expression('(2 * NIR + 1 - sqrt(pow((2 * NIR + 1), 2) - 8 * (NIR - RED))) / 2', {
-  'NIR': ls9_image.select('SR_B5'),
-  'RED': ls9_image.select('SR_B4')
-}).rename('MSAVI');
+<span class="k">var</span> MSAVI = ls9_image.<span class="f">expression</span>(<span class="s">'(2 * NIR + 1 - sqrt(pow((2 * NIR + 1), 2) - 8 * (NIR - RED))) / 2'</span>, {
+  <span class="s">'NIR'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B5'</span>),
+  <span class="s">'RED'</span>: ls9_image.<span class="f">select</span>(<span class="s">'SR_B4'</span>)
+}).<span class="f">rename</span>(<span class="s">'MSAVI'</span>);
 
 <span class="c">// NDMI: (NIR - SWIR1) / (NIR + SWIR1)</span>
-<span class="k">var</span> NDMI = ls9_image.normalizedDifference(['SR_B5', 'SR_B6']).rename('NDMI');
+<span class="k">var</span> NDMI = ls9_image.<span class="f">normalizedDifference</span>([<span class="s">'SR_B5'</span>, <span class="s">'SR_B6'</span>]).<span class="f">rename</span>(<span class="s">'NDMI'</span>);
 
 <span class="c">// NBR: (NIR - SWIR2) / (NIR + SWIR2)</span>
-<span class="k">var</span> NBR = ls9_image.normalizedDifference(['SR_B5', 'SR_B7']).rename('NBR');
+<span class="k">var</span> NBR = ls9_image.<span class="f">normalizedDifference</span>([<span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>]).<span class="f">rename</span>(<span class="s">'NBR'</span>);
 
 <span class="c">// NBR2: (SWIR1 - SWIR2) / (SWIR1 + SWIR2)</span>
-<span class="k">var</span> NBR2 = ls9_image.normalizedDifference(['SR_B6', 'SR_B7']).rename('NBR2');
+<span class="k">var</span> NBR2 = ls9_image.<span class="f">normalizedDifference</span>([<span class="s">'SR_B6'</span>, <span class="s">'SR_B7'</span>]).<span class="f">rename</span>(<span class="s">'NBR2'</span>);
 
 <span class="c">// Simbologías</span>
-<span class="k">var</span> vegPalette = {min: 0, max: 1, palette: ['0000ff', 'DF923D', 'F1B555', 'FCD163', '99B718',
-  '74A901', '66A000', '529400', '3E8601', '207401', '056201', '004C00', '023B01', '012E01',
-  '011D01', '011301']};
-<span class="k">var</span> ndmiParams = {min: -0.5, max: 0.5, palette: ["ff0000", "ffa500", "ffff00", "00ff00", "187a07"]};
-<span class="k">var</span> nbrParams = {min: 0, max: 0.5, palette: ["e47f44", "ffe483", "5d61ed", "2902ff"]};
+<span class="k">var</span> vegPalette = {min: <span class="n">0</span>, max: <span class="n">1</span>, palette: [<span class="s">'0000ff'</span>, <span class="s">'DF923D'</span>, <span class="s">'F1B555'</span>, <span class="s">'FCD163'</span>, <span class="s">'99B718'</span>,
+  <span class="s">'74A901'</span>, <span class="s">'66A000'</span>, <span class="s">'529400'</span>, <span class="s">'3E8601'</span>, <span class="s">'207401'</span>, <span class="s">'056201'</span>, <span class="s">'004C00'</span>, <span class="s">'023B01'</span>, <span class="s">'012E01'</span>,
+  <span class="s">'011D01'</span>, <span class="s">'011301'</span>]};
+<span class="k">var</span> ndmiParams = {min: -<span class="n">0.5</span>, max: <span class="n">0.5</span>, palette: [<span class="s">"ff0000"</span>, <span class="s">"ffa500"</span>, <span class="s">"ffff00"</span>, <span class="s">"00ff00"</span>, <span class="s">"187a07"</span>]};
+<span class="k">var</span> nbrParams = {min: <span class="n">0</span>, max: <span class="n">0.5</span>, palette: [<span class="s">"e47f44"</span>, <span class="s">"ffe483"</span>, <span class="s">"5d61ed"</span>, <span class="s">"2902ff"</span>]};
 
-Map.addLayer(NDVI, vegPalette, 'NDVI');
-Map.addLayer(EVI, vegPalette, 'EVI');
-Map.addLayer(SAVI, vegPalette, 'SAVI');
-Map.addLayer(MSAVI, vegPalette, 'MSAVI');
-Map.addLayer(NDMI, ndmiParams, 'NDMI');
-Map.addLayer(NBR, nbrParams, 'NBR');
-Map.addLayer(NBR2, nbrParams, 'NBR2');
+<span class="g">Map</span>.<span class="f">addLayer</span>(NDVI, vegPalette, <span class="s">'NDVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(EVI, vegPalette, <span class="s">'EVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(SAVI, vegPalette, <span class="s">'SAVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(MSAVI, vegPalette, <span class="s">'MSAVI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(NDMI, ndmiParams, <span class="s">'NDMI'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(NBR, nbrParams, <span class="s">'NBR'</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(NBR2, nbrParams, <span class="s">'NBR2'</span>);
 
 <span class="c">// Unir los índices en una sola imagen y exportarla</span>
-<span class="k">var</span> index = NDVI.addBands([EVI, SAVI, MSAVI, NDMI, NBR, NBR2]).toFloat();
+<span class="k">var</span> index = NDVI.<span class="f">addBands</span>([EVI, SAVI, MSAVI, NDMI, NBR, NBR2]).<span class="f">toFloat</span>();
 
-Export.image.toDrive({
+<span class="g">Export</span>.image.<span class="f">toDrive</span>({
   image: index,
-  description: "landsat_9_vegetation_index",
-  folder: "index",
+  description: <span class="s">"landsat_9_vegetation_index"</span>,
+  folder: <span class="s">"index"</span>,
   region: AOI,
-  scale: 30,
-  maxPixels: 1e13,
-  fileFormat: "TIFF",
-  formatOptions: {cloudOptimized: <span class="k">true</span>}
+  scale: <span class="n">30</span>,
+  maxPixels: <span class="n">1e13</span>,
+  fileFormat: <span class="s">"TIFF"</span>,
+  formatOptions: {cloudOptimized: <span class="n">true</span>}
 });</pre></div>
 
     <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>

@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<link rel="stylesheet" href="../assets/style.css?v=417096c9">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -147,166 +147,166 @@
     <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
     <p>Preparamos una escena de Sentinel-2 sin nubes y calculamos NDWI, MNDWI y AWEInsh tal como en la lección <a href="deteccion-agua-sentinel-2.html">Detección de agua con Sentinel-2</a>. El falso color NIR-Red edge-Verde muestra el agua muy oscura y la vegetación en rojo.</p>
     <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
-<span class="k">function</span> maskS2clouds(img) {
-  <span class="k">var</span> scl = img.select('SCL');
-  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
-    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
-    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
-    .and(scl.neq(10));<span class="c">     // cirros</span>
-  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+<span class="k">function</span> <span class="f">maskS2clouds</span>(img) {
+  <span class="k">var</span> scl = img.<span class="f">select</span>(<span class="s">'SCL'</span>);
+  <span class="k">var</span> mask = scl.<span class="f">neq</span>(<span class="n">3</span>)    <span class="c">// sombra de nubes</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">8</span>))       <span class="c">// nubes, probabilidad media</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">9</span>))       <span class="c">// nubes, probabilidad alta</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">10</span>));     <span class="c">// cirros</span>
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask).<span class="f">select</span>(<span class="s">'B.*'</span>).<span class="f">divide</span>(<span class="n">10000</span>);
 }</pre></div>
     <div class="codebox"><pre><span class="c">// Primera imagen de Sentinel-2 con poca nubosidad sobre el AOI</span>
-<span class="k">var</span> s2_image = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
-  .filterDate("2023-01-01", "2023-12-01")
-  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 10))
-  .filterBounds(AOI)
-  .map(maskS2clouds)
-  .first()
-  .clip(AOI);
-print(s2_image);</pre></div>
+<span class="k">var</span> s2_image = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"COPERNICUS/S2_SR_HARMONIZED"</span>)
+  .<span class="f">filterDate</span>(<span class="s">"2023-01-01"</span>, <span class="s">"2023-12-01"</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, <span class="n">10</span>))
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">map</span>(maskS2clouds)
+  .<span class="f">first</span>()
+  .<span class="f">clip</span>(AOI);
+<span class="g">print</span>(s2_image);</pre></div>
     <div class="codebox"><pre><span class="c">// Falso color NIR-Red edge-Verde</span>
-Map.addLayer(s2_image, {bands: "B8,B5,B3", min: 0, max: 0.4, gamma: 1}, "Sentinel-2");
-Map.centerObject(AOI, 12);</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(s2_image, {bands: <span class="s">"B8,B5,B3"</span>, min: <span class="n">0</span>, max: <span class="n">0.4</span>, gamma: <span class="n">1</span>}, <span class="s">"Sentinel-2"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">12</span>);</pre></div>
     <div class="codebox"><pre><span class="c">// Índices para detectar agua con bandas de Sentinel-2</span>
-<span class="k">var</span> NDWI = s2_image.normalizedDifference(['B3', 'B8']).rename('NDWI');
-<span class="k">var</span> MNDWI = s2_image.normalizedDifference(['B3', 'B11']).rename('MNDWI');
-<span class="k">var</span> AWEInsh = s2_image.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
-  'GREEN': s2_image.select('B3'),
-  'SWIR1': s2_image.select('B11'),
-  'SWIR2': s2_image.select('B12'),
-  'NIR': s2_image.select('B8')
-}).rename('AWEInsh');
-<span class="k">var</span> index = NDWI.addBands([MNDWI, AWEInsh]);</pre></div>
+<span class="k">var</span> NDWI = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B3'</span>, <span class="s">'B8'</span>]).<span class="f">rename</span>(<span class="s">'NDWI'</span>);
+<span class="k">var</span> MNDWI = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B3'</span>, <span class="s">'B11'</span>]).<span class="f">rename</span>(<span class="s">'MNDWI'</span>);
+<span class="k">var</span> AWEInsh = s2_image.<span class="f">expression</span>(<span class="s">'4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)'</span>, {
+  <span class="s">'GREEN'</span>: s2_image.<span class="f">select</span>(<span class="s">'B3'</span>),
+  <span class="s">'SWIR1'</span>: s2_image.<span class="f">select</span>(<span class="s">'B11'</span>),
+  <span class="s">'SWIR2'</span>: s2_image.<span class="f">select</span>(<span class="s">'B12'</span>),
+  <span class="s">'NIR'</span>: s2_image.<span class="f">select</span>(<span class="s">'B8'</span>)
+}).<span class="f">rename</span>(<span class="s">'AWEInsh'</span>);
+<span class="k">var</span> index = NDWI.<span class="f">addBands</span>([MNDWI, AWEInsh]);</pre></div>
 
     <h2 id="paso-2">Paso 2: Máscara de agua <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>Un píxel es agua si NDWI o MNDWI superan 0, o si AWEInsh supera 0,01. Combinar los tres índices ayuda a no perder orillas ni zonas con vegetación flotante.</p>
     <div class="codebox"><pre><span class="c">// Máscara de agua con los tres índices</span>
 <span class="k">var</span> waterMask = <span class="k">function</span>(img) {
-  <span class="k">var</span> water = img.select('NDWI').gt(0)
-    .or(img.select('MNDWI').gt(0))
-    .or(img.select('AWEInsh').gt(0.01));
-  <span class="k">return</span> water.rename('waterMask');
+  <span class="k">var</span> water = img.<span class="f">select</span>(<span class="s">'NDWI'</span>).<span class="f">gt</span>(<span class="n">0</span>)
+    .<span class="f">or</span>(img.<span class="f">select</span>(<span class="s">'MNDWI'</span>).<span class="f">gt</span>(<span class="n">0</span>))
+    .<span class="f">or</span>(img.<span class="f">select</span>(<span class="s">'AWEInsh'</span>).<span class="f">gt</span>(<span class="n">0.01</span>));
+  <span class="k">return</span> water.<span class="f">rename</span>(<span class="s">'waterMask'</span>);
 };
-<span class="k">var</span> masking = waterMask(index);
-Map.addLayer(masking, {}, 'Máscara de agua');</pre></div>
+<span class="k">var</span> masking = <span class="f">waterMask</span>(index);
+<span class="g">Map</span>.<span class="f">addLayer</span>(masking, {}, <span class="s">'Máscara de agua'</span>);</pre></div>
 
     <h2 id="paso-3">Paso 3: Limpiar la máscara <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
     <p>La máscara cruda tiene píxeles sueltos que generarían cientos de polígonos diminutos. <code>connectedPixelCount()</code> cuenta cuántos píxeles conectados tiene cada grupo, y con eso rellenamos las islas pequeñas dentro del agua y eliminamos el agua aislada de pocos píxeles. El parámetro <code>FILL_SIZE</code> controla qué tan agresiva es la limpieza.</p>
     <div class="codebox"><pre><span class="c">// Rellenar islas pequeñas: tierra rodeada de agua con menos de FILL_SIZE píxeles</span>
 <span class="k">var</span> removeIslands = <span class="k">function</span>(img, FILL_SIZE) {
-  <span class="k">var</span> fill = img.not().selfMask().connectedPixelCount(FILL_SIZE).lt(FILL_SIZE);
-  <span class="k">return</span> img.where(fill, 1).rename('waterMask');
+  <span class="k">var</span> fill = img.<span class="f">not</span>().<span class="f">selfMask</span>().<span class="f">connectedPixelCount</span>(FILL_SIZE).<span class="f">lt</span>(FILL_SIZE);
+  <span class="k">return</span> img.<span class="f">where</span>(fill, <span class="n">1</span>).<span class="f">rename</span>(<span class="s">'waterMask'</span>);
 };
 
 <span class="c">// Quitar charcos pequeños: agua aislada con menos de FILL_SIZE píxeles</span>
 <span class="k">var</span> removeSmallWater = <span class="k">function</span>(img, FILL_SIZE) {
-  <span class="k">var</span> fill = img.connectedPixelCount(FILL_SIZE).lt(FILL_SIZE);
-  <span class="k">return</span> img.where(fill, 0).rename('waterMask');
+  <span class="k">var</span> fill = img.<span class="f">connectedPixelCount</span>(FILL_SIZE).<span class="f">lt</span>(FILL_SIZE);
+  <span class="k">return</span> img.<span class="f">where</span>(fill, <span class="n">0</span>).<span class="f">rename</span>(<span class="s">'waterMask'</span>);
 };
 
-<span class="k">var</span> mask_clean = removeSmallWater(removeIslands(masking, 40), 10);
-Map.addLayer(mask_clean, {}, 'Máscara limpia');</pre></div>
+<span class="k">var</span> mask_clean = <span class="f">removeSmallWater</span>(<span class="f">removeIslands</span>(masking, <span class="n">40</span>), <span class="n">10</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(mask_clean, {}, <span class="s">'Máscara limpia'</span>);</pre></div>
 
     <h2 id="paso-4">Paso 4: Vectorizar y exportar <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
     <p><code>reduceToVectors()</code> agrupa los píxeles contiguos de agua en polígonos. La tabla resultante se exporta como shapefile y puedes abrirla directamente en QGIS.</p>
     <div class="codebox"><pre><span class="c">// Convertir los píxeles de agua en polígonos</span>
-<span class="k">var</span> waterPolygons = mask_clean.selfMask().reduceToVectors({
+<span class="k">var</span> waterPolygons = mask_clean.<span class="f">selfMask</span>().<span class="f">reduceToVectors</span>({
   geometry: AOI,
-  scale: 10,
-  geometryType: 'polygon',
-  eightConnected: <span class="k">false</span>,
-  labelProperty: 'zone',
-  maxPixels: 1e13
+  scale: <span class="n">10</span>,
+  geometryType: <span class="s">'polygon'</span>,
+  eightConnected: <span class="n">false</span>,
+  labelProperty: <span class="s">'zone'</span>,
+  maxPixels: <span class="n">1e13</span>
 });
-Map.addLayer(waterPolygons, {color: 'cyan'}, "Polígonos de agua");
+<span class="g">Map</span>.<span class="f">addLayer</span>(waterPolygons, {color: <span class="s">'cyan'</span>}, <span class="s">"Polígonos de agua"</span>);
 
 <span class="c">// Exportar como shapefile a Google Drive</span>
-Export.table.toDrive({
+<span class="g">Export</span>.table.<span class="f">toDrive</span>({
   collection: waterPolygons,
-  description: "water_polygons_sentinel",
-  folder: "shapes",
-  fileFormat: "SHP"
+  description: <span class="s">"water_polygons_sentinel"</span>,
+  folder: <span class="s">"shapes"</span>,
+  fileFormat: <span class="s">"SHP"</span>
 });</pre></div>
 
     <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
     <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
-<span class="k">function</span> maskS2clouds(img) {
-  <span class="k">var</span> scl = img.select('SCL');
-  <span class="k">var</span> mask = scl.neq(3)<span class="c">    // sombra de nubes</span>
-    .and(scl.neq(8))<span class="c">       // nubes, probabilidad media</span>
-    .and(scl.neq(9))<span class="c">       // nubes, probabilidad alta</span>
-    .and(scl.neq(10));<span class="c">     // cirros</span>
-  <span class="k">return</span> img.updateMask(mask).select('B.*').divide(10000);
+<span class="k">function</span> <span class="f">maskS2clouds</span>(img) {
+  <span class="k">var</span> scl = img.<span class="f">select</span>(<span class="s">'SCL'</span>);
+  <span class="k">var</span> mask = scl.<span class="f">neq</span>(<span class="n">3</span>)    <span class="c">// sombra de nubes</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">8</span>))       <span class="c">// nubes, probabilidad media</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">9</span>))       <span class="c">// nubes, probabilidad alta</span>
+    .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">10</span>));     <span class="c">// cirros</span>
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask).<span class="f">select</span>(<span class="s">'B.*'</span>).<span class="f">divide</span>(<span class="n">10000</span>);
 }
 
 <span class="c">// Primera imagen de Sentinel-2 con poca nubosidad sobre el AOI</span>
-<span class="k">var</span> s2_image = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
-  .filterDate("2023-01-01", "2023-12-01")
-  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 10))
-  .filterBounds(AOI)
-  .map(maskS2clouds)
-  .first()
-  .clip(AOI);
-print(s2_image);
+<span class="k">var</span> s2_image = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"COPERNICUS/S2_SR_HARMONIZED"</span>)
+  .<span class="f">filterDate</span>(<span class="s">"2023-01-01"</span>, <span class="s">"2023-12-01"</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, <span class="n">10</span>))
+  .<span class="f">filterBounds</span>(AOI)
+  .<span class="f">map</span>(maskS2clouds)
+  .<span class="f">first</span>()
+  .<span class="f">clip</span>(AOI);
+<span class="g">print</span>(s2_image);
 
 <span class="c">// Falso color NIR-Red edge-Verde</span>
-Map.addLayer(s2_image, {bands: "B8,B5,B3", min: 0, max: 0.4, gamma: 1}, "Sentinel-2");
-Map.centerObject(AOI, 12);
+<span class="g">Map</span>.<span class="f">addLayer</span>(s2_image, {bands: <span class="s">"B8,B5,B3"</span>, min: <span class="n">0</span>, max: <span class="n">0.4</span>, gamma: <span class="n">1</span>}, <span class="s">"Sentinel-2"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">12</span>);
 
 <span class="c">// Índices para detectar agua con bandas de Sentinel-2</span>
-<span class="k">var</span> NDWI = s2_image.normalizedDifference(['B3', 'B8']).rename('NDWI');
-<span class="k">var</span> MNDWI = s2_image.normalizedDifference(['B3', 'B11']).rename('MNDWI');
-<span class="k">var</span> AWEInsh = s2_image.expression('4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)', {
-  'GREEN': s2_image.select('B3'),
-  'SWIR1': s2_image.select('B11'),
-  'SWIR2': s2_image.select('B12'),
-  'NIR': s2_image.select('B8')
-}).rename('AWEInsh');
-<span class="k">var</span> index = NDWI.addBands([MNDWI, AWEInsh]);
+<span class="k">var</span> NDWI = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B3'</span>, <span class="s">'B8'</span>]).<span class="f">rename</span>(<span class="s">'NDWI'</span>);
+<span class="k">var</span> MNDWI = s2_image.<span class="f">normalizedDifference</span>([<span class="s">'B3'</span>, <span class="s">'B11'</span>]).<span class="f">rename</span>(<span class="s">'MNDWI'</span>);
+<span class="k">var</span> AWEInsh = s2_image.<span class="f">expression</span>(<span class="s">'4 * (GREEN - SWIR1) - (0.25 * NIR + 2.75 * SWIR2)'</span>, {
+  <span class="s">'GREEN'</span>: s2_image.<span class="f">select</span>(<span class="s">'B3'</span>),
+  <span class="s">'SWIR1'</span>: s2_image.<span class="f">select</span>(<span class="s">'B11'</span>),
+  <span class="s">'SWIR2'</span>: s2_image.<span class="f">select</span>(<span class="s">'B12'</span>),
+  <span class="s">'NIR'</span>: s2_image.<span class="f">select</span>(<span class="s">'B8'</span>)
+}).<span class="f">rename</span>(<span class="s">'AWEInsh'</span>);
+<span class="k">var</span> index = NDWI.<span class="f">addBands</span>([MNDWI, AWEInsh]);
 
 <span class="c">// Máscara de agua con los tres índices</span>
 <span class="k">var</span> waterMask = <span class="k">function</span>(img) {
-  <span class="k">var</span> water = img.select('NDWI').gt(0)
-    .or(img.select('MNDWI').gt(0))
-    .or(img.select('AWEInsh').gt(0.01));
-  <span class="k">return</span> water.rename('waterMask');
+  <span class="k">var</span> water = img.<span class="f">select</span>(<span class="s">'NDWI'</span>).<span class="f">gt</span>(<span class="n">0</span>)
+    .<span class="f">or</span>(img.<span class="f">select</span>(<span class="s">'MNDWI'</span>).<span class="f">gt</span>(<span class="n">0</span>))
+    .<span class="f">or</span>(img.<span class="f">select</span>(<span class="s">'AWEInsh'</span>).<span class="f">gt</span>(<span class="n">0.01</span>));
+  <span class="k">return</span> water.<span class="f">rename</span>(<span class="s">'waterMask'</span>);
 };
-<span class="k">var</span> masking = waterMask(index);
-Map.addLayer(masking, {}, 'Máscara de agua');
+<span class="k">var</span> masking = <span class="f">waterMask</span>(index);
+<span class="g">Map</span>.<span class="f">addLayer</span>(masking, {}, <span class="s">'Máscara de agua'</span>);
 
 <span class="c">// Rellenar islas pequeñas: tierra rodeada de agua con menos de FILL_SIZE píxeles</span>
 <span class="k">var</span> removeIslands = <span class="k">function</span>(img, FILL_SIZE) {
-  <span class="k">var</span> fill = img.not().selfMask().connectedPixelCount(FILL_SIZE).lt(FILL_SIZE);
-  <span class="k">return</span> img.where(fill, 1).rename('waterMask');
+  <span class="k">var</span> fill = img.<span class="f">not</span>().<span class="f">selfMask</span>().<span class="f">connectedPixelCount</span>(FILL_SIZE).<span class="f">lt</span>(FILL_SIZE);
+  <span class="k">return</span> img.<span class="f">where</span>(fill, <span class="n">1</span>).<span class="f">rename</span>(<span class="s">'waterMask'</span>);
 };
 
 <span class="c">// Quitar charcos pequeños: agua aislada con menos de FILL_SIZE píxeles</span>
 <span class="k">var</span> removeSmallWater = <span class="k">function</span>(img, FILL_SIZE) {
-  <span class="k">var</span> fill = img.connectedPixelCount(FILL_SIZE).lt(FILL_SIZE);
-  <span class="k">return</span> img.where(fill, 0).rename('waterMask');
+  <span class="k">var</span> fill = img.<span class="f">connectedPixelCount</span>(FILL_SIZE).<span class="f">lt</span>(FILL_SIZE);
+  <span class="k">return</span> img.<span class="f">where</span>(fill, <span class="n">0</span>).<span class="f">rename</span>(<span class="s">'waterMask'</span>);
 };
 
-<span class="k">var</span> mask_clean = removeSmallWater(removeIslands(masking, 40), 10);
-Map.addLayer(mask_clean, {}, 'Máscara limpia');
+<span class="k">var</span> mask_clean = <span class="f">removeSmallWater</span>(<span class="f">removeIslands</span>(masking, <span class="n">40</span>), <span class="n">10</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(mask_clean, {}, <span class="s">'Máscara limpia'</span>);
 
 <span class="c">// Convertir los píxeles de agua en polígonos</span>
-<span class="k">var</span> waterPolygons = mask_clean.selfMask().reduceToVectors({
+<span class="k">var</span> waterPolygons = mask_clean.<span class="f">selfMask</span>().<span class="f">reduceToVectors</span>({
   geometry: AOI,
-  scale: 10,
-  geometryType: 'polygon',
-  eightConnected: <span class="k">false</span>,
-  labelProperty: 'zone',
-  maxPixels: 1e13
+  scale: <span class="n">10</span>,
+  geometryType: <span class="s">'polygon'</span>,
+  eightConnected: <span class="n">false</span>,
+  labelProperty: <span class="s">'zone'</span>,
+  maxPixels: <span class="n">1e13</span>
 });
-Map.addLayer(waterPolygons, {color: 'cyan'}, "Polígonos de agua");
+<span class="g">Map</span>.<span class="f">addLayer</span>(waterPolygons, {color: <span class="s">'cyan'</span>}, <span class="s">"Polígonos de agua"</span>);
 
 <span class="c">// Exportar como shapefile a Google Drive</span>
-Export.table.toDrive({
+<span class="g">Export</span>.table.<span class="f">toDrive</span>({
   collection: waterPolygons,
-  description: "water_polygons_sentinel",
-  folder: "shapes",
-  fileFormat: "SHP"
+  description: <span class="s">"water_polygons_sentinel"</span>,
+  folder: <span class="s">"shapes"</span>,
+  fileFormat: <span class="s">"SHP"</span>
 });</pre></div>
 
     <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>

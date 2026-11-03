@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<link rel="stylesheet" href="../assets/style.css?v=417096c9">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -150,24 +150,24 @@
     <h2 id="paso-1">Paso 1: Crear las funciones <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
     <p>Landsat Colección 2 guarda la reflectancia como números enteros. La función <code>scaler</code> los convierte en reflectancia real con los factores que publica el USGS, y <code>mask_clouds</code> lee los bits de la banda <code>QA_PIXEL</code> para ocultar cirros, nubes, sombras de nubes y nieve.</p>
     <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> scaler(img) {
-  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
-  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
-  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+<span class="k">function</span> <span class="f">scaler</span>(img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
+  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
+  <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
 }
 
 <span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> mask_clouds(img) {
-  <span class="k">var</span> qa = img.select('QA_PIXEL');
-  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
-  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
-    .and(qa.bitwiseAnd(cloud).eq(0))
-    .and(qa.bitwiseAnd(cloudShadow).eq(0))
-    .and(qa.bitwiseAnd(snow).eq(0));
-  <span class="k">return</span> img.updateMask(mask);
+<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
+  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
+  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
 }</pre></div>
     <div class="tbl">
       <table>
@@ -187,98 +187,98 @@
     <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
     <p>Filtramos Landsat 9 por fecha y región y calculamos una mediana sin ninguna corrección. Así vemos el punto de partida, todavía con restos de nubes y en valores digitales.</p>
     <div class="codebox"><pre><span class="c">// Colección de Landsat 9 filtrada por fecha y región</span>
-<span class="k">var</span> ls9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
-  .filterDate('2023-01-01', '2023-06-30')
-  .filterBounds(AOI);
-print(ls9);
+<span class="k">var</span> ls9 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>)
+  .<span class="f">filterDate</span>(<span class="s">'2023-01-01'</span>, <span class="s">'2023-06-30'</span>)
+  .<span class="f">filterBounds</span>(AOI);
+<span class="g">print</span>(ls9);
 
 <span class="c">// Mediana sin máscara, todavía con nubes</span>
-<span class="k">var</span> ls9_m = ls9.median().clip(AOI);
-<span class="k">var</span> visRaw = {bands: "SR_B4,SR_B3,SR_B2", min: 7200, max: 13800, gamma: 1};
-Map.addLayer(ls9_m, visRaw, "Landsat 9 mediana con nubes");
-Map.centerObject(AOI, 8);</pre></div>
+<span class="k">var</span> ls9_m = ls9.<span class="f">median</span>().<span class="f">clip</span>(AOI);
+<span class="k">var</span> visRaw = {bands: <span class="s">"SR_B4,SR_B3,SR_B2"</span>, min: <span class="n">7200</span>, max: <span class="n">13800</span>, gamma: <span class="n">1</span>};
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_m, visRaw, <span class="s">"Landsat 9 mediana con nubes"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">8</span>);</pre></div>
 
     <h2 id="paso-3">Paso 3: Composición sin nubes <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
     <p>Ahora aplicamos las dos funciones a cada imagen con <code>map()</code> y luego calculamos la mediana. La segunda versión añade un filtro por <code>CLOUD_COVER_LAND</code> para usar solo las escenas más despejadas, lo que suele dar colores más limpios.</p>
     <div class="codebox"><pre><span class="c">// Mediana sin nubes: primero la máscara, luego el factor de escala</span>
-<span class="k">var</span> ls9_cf = ls9.map(mask_clouds).map(scaler).median().clip(AOI);
-<span class="k">var</span> visSR = {bands: "SR_B4,SR_B3,SR_B2", min: 0.002, max: 0.182, gamma: 1};
-Map.addLayer(ls9_cf, visSR, "Landsat 9 mediana sin nubes");
+<span class="k">var</span> ls9_cf = ls9.<span class="f">map</span>(mask_clouds).<span class="f">map</span>(scaler).<span class="f">median</span>().<span class="f">clip</span>(AOI);
+<span class="k">var</span> visSR = {bands: <span class="s">"SR_B4,SR_B3,SR_B2"</span>, min: <span class="n">0.002</span>, max: <span class="n">0.182</span>, gamma: <span class="n">1</span>};
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_cf, visSR, <span class="s">"Landsat 9 mediana sin nubes"</span>);
 
 <span class="c">// Mismo proceso, pero solo con escenas de menos del 10 % de nubes en tierra</span>
-<span class="k">var</span> ls9_cc = ls9.filter(ee.Filter.lt("CLOUD_COVER_LAND", 10))
-  .map(mask_clouds).map(scaler).median().clip(AOI);
-Map.addLayer(ls9_cc, visSR, "Landsat 9 mediana sin nubes y con filtro");</pre></div>
+<span class="k">var</span> ls9_cc = ls9.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lt</span>(<span class="s">"CLOUD_COVER_LAND"</span>, <span class="n">10</span>))
+  .<span class="f">map</span>(mask_clouds).<span class="f">map</span>(scaler).<span class="f">median</span>().<span class="f">clip</span>(AOI);
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_cc, visSR, <span class="s">"Landsat 9 mediana sin nubes y con filtro"</span>);</pre></div>
 
     <h2 id="paso-4">Paso 4: Exportar la composición <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
     <p>Exportamos solo las bandas ópticas <code>SR_B1</code> a <code>SR_B7</code> a 30 m. La tarea aparece en la pestaña <strong>Tasks</strong>, donde debes ejecutarla.</p>
     <div class="codebox"><pre><span class="c">// Exportar las bandas ópticas a Google Drive</span>
-Export.image.toDrive({
-  image: ls9_cc.select(["SR_B[1-7]"]),
-  description: "landsat_9_cloud_free_composite",
-  folder: "landsat collection cloud free",
+<span class="g">Export</span>.image.<span class="f">toDrive</span>({
+  image: ls9_cc.<span class="f">select</span>([<span class="s">"SR_B[1-7]"</span>]),
+  description: <span class="s">"landsat_9_cloud_free_composite"</span>,
+  folder: <span class="s">"landsat collection cloud free"</span>,
   region: AOI,
-  scale: 30,
-  maxPixels: 1e13,
-  fileFormat: "TIFF",
-  formatOptions: {cloudOptimized: <span class="k">true</span>}
+  scale: <span class="n">30</span>,
+  maxPixels: <span class="n">1e13</span>,
+  fileFormat: <span class="s">"TIFF"</span>,
+  formatOptions: {cloudOptimized: <span class="n">true</span>}
 });</pre></div>
 
     <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
     <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> scaler(img) {
-  <span class="k">var</span> optical = img.select('SR_B.').multiply(0.0000275).add(-0.2).toFloat();
-  <span class="k">var</span> thermal = img.select('ST_B.*').multiply(0.00341802).add(149).toFloat();
-  <span class="k">return</span> img.addBands(optical, null, <span class="k">true</span>).addBands(thermal, null, <span class="k">true</span>);
+<span class="k">function</span> <span class="f">scaler</span>(img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
+  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
+  <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
 }
 
 <span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> mask_clouds(img) {
-  <span class="k">var</span> qa = img.select('QA_PIXEL');
-  <span class="k">var</span> cirrus = 1 &lt;&lt; 2;<span class="c">       // bit 2, cirros</span>
-  <span class="k">var</span> cloud = 1 &lt;&lt; 3;<span class="c">        // bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = 1 &lt;&lt; 4;<span class="c">  // bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = 1 &lt;&lt; 5;<span class="c">         // bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.bitwiseAnd(cirrus).eq(0)
-    .and(qa.bitwiseAnd(cloud).eq(0))
-    .and(qa.bitwiseAnd(cloudShadow).eq(0))
-    .and(qa.bitwiseAnd(snow).eq(0));
-  <span class="k">return</span> img.updateMask(mask);
+<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
+  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
+  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
+  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
+  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
+  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
 }
 
 <span class="c">// Colección de Landsat 9 filtrada por fecha y región</span>
-<span class="k">var</span> ls9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
-  .filterDate('2023-01-01', '2023-06-30')
-  .filterBounds(AOI);
-print(ls9);
+<span class="k">var</span> ls9 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>)
+  .<span class="f">filterDate</span>(<span class="s">'2023-01-01'</span>, <span class="s">'2023-06-30'</span>)
+  .<span class="f">filterBounds</span>(AOI);
+<span class="g">print</span>(ls9);
 
 <span class="c">// Mediana sin máscara, todavía con nubes</span>
-<span class="k">var</span> ls9_m = ls9.median().clip(AOI);
-<span class="k">var</span> visRaw = {bands: "SR_B4,SR_B3,SR_B2", min: 7200, max: 13800, gamma: 1};
-Map.addLayer(ls9_m, visRaw, "Landsat 9 mediana con nubes");
-Map.centerObject(AOI, 8);
+<span class="k">var</span> ls9_m = ls9.<span class="f">median</span>().<span class="f">clip</span>(AOI);
+<span class="k">var</span> visRaw = {bands: <span class="s">"SR_B4,SR_B3,SR_B2"</span>, min: <span class="n">7200</span>, max: <span class="n">13800</span>, gamma: <span class="n">1</span>};
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_m, visRaw, <span class="s">"Landsat 9 mediana con nubes"</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">8</span>);
 
 <span class="c">// Mediana sin nubes: primero la máscara, luego el factor de escala</span>
-<span class="k">var</span> ls9_cf = ls9.map(mask_clouds).map(scaler).median().clip(AOI);
-<span class="k">var</span> visSR = {bands: "SR_B4,SR_B3,SR_B2", min: 0.002, max: 0.182, gamma: 1};
-Map.addLayer(ls9_cf, visSR, "Landsat 9 mediana sin nubes");
+<span class="k">var</span> ls9_cf = ls9.<span class="f">map</span>(mask_clouds).<span class="f">map</span>(scaler).<span class="f">median</span>().<span class="f">clip</span>(AOI);
+<span class="k">var</span> visSR = {bands: <span class="s">"SR_B4,SR_B3,SR_B2"</span>, min: <span class="n">0.002</span>, max: <span class="n">0.182</span>, gamma: <span class="n">1</span>};
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_cf, visSR, <span class="s">"Landsat 9 mediana sin nubes"</span>);
 
 <span class="c">// Mismo proceso, pero solo con escenas de menos del 10 % de nubes en tierra</span>
-<span class="k">var</span> ls9_cc = ls9.filter(ee.Filter.lt("CLOUD_COVER_LAND", 10))
-  .map(mask_clouds).map(scaler).median().clip(AOI);
-Map.addLayer(ls9_cc, visSR, "Landsat 9 mediana sin nubes y con filtro");
+<span class="k">var</span> ls9_cc = ls9.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lt</span>(<span class="s">"CLOUD_COVER_LAND"</span>, <span class="n">10</span>))
+  .<span class="f">map</span>(mask_clouds).<span class="f">map</span>(scaler).<span class="f">median</span>().<span class="f">clip</span>(AOI);
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_cc, visSR, <span class="s">"Landsat 9 mediana sin nubes y con filtro"</span>);
 
 <span class="c">// Exportar las bandas ópticas a Google Drive</span>
-Export.image.toDrive({
-  image: ls9_cc.select(["SR_B[1-7]"]),
-  description: "landsat_9_cloud_free_composite",
-  folder: "landsat collection cloud free",
+<span class="g">Export</span>.image.<span class="f">toDrive</span>({
+  image: ls9_cc.<span class="f">select</span>([<span class="s">"SR_B[1-7]"</span>]),
+  description: <span class="s">"landsat_9_cloud_free_composite"</span>,
+  folder: <span class="s">"landsat collection cloud free"</span>,
   region: AOI,
-  scale: 30,
-  maxPixels: 1e13,
-  fileFormat: "TIFF",
-  formatOptions: {cloudOptimized: <span class="k">true</span>}
+  scale: <span class="n">30</span>,
+  maxPixels: <span class="n">1e13</span>,
+  fileFormat: <span class="s">"TIFF"</span>,
+  formatOptions: {cloudOptimized: <span class="n">true</span>}
 });</pre></div>
 
     <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>

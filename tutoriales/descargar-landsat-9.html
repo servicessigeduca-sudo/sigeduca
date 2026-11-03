@@ -29,7 +29,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="../assets/style.css?v=f0097724">
+<link rel="stylesheet" href="../assets/style.css?v=417096c9">
 <script src="../assets/theme.js?v=45ee55f4"></script>
 </head>
 <body>
@@ -191,24 +191,24 @@
     </ul>
     <div class="callout"><p>Antes de ejecutar el código, dibuja tu zona de estudio con las herramientas de geometría del mapa y cámbiale el nombre a <code>AOI</code> en el panel de importaciones, porque así la llama el script. Para cargar el shapefile de Path y Row, descárgalo del USGS y súbelo a tus assets, como en el tutorial <a href="importar-shapefile.html">Importar shapefile en Earth Engine</a>; luego cambia la ruta del asset por la tuya.</p></div>
     <div class="codebox"><pre><span class="c">// Importar el shapefile de Path y Row</span>
-<span class="k">var</span> path_row = ee.FeatureCollection("projects/ee-sigeduca/assets/WRS2_descending");
+<span class="k">var</span> path_row = <span class="g">ee</span>.<span class="f">FeatureCollection</span>(<span class="s">"projects/ee-sigeduca/assets/WRS2_descending"</span>);
 
 <span class="c">// Filtrado de la colección por fecha, nubosidad y región</span>
-<span class="k">var</span> ls9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
-  .filterDate('2021-01-01', '2023-12-31').sort('system:time_start', <span class="k">true</span>)
-  .filter(ee.Filter.lte('CLOUD_COVER_LAND', 20)).filterBounds(AOI);
+<span class="k">var</span> ls9 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>)
+  .<span class="f">filterDate</span>(<span class="s">'2021-01-01'</span>, <span class="s">'2023-12-31'</span>).<span class="f">sort</span>(<span class="s">'system:time_start'</span>, <span class="n">true</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, <span class="n">20</span>)).<span class="f">filterBounds</span>(AOI);
 
 <span class="c">// Visualización de la imagen en el mapa</span>
-<span class="k">var</span> visparam = {bands: "SR_B4,SR_B3,SR_B2", min: 7600, max: 22000, gamma: 1};
-Map.centerObject(AOI, 8);
-Map.addLayer(ls9.first().clip(AOI), visparam, "First image Landsat 9");</pre></div>
+<span class="k">var</span> visparam = {bands: <span class="s">"SR_B4,SR_B3,SR_B2"</span>, min: <span class="n">7600</span>, max: <span class="n">22000</span>, gamma: <span class="n">1</span>};
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">8</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9.<span class="f">first</span>().<span class="f">clip</span>(AOI), visparam, <span class="s">"First image Landsat 9"</span>);</pre></div>
     <figure class="shot"><img src="../assets/img/descargar-landsat-9/aoi.jpg" alt="Región de interés sobre el área de Dallas y Fort Worth con la primera imagen recortada" loading="lazy" width="1032" height="627"><figcaption>Región de interés y primera imagen de Landsat 9.</figcaption></figure>
 
     <h2 id="paso-2">Paso 2: Agregar el polígono de Path y Row <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>Añadimos al mapa los polígonos de Path y Row que tocan el AOI para ver qué escenas lo cubren.</p>
     <div class="codebox"><pre><span class="c">// Agregar polígono Path y Row al mapa</span>
-<span class="k">var</span> ls9_path = path_row.filterBounds(AOI);
-Map.addLayer(ls9_path, {color: "#0000"}, "PATH AND ROW SHAPEFILE", 0);</pre></div>
+<span class="k">var</span> ls9_path = path_row.<span class="f">filterBounds</span>(AOI);
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_path, {color: <span class="s">"#0000"</span>}, <span class="s">"PATH AND ROW SHAPEFILE"</span>, <span class="n">0</span>);</pre></div>
     <figure class="shot"><img src="../assets/img/descargar-landsat-9/path-row.jpg" alt="Polígonos de Path y Row superpuestos sobre la región de interés" loading="lazy" width="825" height="562"><figcaption>Escenas de Landsat (Path y Row) que cubren la región de interés.</figcaption></figure>
 
     <h2 id="paso-3">Paso 3: Filtrar por Path y Row <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
@@ -217,26 +217,26 @@ Map.addLayer(ls9_path, {color: "#0000"}, "PATH AND ROW SHAPEFILE", 0);</pre></di
       <li>Seleccionamos la primera imagen filtrada y solo las bandas espectrales B1 a B7.</li>
     </ul>
     <div class="codebox"><pre><span class="c">// Filtro de Path y Row en la colección de imágenes</span>
-<span class="k">var</span> ls9_path_row = ls9.filter(ee.Filter.eq("WRS_PATH", 27))
-                      .filter(ee.Filter.eq("WRS_ROW", 37));
-<span class="k">var</span> image_ls9 = ls9_path_row.first().select(["SR_B[1-7]"]);
+<span class="k">var</span> ls9_path_row = ls9.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">"WRS_PATH"</span>, <span class="n">27</span>))
+                      .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">"WRS_ROW"</span>, <span class="n">37</span>));
+<span class="k">var</span> image_ls9 = ls9_path_row.<span class="f">first</span>().<span class="f">select</span>([<span class="s">"SR_B[1-7]"</span>]);
 
 <span class="c">// Cargar imagen filtrada al mapa</span>
-Map.addLayer(image_ls9.clip(AOI), visparam, "PATH AND ROW FILTER", 0);</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(image_ls9.<span class="f">clip</span>(AOI), visparam, <span class="s">"PATH AND ROW FILTER"</span>, <span class="n">0</span>);</pre></div>
     <figure class="shot"><img src="../assets/img/descargar-landsat-9/resultado.jpg" alt="Imagen de Landsat 9 recortada a la región de interés" loading="lazy" width="793" height="530"><figcaption>Imagen de Landsat 9 filtrada por Path y Row y recortada.</figcaption></figure>
 
     <h2 id="paso-4">Paso 4: Exportar la imagen a Google Drive <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
     <p>Exportamos la imagen seleccionada a Google Drive en formato GeoTIFF optimizado para la nube, y ejecutamos la tarea desde la pestaña <strong>Tasks</strong>.</p>
-    <div class="codebox"><pre>Export.image.toDrive({
+    <div class="codebox"><pre><span class="g">Export</span>.image.<span class="f">toDrive</span>({
   image: image_ls9,
-  description: "landsat_9_image",
-  folder: "landsat collections",
+  description: <span class="s">"landsat_9_image"</span>,
+  folder: <span class="s">"landsat collections"</span>,
   region: AOI,
-  scale: 30,
-  maxPixels: 1e13,
-  fileFormat: "TIFF",
+  scale: <span class="n">30</span>,
+  maxPixels: <span class="n">1e13</span>,
+  fileFormat: <span class="s">"TIFF"</span>,
   formatOptions: {
-    cloudOptimized: <span class="k">true</span>
+    cloudOptimized: <span class="n">true</span>
   }
 });</pre></div>
 
@@ -246,41 +246,41 @@ Map.addLayer(image_ls9.clip(AOI), visparam, "PATH AND ROW FILTER", 0);</pre></di
 <span class="c">// y nómbrala "AOI" en el panel de importaciones.</span>
 
 <span class="c">// Importar el shapefile de Path y Row (cambia la ruta por la de tu asset)</span>
-<span class="k">var</span> path_row = ee.FeatureCollection("projects/ee-sigeduca/assets/WRS2_descending");
+<span class="k">var</span> path_row = <span class="g">ee</span>.<span class="f">FeatureCollection</span>(<span class="s">"projects/ee-sigeduca/assets/WRS2_descending"</span>);
 
 <span class="c">// Filtrado de la colección por fecha, nubosidad y región</span>
-<span class="k">var</span> ls9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
-  .filterDate('2021-01-01', '2023-12-31').sort('system:time_start', <span class="k">true</span>)
-  .filter(ee.Filter.lte('CLOUD_COVER_LAND', 20)).filterBounds(AOI);
+<span class="k">var</span> ls9 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>)
+  .<span class="f">filterDate</span>(<span class="s">'2021-01-01'</span>, <span class="s">'2023-12-31'</span>).<span class="f">sort</span>(<span class="s">'system:time_start'</span>, <span class="n">true</span>)
+  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, <span class="n">20</span>)).<span class="f">filterBounds</span>(AOI);
 
 <span class="c">// Visualización de la imagen en el mapa</span>
-<span class="k">var</span> visparam = {bands: "SR_B4,SR_B3,SR_B2", min: 7600, max: 22000, gamma: 1};
-Map.centerObject(AOI, 8);
-Map.addLayer(ls9.first().clip(AOI), visparam, "First image Landsat 9");
+<span class="k">var</span> visparam = {bands: <span class="s">"SR_B4,SR_B3,SR_B2"</span>, min: <span class="n">7600</span>, max: <span class="n">22000</span>, gamma: <span class="n">1</span>};
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">8</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9.<span class="f">first</span>().<span class="f">clip</span>(AOI), visparam, <span class="s">"First image Landsat 9"</span>);
 
 <span class="c">// Agregar polígono Path y Row al mapa</span>
-<span class="k">var</span> ls9_path = path_row.filterBounds(AOI);
-Map.addLayer(ls9_path, {color: "#0000"}, "PATH AND ROW SHAPEFILE", 0);
+<span class="k">var</span> ls9_path = path_row.<span class="f">filterBounds</span>(AOI);
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_path, {color: <span class="s">"#0000"</span>}, <span class="s">"PATH AND ROW SHAPEFILE"</span>, <span class="n">0</span>);
 
 <span class="c">// Filtro de Path y Row en la colección de imágenes</span>
-<span class="k">var</span> ls9_path_row = ls9.filter(ee.Filter.eq("WRS_PATH", 27))
-                      .filter(ee.Filter.eq("WRS_ROW", 37));
-<span class="k">var</span> image_ls9 = ls9_path_row.first().select(["SR_B[1-7]"]);
+<span class="k">var</span> ls9_path_row = ls9.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">"WRS_PATH"</span>, <span class="n">27</span>))
+                      .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">"WRS_ROW"</span>, <span class="n">37</span>));
+<span class="k">var</span> image_ls9 = ls9_path_row.<span class="f">first</span>().<span class="f">select</span>([<span class="s">"SR_B[1-7]"</span>]);
 
 <span class="c">// Cargar imagen filtrada al mapa</span>
-Map.addLayer(image_ls9.clip(AOI), visparam, "PATH AND ROW FILTER", 0);
+<span class="g">Map</span>.<span class="f">addLayer</span>(image_ls9.<span class="f">clip</span>(AOI), visparam, <span class="s">"PATH AND ROW FILTER"</span>, <span class="n">0</span>);
 
 <span class="c">// Exportar la imagen a Google Drive</span>
-Export.image.toDrive({
+<span class="g">Export</span>.image.<span class="f">toDrive</span>({
   image: image_ls9,
-  description: "landsat_9_image",
-  folder: "landsat collections",
+  description: <span class="s">"landsat_9_image"</span>,
+  folder: <span class="s">"landsat collections"</span>,
   region: AOI,
-  scale: 30,
-  maxPixels: 1e13,
-  fileFormat: "TIFF",
+  scale: <span class="n">30</span>,
+  maxPixels: <span class="n">1e13</span>,
+  fileFormat: <span class="s">"TIFF"</span>,
   formatOptions: {
-    cloudOptimized: <span class="k">true</span>
+    cloudOptimized: <span class="n">true</span>
   }
 });</pre></div>
 
