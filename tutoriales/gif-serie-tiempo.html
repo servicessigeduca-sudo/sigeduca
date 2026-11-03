@@ -126,7 +126,7 @@
     
     <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
     <p>Un gráfico resume el cambio en números, pero una animación lo muestra. Ver cuadro a cuadro cómo una ciénaga se encoge o un río cambia de cauce es la forma más rápida de explicar un resultado en una clase, un informe o una red social.</p>
-    <p>En esta lección crearemos dos GIF a partir de la serie anual: uno en falso color y otro con la máscara de agua de DSWE, con el año escrito en cada cuadro.</p>
+    <p>En esta lección agregamos al script de la lección anterior dos GIF: uno en falso color y otro con la máscara de agua de DSWE, con el año escrito en cada cuadro.</p>
 
     <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
     <ul class="check">
@@ -149,368 +149,399 @@
       <li><code>getVideoThumbURL()</code> devuelve un enlace al GIF, y <code>ui.Thumbnail</code> lo muestra en la consola.</li>
     </ul>
 
-    <h2 id="paso-1">Paso 1: Construir la serie y aplicar DSWE <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <h2 id="paso-1">Secciones 0 a 9: Serie, DSWE y área <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
     <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
-    <p>Reconstruimos la serie anual de <a href="serie-tiempo-landsat.html">Series de tiempo con Landsat</a> y le aplicamos la función DSWE de <a href="agua-dswe.html">Agua superficial con DSWE</a>. Si vienes de esas lecciones, este bloque es el mismo.</p>
-    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> <span class="f">scaler</span>(img) {
-  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
-  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
-  <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
-}
+    <p>Las secciones 0 a 9 son las mismas de <a href="area-agua-dswe.html">Área de agua por año</a>: la serie anual, la máscara de agua de Jones (2019), el área de agua con su gráfico y la visualización en el mapa. Puedes copiarlas de esa lección o tomarlas del código completo al final de esta página.</p>
+    <div class="callout"><p><strong>Sobre el módulo.</strong> <code>require()</code> carga funciones guardadas en otro script del Code Editor, en este caso <code>users/sigeduca/routines:Indexes/Jones_2019</code>. Si al ejecutar aparece un error de acceso, crea un script nuevo en tu propio repositorio, pega el código del módulo que mostramos aquí, guárdalo como <code>Jones_2019</code> y cambia la ruta de <code>require()</code> por la tuya, por ejemplo <code>users/TU_USUARIO/TU_REPOSITORIO:Jones_2019</code>.</p></div>
 
-<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
-  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
-  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
-  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
-  <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
-}
+    <h2 id="paso-10">Sección 10: Crear la animación <a class="anchor" href="#paso-10" aria-label="Enlace a esta sección">#</a></h2>
+    <p><code>gifParams</code> fija el tamaño máximo en píxeles (<code>dimensions</code>) y la velocidad (<code>framesPerSecond</code>). En <code>annotations</code> indicamos que el texto vaya arriba y que lo tome de la propiedad <code>año</code>. El tamaño de la letra depende de la escala del mapa cuando ejecutas el script; si sale muy pequeña o muy grande, cambia el 2 de <code>Map.getScale() * 2</code>.</p>
+    <p><code>makeGifAnimation()</code> recibe una colección, unos parámetros de visualización y un nombre. Convierte cada imagen en un cuadro, escribe el año y une la serie con su versión invertida para que la animación vaya y vuelva sin cortes. La llamamos dos veces: el falso color SWIR1-NIR-Rojo muestra el agua casi negra, la vegetación verde y el suelo desnudo en tonos rosados; la máscara de agua muestra solo el agua, en azul.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 10 → CREACIÓN DE ANIMACIÓN CON FORMATO GIF</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Parámetros de búsqueda</span>
-<span class="k">var</span> startYear = <span class="n">2000</span>;   <span class="c">// año inicial</span>
-<span class="k">var</span> endYear = <span class="n">2025</span>;     <span class="c">// año final</span>
-<span class="k">var</span> startMonth = <span class="n">1</span>;     <span class="c">// mes inicial</span>
-<span class="k">var</span> endMonth = <span class="n">12</span>;      <span class="c">// mes final</span>
-<span class="k">var</span> cloudcover = <span class="n">30</span>;    <span class="c">// nubosidad máxima sobre tierra (%)</span>
+<span class="c">// Parámetros:</span>
+<span class="c">//   collection → ImageCollection a animar</span>
+<span class="c">//   visArgs    → argumentos de visualización (bandas, min, max, palette, etc.)</span>
+<span class="c">//   label      → nombre para identificar la animación en la consola</span>
 
-<span class="c">// Nombres comunes para las bandas de todos los sensores</span>
-<span class="k">var</span> bandsTM = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];   <span class="c">// Landsat 4, 5 y 7</span>
-<span class="k">var</span> bandsOLI = [<span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B6'</span>, <span class="s">'SR_B7'</span>];  <span class="c">// Landsat 8 y 9</span>
-<span class="k">var</span> names = [<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>];
-
-<span class="c">// Filtra una colección y prepara cada imagen</span>
-<span class="k">function</span> <span class="f">landsat</span>(id, bands) {
-  <span class="k">return</span> <span class="g">ee</span>.<span class="f">ImageCollection</span>(id)
-    .<span class="f">filterBounds</span>(AOI)
-    .<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, (endYear + <span class="n">1</span>) + <span class="s">'-01-01'</span>)
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, cloudcover))
-    .<span class="f">map</span>(<span class="k">function</span> (img) {
-      <span class="k">return</span> <span class="f">scaler</span>(<span class="f">mask_clouds</span>(img)).<span class="f">select</span>(bands, names);
-    });
-}
-
-<span class="c">// Landsat 4, 5, 7, 8 y 9 en una sola colección</span>
-<span class="k">var</span> collection = <span class="f">landsat</span>(<span class="s">'LANDSAT/LT04/C02/T1_L2'</span>, bandsTM)
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LT05/C02/T1_L2'</span>, bandsTM))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LE07/C02/T1_L2'</span>, bandsTM).<span class="f">filterDate</span>(<span class="s">'1999-04-15'</span>, <span class="s">'2013-05-30'</span>))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC08/C02/T1_L2'</span>, bandsOLI))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC09/C02/T1_L2'</span>, bandsOLI));
-<span class="g">print</span>(<span class="s">'Imágenes disponibles'</span>, collection.<span class="f">size</span>());
-
-<span class="c">// Una mediana por año</span>
-<span class="k">var</span> years = <span class="g">ee</span>.List.<span class="f">sequence</span>(startYear, endYear);
-
-<span class="k">var</span> annual = <span class="g">ee</span>.ImageCollection.<span class="f">fromImages</span>(years.<span class="f">map</span>(<span class="k">function</span> (year) {
-  <span class="k">var</span> start = <span class="g">ee</span>.Date.<span class="f">fromYMD</span>(year, <span class="n">1</span>, <span class="n">1</span>);
-  <span class="k">var</span> images = collection.<span class="f">filterDate</span>(start, start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>));
-  <span class="k">return</span> images.<span class="f">median</span>()
-    .<span class="f">clip</span>(AOI)
-    .<span class="f">set</span>(<span class="s">'year'</span>, year)
-    .<span class="f">set</span>(<span class="s">'n_images'</span>, images.<span class="f">size</span>());
-}));
-
-<span class="c">// Quitar los años sin imágenes</span>
-annual = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">gt</span>(<span class="s">'n_images'</span>, <span class="n">0</span>));
-<span class="g">print</span>(<span class="s">'Medianas anuales'</span>, annual);
-
-<span class="c">// DSWE: cinco pruebas espectrales sobre reflectancia de superficie (Jones, 2019)</span>
-<span class="k">function</span> <span class="f">dswe</span>(img) {
-  <span class="c">// En agua oscura (mar, lagos profundos) la reflectancia escalada puede ser un poco</span>
-  <span class="c">// negativa, y normalizedDifference() enmascara esos píxeles. Por eso usamos 0 como mínimo.</span>
-  <span class="k">var</span> r = img.<span class="f">select</span>([<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>]).<span class="f">max</span>(<span class="n">0</span>);
-  <span class="k">var</span> blue = r.<span class="f">select</span>(<span class="s">'Blue'</span>);
-  <span class="k">var</span> green = r.<span class="f">select</span>(<span class="s">'Green'</span>);
-  <span class="k">var</span> red = r.<span class="f">select</span>(<span class="s">'Red'</span>);
-  <span class="k">var</span> nir = r.<span class="f">select</span>(<span class="s">'Nir'</span>);
-  <span class="k">var</span> swir1 = r.<span class="f">select</span>(<span class="s">'Swir1'</span>);
-  <span class="k">var</span> swir2 = r.<span class="f">select</span>(<span class="s">'Swir2'</span>);
-
-  <span class="c">// Valores que usan las pruebas</span>
-  <span class="k">var</span> mndwi = r.<span class="f">normalizedDifference</span>([<span class="s">'Green'</span>, <span class="s">'Swir1'</span>]);
-  <span class="k">var</span> ndvi = r.<span class="f">normalizedDifference</span>([<span class="s">'Nir'</span>, <span class="s">'Red'</span>]);
-  <span class="k">var</span> mbsrv = green.<span class="f">add</span>(red);   <span class="c">// verde + rojo</span>
-  <span class="k">var</span> mbsrn = nir.<span class="f">add</span>(swir1);   <span class="c">// NIR + SWIR1</span>
-  <span class="k">var</span> awesh = blue.<span class="f">add</span>(green.<span class="f">multiply</span>(<span class="n">2.5</span>))
-    .<span class="f">subtract</span>(mbsrn.<span class="f">multiply</span>(<span class="n">1.5</span>))
-    .<span class="f">subtract</span>(swir2.<span class="f">multiply</span>(<span class="n">0.25</span>));
-
-  <span class="c">// Las cinco pruebas: 1 si se cumple, 0 si no</span>
-  <span class="k">var</span> t1 = mndwi.<span class="f">gt</span>(<span class="n">0.124</span>);
-  <span class="k">var</span> t2 = mbsrv.<span class="f">gt</span>(mbsrn);
-  <span class="k">var</span> t3 = awesh.<span class="f">gt</span>(<span class="n">0</span>);
-  <span class="k">var</span> t4 = mndwi.<span class="f">gt</span>(-<span class="n">0.44</span>).<span class="f">and</span>(swir1.<span class="f">lt</span>(<span class="n">0.09</span>)).<span class="f">and</span>(nir.<span class="f">lt</span>(<span class="n">0.15</span>)).<span class="f">and</span>(ndvi.<span class="f">lt</span>(<span class="n">0.7</span>));
-  <span class="k">var</span> t5 = mndwi.<span class="f">gt</span>(-<span class="n">0.5</span>).<span class="f">and</span>(blue.<span class="f">lt</span>(<span class="n">0.1</span>)).<span class="f">and</span>(swir1.<span class="f">lt</span>(<span class="n">0.3</span>))
-    .<span class="f">and</span>(swir2.<span class="f">lt</span>(<span class="n">0.1</span>)).<span class="f">and</span>(nir.<span class="f">lt</span>(<span class="n">0.25</span>));
-
-  <span class="c">// Código de cinco cifras, una por prueba (t5 t4 t3 t2 t1)</span>
-  <span class="k">var</span> testCode = t1.<span class="f">add</span>(t2.<span class="f">multiply</span>(<span class="n">10</span>)).<span class="f">add</span>(t3.<span class="f">multiply</span>(<span class="n">100</span>))
-    .<span class="f">add</span>(t4.<span class="f">multiply</span>(<span class="n">1000</span>)).<span class="f">add</span>(t5.<span class="f">multiply</span>(<span class="n">10000</span>));
-
-  <span class="c">// Tabla de clases del USGS</span>
-  <span class="k">var</span> dsweClass = testCode.<span class="f">remap</span>(
-    [<span class="n">0</span>, <span class="n">1</span>, <span class="n">10</span>, <span class="n">100</span>, <span class="n">1000</span>,                                             <span class="c">// 0: no agua</span>
-     <span class="n">1111</span>, <span class="n">10111</span>, <span class="n">11011</span>, <span class="n">11101</span>, <span class="n">11110</span>, <span class="n">11111</span>,                         <span class="c">// 1: agua, confianza alta</span>
-     <span class="n">111</span>, <span class="n">1011</span>, <span class="n">1101</span>, <span class="n">1110</span>, <span class="n">10011</span>, <span class="n">10101</span>, <span class="n">10110</span>, <span class="n">11001</span>, <span class="n">11010</span>, <span class="n">11100</span>, <span class="c">// 2: agua, confianza moderada</span>
-     <span class="n">11000</span>,                                                           <span class="c">// 3: agua parcial, conservadora</span>
-     <span class="n">11</span>, <span class="n">101</span>, <span class="n">110</span>, <span class="n">1001</span>, <span class="n">1010</span>, <span class="n">1100</span>, <span class="n">10000</span>, <span class="n">10001</span>, <span class="n">10010</span>, <span class="n">10100</span>],     <span class="c">// 4: agua parcial, agresiva</span>
-    [<span class="n">0</span>, <span class="n">0</span>, <span class="n">0</span>, <span class="n">0</span>, <span class="n">0</span>,
-     <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>,
-     <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>,
-     <span class="n">3</span>,
-     <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>]).<span class="f">rename</span>(<span class="s">'dswe'</span>);
-
-  <span class="c">// Máscara de agua: confianza alta o moderada</span>
-  <span class="k">var</span> waterMask = dsweClass.<span class="f">eq</span>(<span class="n">1</span>).<span class="f">or</span>(dsweClass.<span class="f">eq</span>(<span class="n">2</span>)).<span class="f">rename</span>(<span class="s">'waterMask'</span>);
-  <span class="k">return</span> img.<span class="f">addBands</span>([dsweClass, waterMask]);
-}
-
-<span class="c">// DSWE para cada año de la serie</span>
-<span class="k">var</span> water = annual.<span class="f">map</span>(dswe);
-<span class="g">print</span>(<span class="s">'Serie con DSWE'</span>, water);</pre></div>
-
-    <h2 id="paso-2">Paso 2: Parámetros del GIF <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
-    <p><code>dimensions</code> fija el tamaño máximo en píxeles y <code>framesPerSecond</code> la velocidad. En <code>annotations</code> indicamos que el texto vaya arriba y que lo tome de la propiedad <code>label</code>. El tamaño de la letra depende de la escala del mapa cuando ejecutas el script; si sale muy pequeña o muy grande, cambia el 2 de <code>Map.getScale() * 2</code>.</p>
-    <div class="codebox"><pre><span class="c">// Paquete de texto para escribir el año en cada cuadro</span>
 <span class="k">var</span> text = <span class="g">require</span>(<span class="s">'users/gena/packages:text'</span>);
 
-<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);
-
 <span class="k">var</span> gifParams = {
-  region: AOI,
-  dimensions: <span class="n">800</span>,
-  crs: <span class="s">'EPSG:4326'</span>,
-  framesPerSecond: <span class="n">6</span>
+  <span class="s">'region'</span>: AOI,
+  <span class="s">'dimensions'</span>: <span class="n">800</span>,
+  <span class="s">'crs'</span>: <span class="s">'EPSG:4326'</span>,
+  <span class="s">'framesPerSecond'</span>: <span class="n">6</span>
 };
 
 <span class="k">var</span> annotations = [{
   position: <span class="s">'top'</span>,
   offset: <span class="s">'5%'</span>,
   margin: <span class="s">'5%'</span>,
-  property: <span class="s">'label'</span>,
-  scale: <span class="g">Map</span>.<span class="f">getScale</span>() * <span class="n">2</span>
-}];</pre></div>
-
-    <h2 id="paso-3">Paso 3: Crear la función <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
-    <p><code>makeGif()</code> recibe una colección, unos parámetros de visualización y un nombre. Convierte cada imagen en un cuadro, escribe el año y une la serie con su versión invertida para que la animación vaya y vuelva sin cortes.</p>
-    <div class="codebox"><pre><span class="c">// Crea un GIF a partir de una colección</span>
-<span class="k">function</span> <span class="f">makeGif</span>(collection, vis, label) {
-  <span class="c">// Convertir cada imagen en un cuadro RGB y guardar el año como texto</span>
-  <span class="k">var</span> frames = collection.<span class="f">map</span>(<span class="k">function</span> (img) {
-    <span class="k">var</span> year = <span class="g">ee</span>.<span class="g">Number</span>(img.<span class="f">get</span>(<span class="s">'year'</span>)).<span class="f">toInt</span>().<span class="f">format</span>();
-    <span class="k">return</span> img.<span class="f">visualize</span>(vis).<span class="f">set</span>(<span class="s">'label'</span>, year);
-  });
-
-  <span class="c">// Escribir el año sobre cada cuadro</span>
-  frames = frames.<span class="f">map</span>(<span class="k">function</span> (img) {
-    <span class="k">return</span> text.<span class="f">annotateImage</span>(img, {}, AOI, annotations)
-      .<span class="f">copyProperties</span>(img, img.<span class="f">propertyNames</span>());
-  });
-
-  <span class="c">// Ida y vuelta: del primer año al último y de regreso</span>
-  <span class="k">var</span> animation = frames.<span class="f">merge</span>(frames.<span class="f">sort</span>(<span class="s">'label'</span>, <span class="n">false</span>));
-
-  <span class="g">print</span>(<span class="s">'Enlace del GIF: '</span> + label, animation.<span class="f">getVideoThumbURL</span>(gifParams));
-  <span class="g">print</span>(<span class="s">'Animación: '</span> + label, <span class="g">ui</span>.<span class="f">Thumbnail</span>(animation, gifParams));
-  <span class="k">return</span> animation;
-}</pre></div>
-
-    <h2 id="paso-4">Paso 4: Generar los GIF <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Llamamos a la misma función dos veces. El falso color SWIR1-NIR-Rojo muestra el agua casi negra, la vegetación verde y el suelo desnudo en tonos rosados. La máscara de agua muestra solo el agua, en azul.</p>
-    <div class="codebox"><pre><span class="c">// Falso color SWIR1-NIR-Rojo</span>
-<span class="k">var</span> visFalse = {bands: [<span class="s">'Swir1'</span>, <span class="s">'Nir'</span>, <span class="s">'Red'</span>], min: <span class="n">0.0125</span>, max: <span class="n">0.41</span>, gamma: <span class="n">1</span>};
-<span class="f">makeGif</span>(water, visFalse, <span class="s">'Landsat SWIR1-NIR-Rojo'</span>);
-
-<span class="c">// Máscara de agua de DSWE: negro sin agua, azul con agua</span>
-<span class="k">var</span> visWater = {bands: [<span class="s">'waterMask'</span>], min: <span class="n">0</span>, max: <span class="n">1</span>, palette: [<span class="s">'0c0c0c'</span>, <span class="s">'0400ff'</span>]};
-<span class="f">makeGif</span>(water, visWater, <span class="s">'Máscara de agua DSWE'</span>);</pre></div>
-    <div class="callout"><p><strong>Para descargar el GIF</strong>, haz clic en el enlace que aparece en la consola y guárdalo desde el navegador. Si Earth Engine responde que la animación es demasiado grande, reduce <code>dimensions</code> o el tamaño del AOI.</p></div>
-
-    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
-    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> <span class="f">scaler</span>(img) {
-  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
-  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
-  <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
-}
-
-<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
-  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
-  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
-  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
-  <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
-}
-
-<span class="c">// Parámetros de búsqueda</span>
-<span class="k">var</span> startYear = <span class="n">2000</span>;   <span class="c">// año inicial</span>
-<span class="k">var</span> endYear = <span class="n">2025</span>;     <span class="c">// año final</span>
-<span class="k">var</span> startMonth = <span class="n">1</span>;     <span class="c">// mes inicial</span>
-<span class="k">var</span> endMonth = <span class="n">12</span>;      <span class="c">// mes final</span>
-<span class="k">var</span> cloudcover = <span class="n">30</span>;    <span class="c">// nubosidad máxima sobre tierra (%)</span>
-
-<span class="c">// Nombres comunes para las bandas de todos los sensores</span>
-<span class="k">var</span> bandsTM = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];   <span class="c">// Landsat 4, 5 y 7</span>
-<span class="k">var</span> bandsOLI = [<span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B6'</span>, <span class="s">'SR_B7'</span>];  <span class="c">// Landsat 8 y 9</span>
-<span class="k">var</span> names = [<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>];
-
-<span class="c">// Filtra una colección y prepara cada imagen</span>
-<span class="k">function</span> <span class="f">landsat</span>(id, bands) {
-  <span class="k">return</span> <span class="g">ee</span>.<span class="f">ImageCollection</span>(id)
-    .<span class="f">filterBounds</span>(AOI)
-    .<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, (endYear + <span class="n">1</span>) + <span class="s">'-01-01'</span>)
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, cloudcover))
-    .<span class="f">map</span>(<span class="k">function</span> (img) {
-      <span class="k">return</span> <span class="f">scaler</span>(<span class="f">mask_clouds</span>(img)).<span class="f">select</span>(bands, names);
-    });
-}
-
-<span class="c">// Landsat 4, 5, 7, 8 y 9 en una sola colección</span>
-<span class="k">var</span> collection = <span class="f">landsat</span>(<span class="s">'LANDSAT/LT04/C02/T1_L2'</span>, bandsTM)
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LT05/C02/T1_L2'</span>, bandsTM))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LE07/C02/T1_L2'</span>, bandsTM).<span class="f">filterDate</span>(<span class="s">'1999-04-15'</span>, <span class="s">'2013-05-30'</span>))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC08/C02/T1_L2'</span>, bandsOLI))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC09/C02/T1_L2'</span>, bandsOLI));
-<span class="g">print</span>(<span class="s">'Imágenes disponibles'</span>, collection.<span class="f">size</span>());
-
-<span class="c">// Una mediana por año</span>
-<span class="k">var</span> years = <span class="g">ee</span>.List.<span class="f">sequence</span>(startYear, endYear);
-
-<span class="k">var</span> annual = <span class="g">ee</span>.ImageCollection.<span class="f">fromImages</span>(years.<span class="f">map</span>(<span class="k">function</span> (year) {
-  <span class="k">var</span> start = <span class="g">ee</span>.Date.<span class="f">fromYMD</span>(year, <span class="n">1</span>, <span class="n">1</span>);
-  <span class="k">var</span> images = collection.<span class="f">filterDate</span>(start, start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>));
-  <span class="k">return</span> images.<span class="f">median</span>()
-    .<span class="f">clip</span>(AOI)
-    .<span class="f">set</span>(<span class="s">'year'</span>, year)
-    .<span class="f">set</span>(<span class="s">'n_images'</span>, images.<span class="f">size</span>());
-}));
-
-<span class="c">// Quitar los años sin imágenes</span>
-annual = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">gt</span>(<span class="s">'n_images'</span>, <span class="n">0</span>));
-<span class="g">print</span>(<span class="s">'Medianas anuales'</span>, annual);
-
-<span class="c">// DSWE: cinco pruebas espectrales sobre reflectancia de superficie (Jones, 2019)</span>
-<span class="k">function</span> <span class="f">dswe</span>(img) {
-  <span class="c">// En agua oscura (mar, lagos profundos) la reflectancia escalada puede ser un poco</span>
-  <span class="c">// negativa, y normalizedDifference() enmascara esos píxeles. Por eso usamos 0 como mínimo.</span>
-  <span class="k">var</span> r = img.<span class="f">select</span>([<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>]).<span class="f">max</span>(<span class="n">0</span>);
-  <span class="k">var</span> blue = r.<span class="f">select</span>(<span class="s">'Blue'</span>);
-  <span class="k">var</span> green = r.<span class="f">select</span>(<span class="s">'Green'</span>);
-  <span class="k">var</span> red = r.<span class="f">select</span>(<span class="s">'Red'</span>);
-  <span class="k">var</span> nir = r.<span class="f">select</span>(<span class="s">'Nir'</span>);
-  <span class="k">var</span> swir1 = r.<span class="f">select</span>(<span class="s">'Swir1'</span>);
-  <span class="k">var</span> swir2 = r.<span class="f">select</span>(<span class="s">'Swir2'</span>);
-
-  <span class="c">// Valores que usan las pruebas</span>
-  <span class="k">var</span> mndwi = r.<span class="f">normalizedDifference</span>([<span class="s">'Green'</span>, <span class="s">'Swir1'</span>]);
-  <span class="k">var</span> ndvi = r.<span class="f">normalizedDifference</span>([<span class="s">'Nir'</span>, <span class="s">'Red'</span>]);
-  <span class="k">var</span> mbsrv = green.<span class="f">add</span>(red);   <span class="c">// verde + rojo</span>
-  <span class="k">var</span> mbsrn = nir.<span class="f">add</span>(swir1);   <span class="c">// NIR + SWIR1</span>
-  <span class="k">var</span> awesh = blue.<span class="f">add</span>(green.<span class="f">multiply</span>(<span class="n">2.5</span>))
-    .<span class="f">subtract</span>(mbsrn.<span class="f">multiply</span>(<span class="n">1.5</span>))
-    .<span class="f">subtract</span>(swir2.<span class="f">multiply</span>(<span class="n">0.25</span>));
-
-  <span class="c">// Las cinco pruebas: 1 si se cumple, 0 si no</span>
-  <span class="k">var</span> t1 = mndwi.<span class="f">gt</span>(<span class="n">0.124</span>);
-  <span class="k">var</span> t2 = mbsrv.<span class="f">gt</span>(mbsrn);
-  <span class="k">var</span> t3 = awesh.<span class="f">gt</span>(<span class="n">0</span>);
-  <span class="k">var</span> t4 = mndwi.<span class="f">gt</span>(-<span class="n">0.44</span>).<span class="f">and</span>(swir1.<span class="f">lt</span>(<span class="n">0.09</span>)).<span class="f">and</span>(nir.<span class="f">lt</span>(<span class="n">0.15</span>)).<span class="f">and</span>(ndvi.<span class="f">lt</span>(<span class="n">0.7</span>));
-  <span class="k">var</span> t5 = mndwi.<span class="f">gt</span>(-<span class="n">0.5</span>).<span class="f">and</span>(blue.<span class="f">lt</span>(<span class="n">0.1</span>)).<span class="f">and</span>(swir1.<span class="f">lt</span>(<span class="n">0.3</span>))
-    .<span class="f">and</span>(swir2.<span class="f">lt</span>(<span class="n">0.1</span>)).<span class="f">and</span>(nir.<span class="f">lt</span>(<span class="n">0.25</span>));
-
-  <span class="c">// Código de cinco cifras, una por prueba (t5 t4 t3 t2 t1)</span>
-  <span class="k">var</span> testCode = t1.<span class="f">add</span>(t2.<span class="f">multiply</span>(<span class="n">10</span>)).<span class="f">add</span>(t3.<span class="f">multiply</span>(<span class="n">100</span>))
-    .<span class="f">add</span>(t4.<span class="f">multiply</span>(<span class="n">1000</span>)).<span class="f">add</span>(t5.<span class="f">multiply</span>(<span class="n">10000</span>));
-
-  <span class="c">// Tabla de clases del USGS</span>
-  <span class="k">var</span> dsweClass = testCode.<span class="f">remap</span>(
-    [<span class="n">0</span>, <span class="n">1</span>, <span class="n">10</span>, <span class="n">100</span>, <span class="n">1000</span>,                                             <span class="c">// 0: no agua</span>
-     <span class="n">1111</span>, <span class="n">10111</span>, <span class="n">11011</span>, <span class="n">11101</span>, <span class="n">11110</span>, <span class="n">11111</span>,                         <span class="c">// 1: agua, confianza alta</span>
-     <span class="n">111</span>, <span class="n">1011</span>, <span class="n">1101</span>, <span class="n">1110</span>, <span class="n">10011</span>, <span class="n">10101</span>, <span class="n">10110</span>, <span class="n">11001</span>, <span class="n">11010</span>, <span class="n">11100</span>, <span class="c">// 2: agua, confianza moderada</span>
-     <span class="n">11000</span>,                                                           <span class="c">// 3: agua parcial, conservadora</span>
-     <span class="n">11</span>, <span class="n">101</span>, <span class="n">110</span>, <span class="n">1001</span>, <span class="n">1010</span>, <span class="n">1100</span>, <span class="n">10000</span>, <span class="n">10001</span>, <span class="n">10010</span>, <span class="n">10100</span>],     <span class="c">// 4: agua parcial, agresiva</span>
-    [<span class="n">0</span>, <span class="n">0</span>, <span class="n">0</span>, <span class="n">0</span>, <span class="n">0</span>,
-     <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>,
-     <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>,
-     <span class="n">3</span>,
-     <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>]).<span class="f">rename</span>(<span class="s">'dswe'</span>);
-
-  <span class="c">// Máscara de agua: confianza alta o moderada</span>
-  <span class="k">var</span> waterMask = dsweClass.<span class="f">eq</span>(<span class="n">1</span>).<span class="f">or</span>(dsweClass.<span class="f">eq</span>(<span class="n">2</span>)).<span class="f">rename</span>(<span class="s">'waterMask'</span>);
-  <span class="k">return</span> img.<span class="f">addBands</span>([dsweClass, waterMask]);
-}
-
-<span class="c">// DSWE para cada año de la serie</span>
-<span class="k">var</span> water = annual.<span class="f">map</span>(dswe);
-<span class="g">print</span>(<span class="s">'Serie con DSWE'</span>, water);
-
-<span class="c">// Paquete de texto para escribir el año en cada cuadro</span>
-<span class="k">var</span> text = <span class="g">require</span>(<span class="s">'users/gena/packages:text'</span>);
-
-<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);
-
-<span class="k">var</span> gifParams = {
-  region: AOI,
-  dimensions: <span class="n">800</span>,
-  crs: <span class="s">'EPSG:4326'</span>,
-  framesPerSecond: <span class="n">6</span>
-};
-
-<span class="k">var</span> annotations = [{
-  position: <span class="s">'top'</span>,
-  offset: <span class="s">'5%'</span>,
-  margin: <span class="s">'5%'</span>,
-  property: <span class="s">'label'</span>,
+  property: <span class="s">'año'</span>,
   scale: <span class="g">Map</span>.<span class="f">getScale</span>() * <span class="n">2</span>
 }];
 
-<span class="c">// Crea un GIF a partir de una colección</span>
-<span class="k">function</span> <span class="f">makeGif</span>(collection, vis, label) {
-  <span class="c">// Convertir cada imagen en un cuadro RGB y guardar el año como texto</span>
-  <span class="k">var</span> frames = collection.<span class="f">map</span>(<span class="k">function</span> (img) {
-    <span class="k">var</span> year = <span class="g">ee</span>.<span class="g">Number</span>(img.<span class="f">get</span>(<span class="s">'year'</span>)).<span class="f">toInt</span>().<span class="f">format</span>();
-    <span class="k">return</span> img.<span class="f">visualize</span>(vis).<span class="f">set</span>(<span class="s">'label'</span>, year);
-  });
+<span class="k">function</span> <span class="f">makeGifAnimation</span>(collection, visArgs, label) {
 
-  <span class="c">// Escribir el año sobre cada cuadro</span>
-  frames = frames.<span class="f">map</span>(<span class="k">function</span> (img) {
+  <span class="c">// Convertir cada imagen a visualización RGB y añadir la etiqueta del año</span>
+  <span class="k">var</span> visFun = <span class="k">function</span>(img) {
+    <span class="k">var</span> y = <span class="g">ee</span>.<span class="g">Number</span>(img.<span class="f">get</span>(<span class="s">'year'</span>)).<span class="f">toInt</span>();
+    <span class="k">return</span> img.<span class="f">visualize</span>(visArgs).<span class="f">set</span>(<span class="s">'año'</span>, <span class="g">ee</span>.<span class="g">String</span>(y));
+  };
+
+  <span class="c">// Escribir el año sobre cada imagen</span>
+  <span class="k">var</span> text_f = <span class="k">function</span>(img) {
     <span class="k">return</span> text.<span class="f">annotateImage</span>(img, {}, AOI, annotations)
-      .<span class="f">copyProperties</span>(img, img.<span class="f">propertyNames</span>());
-  });
+               .<span class="f">copyProperties</span>(img, img.<span class="f">propertyNames</span>());
+  };
 
-  <span class="c">// Ida y vuelta: del primer año al último y de regreso</span>
-  <span class="k">var</span> animation = frames.<span class="f">merge</span>(frames.<span class="f">sort</span>(<span class="s">'label'</span>, <span class="n">false</span>));
+  <span class="c">// Aplicar visualización y anotación, y construir la animación (ida y vuelta)</span>
+  <span class="k">var</span> animated = collection.<span class="f">map</span>(visFun).<span class="f">map</span>(text_f);
+  <span class="k">var</span> basicAnimation = animated.<span class="f">merge</span>(animated.<span class="f">sort</span>(<span class="s">'año'</span>, <span class="n">false</span>));
 
-  <span class="g">print</span>(<span class="s">'Enlace del GIF: '</span> + label, animation.<span class="f">getVideoThumbURL</span>(gifParams));
-  <span class="g">print</span>(<span class="s">'Animación: '</span> + label, <span class="g">ui</span>.<span class="f">Thumbnail</span>(animation, gifParams));
-  <span class="k">return</span> animation;
+  <span class="c">// Mostrar en la consola</span>
+  <span class="g">print</span>(<span class="s">'GIF URL → '</span> + label, basicAnimation.<span class="f">getVideoThumbURL</span>(gifParams));
+  <span class="g">print</span>(<span class="s">'Animación → '</span> + label, <span class="g">ui</span>.<span class="f">Thumbnail</span>(basicAnimation, gifParams));
+
+  <span class="k">return</span> basicAnimation;
 }
 
-<span class="c">// Falso color SWIR1-NIR-Rojo</span>
-<span class="k">var</span> visFalse = {bands: [<span class="s">'Swir1'</span>, <span class="s">'Nir'</span>, <span class="s">'Red'</span>], min: <span class="n">0.0125</span>, max: <span class="n">0.41</span>, gamma: <span class="n">1</span>};
-<span class="f">makeGif</span>(water, visFalse, <span class="s">'Landsat SWIR1-NIR-Rojo'</span>);
+<span class="c">// Animación en falso color (Swir1, Nir, Red)</span>
+<span class="k">var</span> visArgs_RGB = {bands: <span class="s">'Swir1,Nir,Red'</span>, min: <span class="n">0.0125</span>, max: <span class="n">0.41448</span>, gamma: <span class="n">1</span>};
+<span class="k">var</span> anim_RGB = <span class="f">makeGifAnimation</span>(<span class="g">ee</span>.<span class="f">ImageCollection</span>(img_medians), visArgs_RGB, <span class="s">'RGB Landsat'</span>);
 
-<span class="c">// Máscara de agua de DSWE: negro sin agua, azul con agua</span>
-<span class="k">var</span> visWater = {bands: [<span class="s">'waterMask'</span>], min: <span class="n">0</span>, max: <span class="n">1</span>, palette: [<span class="s">'0c0c0c'</span>, <span class="s">'0400ff'</span>]};
-<span class="f">makeGif</span>(water, visWater, <span class="s">'Máscara de agua DSWE'</span>);</pre></div>
+<span class="c">// Animación de la máscara de agua (Jones, 2019)</span>
+<span class="k">var</span> visArgs_WATER = {bands: <span class="s">'waterMask'</span>, opacity: <span class="n">1</span>, palette: [<span class="s">'0c0c0c'</span>, <span class="s">'0400ff'</span>]};
+<span class="k">var</span> anim_WATER = <span class="f">makeGifAnimation</span>(masked, visArgs_WATER, <span class="s">'Water Mask Jones 2019'</span>);</pre></div>
+    <div class="callout"><p><strong>Para descargar el GIF</strong>, haz clic en el enlace que aparece en la consola y guárdalo desde el navegador. Si Earth Engine responde que la animación es demasiado grande, reduce <code>dimensions</code> o el tamaño del AOI.</p></div>
+
+    <h2 id="paso-11">Sección 11: Exportar las máscaras <a class="anchor" href="#paso-11" aria-label="Enlace a esta sección">#</a></h2>
+    <p>La exportación es la misma de la lección anterior, ahora como sección 11.</p>
+    <p>La exportación viene desactivada: todo el bloque está entre <code>/*</code> y <code>*/</code>, así que Earth Engine lo ignora. Para usarla, borra las dos líneas que dicen <code>Eliminar comentario</code> y vuelve a ejecutar. En la pestaña <strong>Tasks</strong> aparecerá una tarea por año y tendrás que ejecutar cada una. <code>crs</code> fija la proyección de salida: <code>EPSG:32618</code> es UTM zona 18 Norte, que cubre buena parte de Colombia; cámbiala por la zona UTM de tu AOI.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 11 → EXPORTACIÓN OPCIONAL A GOOGLE DRIVE</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">/*// Eliminar comentario
+
+var list = masked.toList(masked.size());
+
+// Función que exporta cada imagen de la lista
+var exportImages = function(index) {
+  var img = ee.Image(list.get(index));
+  var year = ee.Number(img.get('year')).format('%d');
+
+  Export.image.toDrive({
+    image: img,
+    description: ee.String('Jones_Median_').cat(year).getInfo(),
+    folder: 'Jones_Median',
+    fileNamePrefix: ee.String('Jones_Median_').cat(year).getInfo(),
+    region: AOI,
+    scale: 30,
+    crs: 'EPSG:32618',  // UTM 18N, cámbiala por la zona de tu AOI
+    maxPixels: 1e13
+  });
+};
+
+// Ejecuta una exportación por año
+var count = masked.size();
+count.evaluate(function(n) {
+  for (var i = 0; i &lt; n; i++) {
+    exportImages(i);
+  }
+});
+
+*/</span><span class="c">// Eliminar comentario</span></pre></div>
+
+    <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 0 → CREAR FUNCIONES PRINCIPALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// 0.1 → Función de factor de escala</span>
+<span class="k">function</span> <span class="f">scaler</span> (img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">"SR_B."</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
+  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">"ST_B.*"</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
+  <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
+}
+
+<span class="c">// 0.2 → Función de máscara de nubes</span>
+<span class="k">function</span> <span class="f">mask_clouds</span> (img) {
+  <span class="c">// Banda de calidad QA_PIXEL (renombrada como BQA)</span>
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'BQA'</span>);
+  <span class="c">// Bits de QA_PIXEL en Landsat Colección 2</span>
+  <span class="k">var</span> cirrus = (<span class="n">1</span> &lt;&lt; <span class="n">2</span>);              <span class="c">// bit 2: cirros</span>
+  <span class="k">var</span> cloudsBitMask = (<span class="n">1</span> &lt;&lt; <span class="n">3</span>);       <span class="c">// bit 3: nubes</span>
+  <span class="k">var</span> cloudShadowBitMask = (<span class="n">1</span> &lt;&lt; <span class="n">4</span>);  <span class="c">// bit 4: sombras de nubes</span>
+  <span class="k">var</span> snow = (<span class="n">1</span> &lt;&lt; <span class="n">5</span>);                <span class="c">// bit 5: nieve</span>
+  <span class="c">// Todos los bits deben estar en cero (condiciones despejadas)</span>
+  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cloudShadowBitMask).<span class="f">eq</span>(<span class="n">0</span>)
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudsBitMask).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
+}
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 1 → DEFINIR BANDAS Y NOMENCLATURAS</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> bn9 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B6'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn8 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B6'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn7 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn5 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bns = [<span class="s">'uBlue'</span>, <span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Swir1'</span>, <span class="s">'BQA'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir2'</span>];
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 2 → CREAR Y UNIFICAR COLECCIONES LANDSAT (4, 5, 7, 8 Y 9)</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> ls4 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LT04/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn5, bns);
+<span class="k">var</span> ls5 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LT05/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn5, bns);
+<span class="k">var</span> ls7 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LE07/C02/T1_L2"</span>).<span class="f">map</span>(scaler)
+                            .<span class="f">filterDate</span>(<span class="s">'1999-04-15'</span>, <span class="s">'2013-05-30'</span>)
+                            .<span class="f">select</span>(bn7, bns);
+<span class="k">var</span> ls8 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC08/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn8, bns);
+<span class="k">var</span> ls9 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn9, bns);
+
+<span class="k">var</span> merged = ls4.<span class="f">merge</span>(ls5).<span class="f">merge</span>(ls7).<span class="f">merge</span>(ls8).<span class="f">merge</span>(ls9);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 3 → DEFINIR PARÁMETROS DE BÚSQUEDA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> startYear = <span class="n">2000</span>;  <span class="c">// Año inicio</span>
+<span class="k">var</span> endYear = <span class="n">2025</span>;    <span class="c">// Año final</span>
+<span class="k">var</span> startMonth = <span class="n">1</span>;    <span class="c">// Mes inicial</span>
+<span class="k">var</span> endMonth = <span class="n">12</span>;     <span class="c">// Mes final</span>
+<span class="k">var</span> cloudcover = <span class="n">30</span>;   <span class="c">// Cobertura de nubes (%)</span>
+<span class="k">var</span> AOI = AOI;         <span class="c">// Área de estudio</span>
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 4 → APLICAR FILTROS A LA COLECCIÓN FUSIONADA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> filtered = merged.<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, endYear + <span class="s">'-12-31'</span>)
+                     .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, cloudcover))
+                     .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
+                     .<span class="f">sort</span>(<span class="s">'system:time_start'</span>, <span class="n">false</span>)
+                     .<span class="f">filterBounds</span>(AOI);
+
+<span class="g">print</span>(<span class="s">"Imágenes disponibles para la zona de estudio (Landsat 4, 5, 7, 8 y 9)"</span>, filtered);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 5 → CALCULAR MEDIANAS ANUALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> years = <span class="g">ee</span>.List.<span class="f">sequence</span>(startYear, endYear);
+
+<span class="k">function</span> <span class="f">yearly_medians</span>(year) {
+  <span class="k">var</span> start = <span class="g">ee</span>.Date.<span class="f">fromYMD</span>(year, <span class="n">1</span>, <span class="n">1</span>);
+  <span class="k">var</span> end = start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>);
+  <span class="k">var</span> L = filtered.<span class="f">map</span>(mask_clouds);
+  <span class="k">var</span> image = L.<span class="f">filterDate</span>(start, end).<span class="f">median</span>().<span class="f">clip</span>(AOI).<span class="f">toFloat</span>();
+  <span class="k">return</span> image.<span class="f">set</span>(<span class="s">'year'</span>, year);
+}
+
+<span class="c">// Generar medianas por año</span>
+<span class="k">var</span> img_medians = years.<span class="f">map</span>(yearly_medians);
+
+<span class="c">// Remover imágenes vacías</span>
+img_medians = img_medians.<span class="f">map</span>(<span class="k">function</span>(ele) {
+  <span class="k">var</span> count = <span class="g">ee</span>.<span class="f">Image</span>(ele).<span class="f">bandNames</span>().<span class="f">size</span>();
+  <span class="k">return</span> <span class="g">ee</span>.Algorithms.<span class="f">If</span>(count.<span class="f">gt</span>(<span class="n">0</span>), ele, <span class="n">0</span>);
+}).<span class="f">flatten</span>();
+img_medians = img_medians.<span class="f">removeAll</span>([<span class="n">0</span>]);
+
+<span class="c">// Colección de medianas anuales</span>
+<span class="k">var</span> colmeans = <span class="g">ee</span>.<span class="f">ImageCollection</span>(img_medians);
+<span class="k">var</span> años = <span class="g">ee</span>.<span class="f">Array</span>(colmeans.<span class="f">aggregate_array</span>(<span class="s">'year'</span>));
+
+<span class="g">print</span>(<span class="s">"Mediana de imágenes por año"</span>, colmeans);
+<span class="g">print</span>(<span class="s">"Lista de años"</span>, años);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 6 → APLICAR DSWE JONES (2019)</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> x = <span class="g">require</span>(<span class="s">'users/sigeduca/routines:Indexes/Jones_2019'</span>); <span class="c">// MÓDULO DE JONES</span>
+
+<span class="c">// Crear función Jones (DSWE)</span>
+<span class="k">function</span> <span class="f">Jones</span> (image){
+  <span class="k">var</span> river = x.<span class="f">ClassifyWaterJones2019</span>(image);
+  <span class="k">return</span> image.<span class="f">addBands</span>(river);
+}
+
+<span class="k">var</span> water_jones_2019 = colmeans.<span class="f">map</span>(Jones);
+<span class="k">var</span> masked = water_jones_2019.<span class="f">select</span>(<span class="s">"waterMask"</span>); <span class="c">// colección de máscaras de agua</span>
+
+<span class="g">print</span>(<span class="s">"Máscara de agua, Jones (2019)"</span>, masked);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 7 → CALCULAR ÁREA DE CUERPOS DE AGUA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// Función para calcular el área de agua de cada imagen</span>
+<span class="k">function</span> <span class="f">water_area</span> (img){
+  <span class="k">var</span> water = img.<span class="f">eq</span>(<span class="n">1</span>);
+  <span class="k">var</span> area = <span class="g">ee</span>.Image.<span class="f">pixelArea</span>();
+  <span class="k">var</span> waterArea = water.<span class="f">multiply</span>(area).<span class="f">divide</span>(<span class="n">1000000</span>).<span class="f">rename</span>(<span class="s">'water_area'</span>);
+  <span class="k">var</span> stats = waterArea.<span class="f">reduceRegion</span>({reducer: <span class="g">ee</span>.Reducer.<span class="f">sum</span>(), geometry: AOI, scale: <span class="n">30</span>,
+                                      bestEffort: <span class="n">true</span>, maxPixels: <span class="n">10000000000</span>});
+  <span class="k">return</span> img.<span class="f">set</span>(stats).<span class="f">copyProperties</span>(img);
+}
+
+<span class="k">var</span> water_area_c = masked.<span class="f">map</span>(water_area);
+<span class="k">var</span> year_si = <span class="g">ee</span>.<span class="f">Array</span>(masked.<span class="f">aggregate_array</span>(<span class="s">'year'</span>));
+<span class="k">var</span> wa_y = <span class="g">ee</span>.<span class="f">Array</span>(water_area_c.<span class="f">aggregate_array</span>(<span class="s">'water_area'</span>));
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 8 → VISUALIZACIÓN DE RESULTADOS EN LA CONSOLA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// Gráfico del cambio de área en la consola</span>
+<span class="k">var</span> chart_W = <span class="g">ui</span>.Chart.array.<span class="f">values</span>({array: wa_y, axis: <span class="n">0</span>, xLabels: year_si})
+  .<span class="f">setOptions</span>({
+    title: <span class="s">'WATER AREA EVOLUTION'</span>,
+    colors: [<span class="s">'cf513e'</span>],
+    hAxis: {title: <span class="s">'Years'</span>, titleTextStyle: {italic: <span class="n">false</span>, bold: <span class="n">true</span>}},
+    vAxis: {title: <span class="s">'AREA (Km^2)'</span>, titleTextStyle: {italic: <span class="n">false</span>, bold: <span class="n">true</span>}},
+    lineSize: <span class="n">3</span>,
+    pointSize: <span class="n">3</span>,
+    dataOpacity: <span class="n">0.4</span>,
+    legend: {position: <span class="s">'none'</span>}
+  });
+
+<span class="g">print</span>(chart_W);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 9 → VISUALIZACIÓN EN EL MAPA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// Visualización RGB</span>
+
+<span class="k">var</span> m_list = img_medians;
+<span class="k">var</span> len_w = img_medians.<span class="f">size</span>();
+<span class="k">var</span> visArgs_LAND = {bands: <span class="s">'Red,Green,Blue'</span>, min: <span class="n">0.002</span>, max: <span class="n">0.25</span>, gamma: <span class="n">1</span>};
+
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);
+
+len_w.<span class="f">evaluate</span>(<span class="k">function</span>(l) {
+  <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; l; i++) {
+    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(m_list.<span class="f">get</span>(i));
+    <span class="g">Map</span>.<span class="f">addLayer</span>(img, visArgs_LAND, <span class="s">'RGB-'</span> + i.<span class="f">toString</span>(), <span class="n">false</span>);
+  }
+});
+
+<span class="c">// Visualización de la máscara de agua de Jones</span>
+<span class="k">var</span> list_masked = masked.<span class="f">toList</span>(masked.<span class="f">size</span>());
+<span class="k">var</span> len_masked = list_masked.<span class="f">size</span>();
+
+len_masked.<span class="f">evaluate</span>(<span class="k">function</span>(l) {
+  <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; l; i++) {
+    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(list_masked.<span class="f">get</span>(i));
+    <span class="g">Map</span>.<span class="f">addLayer</span>(img, {}, <span class="s">'mascara jones -'</span> + i.<span class="f">toString</span>(), <span class="n">false</span>);
+  }
+});
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 10 → CREACIÓN DE ANIMACIÓN CON FORMATO GIF</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// Parámetros:</span>
+<span class="c">//   collection → ImageCollection a animar</span>
+<span class="c">//   visArgs    → argumentos de visualización (bandas, min, max, palette, etc.)</span>
+<span class="c">//   label      → nombre para identificar la animación en la consola</span>
+
+<span class="k">var</span> text = <span class="g">require</span>(<span class="s">'users/gena/packages:text'</span>);
+
+<span class="k">var</span> gifParams = {
+  <span class="s">'region'</span>: AOI,
+  <span class="s">'dimensions'</span>: <span class="n">800</span>,
+  <span class="s">'crs'</span>: <span class="s">'EPSG:4326'</span>,
+  <span class="s">'framesPerSecond'</span>: <span class="n">6</span>
+};
+
+<span class="k">var</span> annotations = [{
+  position: <span class="s">'top'</span>,
+  offset: <span class="s">'5%'</span>,
+  margin: <span class="s">'5%'</span>,
+  property: <span class="s">'año'</span>,
+  scale: <span class="g">Map</span>.<span class="f">getScale</span>() * <span class="n">2</span>
+}];
+
+<span class="k">function</span> <span class="f">makeGifAnimation</span>(collection, visArgs, label) {
+
+  <span class="c">// Convertir cada imagen a visualización RGB y añadir la etiqueta del año</span>
+  <span class="k">var</span> visFun = <span class="k">function</span>(img) {
+    <span class="k">var</span> y = <span class="g">ee</span>.<span class="g">Number</span>(img.<span class="f">get</span>(<span class="s">'year'</span>)).<span class="f">toInt</span>();
+    <span class="k">return</span> img.<span class="f">visualize</span>(visArgs).<span class="f">set</span>(<span class="s">'año'</span>, <span class="g">ee</span>.<span class="g">String</span>(y));
+  };
+
+  <span class="c">// Escribir el año sobre cada imagen</span>
+  <span class="k">var</span> text_f = <span class="k">function</span>(img) {
+    <span class="k">return</span> text.<span class="f">annotateImage</span>(img, {}, AOI, annotations)
+               .<span class="f">copyProperties</span>(img, img.<span class="f">propertyNames</span>());
+  };
+
+  <span class="c">// Aplicar visualización y anotación, y construir la animación (ida y vuelta)</span>
+  <span class="k">var</span> animated = collection.<span class="f">map</span>(visFun).<span class="f">map</span>(text_f);
+  <span class="k">var</span> basicAnimation = animated.<span class="f">merge</span>(animated.<span class="f">sort</span>(<span class="s">'año'</span>, <span class="n">false</span>));
+
+  <span class="c">// Mostrar en la consola</span>
+  <span class="g">print</span>(<span class="s">'GIF URL → '</span> + label, basicAnimation.<span class="f">getVideoThumbURL</span>(gifParams));
+  <span class="g">print</span>(<span class="s">'Animación → '</span> + label, <span class="g">ui</span>.<span class="f">Thumbnail</span>(basicAnimation, gifParams));
+
+  <span class="k">return</span> basicAnimation;
+}
+
+<span class="c">// Animación en falso color (Swir1, Nir, Red)</span>
+<span class="k">var</span> visArgs_RGB = {bands: <span class="s">'Swir1,Nir,Red'</span>, min: <span class="n">0.0125</span>, max: <span class="n">0.41448</span>, gamma: <span class="n">1</span>};
+<span class="k">var</span> anim_RGB = <span class="f">makeGifAnimation</span>(<span class="g">ee</span>.<span class="f">ImageCollection</span>(img_medians), visArgs_RGB, <span class="s">'RGB Landsat'</span>);
+
+<span class="c">// Animación de la máscara de agua (Jones, 2019)</span>
+<span class="k">var</span> visArgs_WATER = {bands: <span class="s">'waterMask'</span>, opacity: <span class="n">1</span>, palette: [<span class="s">'0c0c0c'</span>, <span class="s">'0400ff'</span>]};
+<span class="k">var</span> anim_WATER = <span class="f">makeGifAnimation</span>(masked, visArgs_WATER, <span class="s">'Water Mask Jones 2019'</span>);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 11 → EXPORTACIÓN OPCIONAL A GOOGLE DRIVE</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">/*// Eliminar comentario
+
+var list = masked.toList(masked.size());
+
+// Función que exporta cada imagen de la lista
+var exportImages = function(index) {
+  var img = ee.Image(list.get(index));
+  var year = ee.Number(img.get('year')).format('%d');
+
+  Export.image.toDrive({
+    image: img,
+    description: ee.String('Jones_Median_').cat(year).getInfo(),
+    folder: 'Jones_Median',
+    fileNamePrefix: ee.String('Jones_Median_').cat(year).getInfo(),
+    region: AOI,
+    scale: 30,
+    crs: 'EPSG:32618',  // UTM 18N, cámbiala por la zona de tu AOI
+    maxPixels: 1e13
+  });
+};
+
+// Ejecuta una exportación por año
+var count = masked.size();
+count.evaluate(function(n) {
+  for (var i = 0; i &lt; n; i++) {
+    exportImages(i);
+  }
+});
+
+*/</span><span class="c">// Eliminar comentario</span></pre></div>
 
     <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Con esto completas el recorrido de series de tiempo: construiste la serie, calculaste índices y clases de agua para cada año, mediste su evolución y ahora puedes mostrarla en una animación. La función <code>makeGif()</code> sirve para cualquier colección, así que puedes usarla también con la serie de Sentinel-2 o con los índices de vegetación.</p>
+    <p>Con esto completas el recorrido de series de tiempo: construiste la serie, calculaste índices y máscaras de agua para cada año, mediste su evolución y ahora puedes mostrarla en una animación. La función <code>makeGifAnimation()</code> sirve para cualquier colección, así que puedes usarla también con la serie de Sentinel-2 o con los índices de vegetación.</p>
 
     <div class="pager two">
       <a href="../cursos/curso-gee-intermedio.html"><small>Volver al curso</small>← Google Earth Engine intermedio</a>

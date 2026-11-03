@@ -126,11 +126,11 @@
     
     <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
     <p>Sentinel-2 tiene una historia más corta que Landsat, pero mucho más detalle. La Agencia Espacial Europea (ESA) lanzó Sentinel-2A en 2015 y Sentinel-2B en 2017. Juntos fotografían cada punto de la Tierra cada cinco días, con 10 m de resolución en las bandas visibles y en el infrarrojo cercano. Es la mejor opción para seguir cambios recientes en áreas pequeñas, como una finca, una ciénaga o el borde de una ciudad.</p>
-    <p>En esta lección crearemos una mediana anual sin nubes con la colección de reflectancia de superficie y exportaremos cada año a Google Drive.</p>
+    <p>En esta lección seguiremos la misma estructura de <a href="serie-tiempo-landsat.html">Series de tiempo con Landsat</a>, sección por sección, para crear una mediana anual sin nubes con la colección de reflectancia de superficie.</p>
 
     <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
     <ul class="check">
-      <li>Filtrar la colección de Sentinel-2 por años, meses y nubosidad.</li>
+      <li>Adaptar el script de series de Landsat a Sentinel-2.</li>
       <li>Crear una mediana anual sin nubes con la máscara SCL.</li>
       <li>Mostrar y exportar cada año de la serie.</li>
       <li>Entender por qué usamos la colección HARMONIZED en series de tiempo.</li>
@@ -139,7 +139,7 @@
     <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
     <ul class="check">
       <li><a href="https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR_HARMONIZED" target="_blank" rel="noopener">Sentinel-2 Surface Reflectance (COPERNICUS/S2_SR_HARMONIZED)</a></li>
-      <li><a href="https://developers.google.com/earth-engine/apidocs/ee-imagecollection-fromimages" target="_blank" rel="noopener">ee.ImageCollection.fromImages()</a></li>
+      <li><a href="https://developers.google.com/earth-engine/apidocs/ee-algorithms-if" target="_blank" rel="noopener">ee.Algorithms.If()</a></li>
     </ul>
 
     <h2 id="antes">Dos detalles antes de empezar <a class="anchor" href="#antes" aria-label="Enlace a esta sección">#</a></h2>
@@ -148,162 +148,298 @@
       <li><strong>¿Por qué HARMONIZED?</strong> Desde el 25 de enero de 2022, ESA suma 1000 a los valores de las imágenes nuevas por un cambio en su procesamiento. La colección <code>S2_SR_HARMONIZED</code> corrige ese desplazamiento para que las imágenes de antes y después de esa fecha sean comparables. En una serie de tiempo es indispensable: sin la corrección verías un salto falso en 2022.</li>
     </ul>
 
-    <h2 id="paso-1">Paso 1: Crear la función de máscara <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <h2 id="paso-0">Sección 0: Crear las funciones principales <a class="anchor" href="#paso-0" aria-label="Enlace a esta sección">#</a></h2>
     <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
-    <p>Usamos la misma función del curso básico. Oculta sombras, nubes y cirros con la banda <code>SCL</code> y pasa los valores a reflectancia, de 0 a 1.</p>
-    <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
-<span class="k">function</span> <span class="f">maskS2clouds</span>(img) {
+    <p><code>scaler()</code> divide las bandas entre 10 000 para pasarlas a reflectancia. Usamos <code>addBands()</code> con reemplazo, como en Landsat, porque así la imagen conserva su fecha; una división directa la perdería y después no podríamos filtrar por año. <code>mask_clouds()</code> usa la banda <code>SCL</code>, la clasificación de escena de ESA, para ocultar sombras, nubes y cirros.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 0 → CREAR FUNCIONES PRINCIPALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// 0.1 → Función de factor de escala (valores digitales a reflectancia, 0 a 1)</span>
+<span class="k">function</span> <span class="f">scaler</span> (img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'B.*'</span>).<span class="f">divide</span>(<span class="n">10000</span>).<span class="f">toFloat</span>();
+  <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>);
+}
+
+<span class="c">// 0.2 → Función de máscara de nubes con la banda SCL</span>
+<span class="k">function</span> <span class="f">mask_clouds</span> (img) {
   <span class="k">var</span> scl = img.<span class="f">select</span>(<span class="s">'SCL'</span>);
   <span class="k">var</span> mask = scl.<span class="f">neq</span>(<span class="n">3</span>)    <span class="c">// sombra de nubes</span>
     .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">8</span>))       <span class="c">// nubes, probabilidad media</span>
     .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">9</span>))       <span class="c">// nubes, probabilidad alta</span>
     .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">10</span>));     <span class="c">// cirros</span>
-  <span class="k">return</span> img.<span class="f">updateMask</span>(mask).<span class="f">select</span>(<span class="s">'B.*'</span>).<span class="f">divide</span>(<span class="n">10000</span>);
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
 }</pre></div>
 
-    <h2 id="paso-2">Paso 2: Parámetros y colección <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Filtramos por zona, años, meses y nubosidad, y aplicamos la máscara a cada imagen. Como Sentinel-2 pasa cada cinco días, un límite de 20 % de píxeles nubosos todavía deja muchas imágenes por año.</p>
-    <div class="codebox"><pre><span class="c">// Parámetros de búsqueda</span>
-<span class="k">var</span> startYear = <span class="n">2019</span>;   <span class="c">// año inicial</span>
-<span class="k">var</span> endYear = <span class="n">2025</span>;     <span class="c">// año final</span>
-<span class="k">var</span> startMonth = <span class="n">1</span>;     <span class="c">// mes inicial</span>
-<span class="k">var</span> endMonth = <span class="n">12</span>;      <span class="c">// mes final</span>
-<span class="k">var</span> cloudcover = <span class="n">20</span>;    <span class="c">// porcentaje máximo de píxeles nubosos</span>
+    <h2 id="paso-1">Secciones 1 y 2: Bandas y colección <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Seleccionamos las diez bandas de superficie útiles y les damos nombres comunes. Dejamos fuera B1 y B9, que sirven para medir aerosoles y vapor de agua en la atmósfera y tienen 60 m de resolución. Las bandas de 20 m (borde rojo, B8A y SWIR) se remuestrean a 10 m al exportar.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 1 → DEFINIR BANDAS Y NOMENCLATURAS</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Colección filtrada y sin nubes</span>
-<span class="k">var</span> collection = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">'COPERNICUS/S2_SR_HARMONIZED'</span>)
-  .<span class="f">filterBounds</span>(AOI)
-  .<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, (endYear + <span class="n">1</span>) + <span class="s">'-01-01'</span>)
-  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
-  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, cloudcover))
-  .<span class="f">map</span>(maskS2clouds);
-<span class="g">print</span>(<span class="s">'Imágenes disponibles'</span>, collection.<span class="f">size</span>());</pre></div>
+<span class="k">var</span> bn_s2 = [<span class="s">'B2'</span>, <span class="s">'B3'</span>, <span class="s">'B4'</span>, <span class="s">'B5'</span>, <span class="s">'B6'</span>, <span class="s">'B7'</span>, <span class="s">'B8'</span>, <span class="s">'B8A'</span>, <span class="s">'B11'</span>, <span class="s">'B12'</span>, <span class="s">'SCL'</span>];
+<span class="k">var</span> bns = [<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'RE1'</span>, <span class="s">'RE2'</span>, <span class="s">'RE3'</span>, <span class="s">'Nir'</span>, <span class="s">'Nir2'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>, <span class="s">'SCL'</span>];
 
-    <h2 id="paso-3">Paso 3: Crear una mediana por año <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
-    <p>El método es el mismo de <a href="serie-tiempo-landsat.html">Series de tiempo con Landsat</a>: recorremos los años, calculamos una mediana para cada uno, guardamos el año y el número de imágenes, y eliminamos los años vacíos.</p>
-    <div class="codebox"><pre><span class="c">// Una mediana por año</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 2 → CREAR LA COLECCIÓN SENTINEL-2</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> s2 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"COPERNICUS/S2_SR_HARMONIZED"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn_s2, bns);</pre></div>
+
+    <h2 id="paso-3">Secciones 3 y 4: Parámetros y filtros <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Como Sentinel-2 pasa cada cinco días, un límite de 20 % de píxeles nubosos (<code>CLOUDY_PIXEL_PERCENTAGE</code>) todavía deja muchas imágenes por año.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 3 → DEFINIR PARÁMETROS DE BÚSQUEDA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> startYear = <span class="n">2019</span>;  <span class="c">// Año inicio</span>
+<span class="k">var</span> endYear = <span class="n">2025</span>;    <span class="c">// Año final</span>
+<span class="k">var</span> startMonth = <span class="n">1</span>;    <span class="c">// Mes inicial</span>
+<span class="k">var</span> endMonth = <span class="n">12</span>;     <span class="c">// Mes final</span>
+<span class="k">var</span> cloudcover = <span class="n">20</span>;   <span class="c">// Porcentaje máximo de píxeles nubosos</span>
+<span class="k">var</span> AOI = AOI;         <span class="c">// Área de estudio</span>
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 4 → APLICAR FILTROS A LA COLECCIÓN</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> filtered = s2.<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, endYear + <span class="s">'-12-31'</span>)
+                 .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, cloudcover))
+                 .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
+                 .<span class="f">sort</span>(<span class="s">'system:time_start'</span>, <span class="n">false</span>)
+                 .<span class="f">filterBounds</span>(AOI);
+
+<span class="g">print</span>(<span class="s">"Imágenes disponibles para la zona de estudio (Sentinel-2)"</span>, filtered);</pre></div>
+
+    <h2 id="paso-5">Sección 5: Calcular las medianas anuales <a class="anchor" href="#paso-5" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Este bloque es idéntico al de <a href="serie-tiempo-landsat.html">Series de tiempo con Landsat</a>: una mediana por año y eliminación de los años sin imágenes.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 5 → CALCULAR MEDIANAS ANUALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
 <span class="k">var</span> years = <span class="g">ee</span>.List.<span class="f">sequence</span>(startYear, endYear);
 
-<span class="k">var</span> annual = <span class="g">ee</span>.ImageCollection.<span class="f">fromImages</span>(years.<span class="f">map</span>(<span class="k">function</span> (year) {
+<span class="k">function</span> <span class="f">yearly_medians</span>(year) {
   <span class="k">var</span> start = <span class="g">ee</span>.Date.<span class="f">fromYMD</span>(year, <span class="n">1</span>, <span class="n">1</span>);
-  <span class="k">var</span> images = collection.<span class="f">filterDate</span>(start, start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>));
-  <span class="k">return</span> images.<span class="f">median</span>()
-    .<span class="f">clip</span>(AOI)
-    .<span class="f">set</span>(<span class="s">'year'</span>, year)
-    .<span class="f">set</span>(<span class="s">'n_images'</span>, images.<span class="f">size</span>());
-}));
+  <span class="k">var</span> end = start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>);
+  <span class="k">var</span> L = filtered.<span class="f">map</span>(mask_clouds);
+  <span class="k">var</span> image = L.<span class="f">filterDate</span>(start, end).<span class="f">median</span>().<span class="f">clip</span>(AOI).<span class="f">toFloat</span>();
+  <span class="k">return</span> image.<span class="f">set</span>(<span class="s">'year'</span>, year);
+}
 
-<span class="c">// Quitar los años sin imágenes</span>
-annual = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">gt</span>(<span class="s">'n_images'</span>, <span class="n">0</span>));
-<span class="g">print</span>(<span class="s">'Medianas anuales'</span>, annual);</pre></div>
+<span class="c">// Generar medianas por año</span>
+<span class="k">var</span> img_medians = years.<span class="f">map</span>(yearly_medians);
 
-    <h2 id="paso-4">Paso 4: Visualizar la serie <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+<span class="c">// Remover imágenes vacías</span>
+img_medians = img_medians.<span class="f">map</span>(<span class="k">function</span>(ele) {
+  <span class="k">var</span> count = <span class="g">ee</span>.<span class="f">Image</span>(ele).<span class="f">bandNames</span>().<span class="f">size</span>();
+  <span class="k">return</span> <span class="g">ee</span>.Algorithms.<span class="f">If</span>(count.<span class="f">gt</span>(<span class="n">0</span>), ele, <span class="n">0</span>);
+}).<span class="f">flatten</span>();
+img_medians = img_medians.<span class="f">removeAll</span>([<span class="n">0</span>]);
+
+<span class="c">// Colección de medianas anuales</span>
+<span class="k">var</span> colmeans = <span class="g">ee</span>.<span class="f">ImageCollection</span>(img_medians);
+<span class="k">var</span> años = <span class="g">ee</span>.<span class="f">Array</span>(colmeans.<span class="f">aggregate_array</span>(<span class="s">'year'</span>));
+
+<span class="g">print</span>(<span class="s">"Mediana de imágenes por año"</span>, colmeans);
+<span class="g">print</span>(<span class="s">"Lista de años"</span>, años);</pre></div>
+
+    <h2 id="paso-6">Sección 6: Visualizar la serie <a class="anchor" href="#paso-6" aria-label="Enlace a esta sección">#</a></h2>
     <p>Agregamos una capa por año en color verdadero. Activa las capas una por una en el panel <strong>Layers</strong> para comparar los años.</p>
-    <div class="codebox"><pre><span class="c">// Color verdadero, una capa por año</span>
-<span class="k">var</span> visRGB = {bands: [<span class="s">'B4'</span>, <span class="s">'B3'</span>, <span class="s">'B2'</span>], min: <span class="n">0.01</span>, max: <span class="n">0.22</span>, gamma: <span class="n">1</span>};
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 6 → VISUALIZACIÓN EN EL MAPA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> m_list = img_medians;
+<span class="k">var</span> len_w = img_medians.<span class="f">size</span>();
+<span class="k">var</span> visArgs_S2 = {bands: <span class="s">'Red,Green,Blue'</span>, min: <span class="n">0.01</span>, max: <span class="n">0.22</span>, gamma: <span class="n">1</span>};
+
 <span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">11</span>);
 
-annual.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>();
-    <span class="g">Map</span>.<span class="f">addLayer</span>(img, visRGB, <span class="s">'RGB '</span> + year, <span class="n">false</span>);
-  });
+len_w.<span class="f">evaluate</span>(<span class="k">function</span>(l) {
+  <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; l; i++) {
+    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(m_list.<span class="f">get</span>(i));
+    <span class="g">Map</span>.<span class="f">addLayer</span>(img, visArgs_S2, <span class="s">'RGB-'</span> + i.<span class="f">toString</span>(), <span class="n">false</span>);
+  }
 });</pre></div>
 
-    <h2 id="paso-5">Paso 5: Exportar cada año <a class="anchor" href="#paso-5" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Exportamos diez bandas a 10 m: las tres visibles, las tres del borde rojo, los dos infrarrojos cercanos (B8 y B8A) y los dos SWIR. Dejamos fuera B1 y B9, que sirven para medir aerosoles y vapor de agua en la atmósfera y tienen 60 m de resolución. Las bandas de 20 m se remuestrean a 10 m al exportar.</p>
-    <div class="codebox"><pre><span class="c">// Bandas a exportar: visibles, borde rojo, NIR y SWIR</span>
-<span class="k">var</span> exportBands = [<span class="s">'B2'</span>, <span class="s">'B3'</span>, <span class="s">'B4'</span>, <span class="s">'B5'</span>, <span class="s">'B6'</span>, <span class="s">'B7'</span>, <span class="s">'B8'</span>, <span class="s">'B8A'</span>, <span class="s">'B11'</span>, <span class="s">'B12'</span>];
+    <h2 id="paso-7">Sección 7: Exportar cada año <a class="anchor" href="#paso-7" aria-label="Enlace a esta sección">#</a></h2>
+    <p>La exportación viene desactivada: todo el bloque está entre <code>/*</code> y <code>*/</code>, así que Earth Engine lo ignora. Para usarla, borra las dos líneas que dicen <code>Eliminar comentario</code> y vuelve a ejecutar. En la pestaña <strong>Tasks</strong> aparecerá una tarea por año y tendrás que ejecutar cada una. <code>crs</code> fija la proyección de salida: <code>EPSG:32618</code> es UTM zona 18 Norte, que cubre buena parte de Colombia; cámbiala por la zona UTM de tu AOI. Aquí la escala es de 10 m.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 7 → EXPORTACIÓN OPCIONAL A GOOGLE DRIVE</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Una tarea de exportación por año</span>
-annual.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>());
-    <span class="g">Export</span>.image.<span class="f">toDrive</span>({
-      image: img.<span class="f">select</span>(exportBands).<span class="f">toFloat</span>(),
-      description: <span class="s">'Sentinel2_mediana_'</span> + year,
-      folder: <span class="s">'Sentinel_Median'</span>,
-      region: AOI,
-      scale: <span class="n">10</span>,
-      crs: <span class="s">'EPSG:32618'</span>,  <span class="c">// UTM 18N, cámbiala por la zona de tu AOI</span>
-      maxPixels: <span class="n">1e13</span>
-    });
+<span class="c">/*// Eliminar comentario
+
+var list = colmeans.toList(colmeans.size());
+
+// Función que exporta cada imagen de la lista
+var exportImages = function(index) {
+  var img = ee.Image(list.get(index));
+  var year = ee.Number(img.get('year')).format('%d');
+
+  Export.image.toDrive({
+    image: img,
+    description: ee.String('Sentinel2_Median_').cat(year).getInfo(),
+    folder: 'Sentinel_Median',
+    fileNamePrefix: ee.String('Median_').cat(year).getInfo(),
+    region: AOI,
+    scale: 10,
+    crs: 'EPSG:32618',  // UTM 18N, cámbiala por la zona de tu AOI
+    maxPixels: 1e13
   });
-});</pre></div>
+};
+
+// Ejecuta una exportación por año
+var count = colmeans.size();
+count.evaluate(function(n) {
+  for (var i = 0; i &lt; n; i++) {
+    exportImages(i);
+  }
+});
+
+*/</span><span class="c">// Eliminar comentario</span></pre></div>
 
     <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
-    <div class="codebox"><pre><span class="c">// Máscara de nubes con la banda SCL y paso a reflectancia (0 a 1)</span>
-<span class="k">function</span> <span class="f">maskS2clouds</span>(img) {
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 0 → CREAR FUNCIONES PRINCIPALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// 0.1 → Función de factor de escala (valores digitales a reflectancia, 0 a 1)</span>
+<span class="k">function</span> <span class="f">scaler</span> (img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'B.*'</span>).<span class="f">divide</span>(<span class="n">10000</span>).<span class="f">toFloat</span>();
+  <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>);
+}
+
+<span class="c">// 0.2 → Función de máscara de nubes con la banda SCL</span>
+<span class="k">function</span> <span class="f">mask_clouds</span> (img) {
   <span class="k">var</span> scl = img.<span class="f">select</span>(<span class="s">'SCL'</span>);
   <span class="k">var</span> mask = scl.<span class="f">neq</span>(<span class="n">3</span>)    <span class="c">// sombra de nubes</span>
     .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">8</span>))       <span class="c">// nubes, probabilidad media</span>
     .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">9</span>))       <span class="c">// nubes, probabilidad alta</span>
     .<span class="f">and</span>(scl.<span class="f">neq</span>(<span class="n">10</span>));     <span class="c">// cirros</span>
-  <span class="k">return</span> img.<span class="f">updateMask</span>(mask).<span class="f">select</span>(<span class="s">'B.*'</span>).<span class="f">divide</span>(<span class="n">10000</span>);
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
 }
 
-<span class="c">// Parámetros de búsqueda</span>
-<span class="k">var</span> startYear = <span class="n">2019</span>;   <span class="c">// año inicial</span>
-<span class="k">var</span> endYear = <span class="n">2025</span>;     <span class="c">// año final</span>
-<span class="k">var</span> startMonth = <span class="n">1</span>;     <span class="c">// mes inicial</span>
-<span class="k">var</span> endMonth = <span class="n">12</span>;      <span class="c">// mes final</span>
-<span class="k">var</span> cloudcover = <span class="n">20</span>;    <span class="c">// porcentaje máximo de píxeles nubosos</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 1 → DEFINIR BANDAS Y NOMENCLATURAS</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Colección filtrada y sin nubes</span>
-<span class="k">var</span> collection = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">'COPERNICUS/S2_SR_HARMONIZED'</span>)
-  .<span class="f">filterBounds</span>(AOI)
-  .<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, (endYear + <span class="n">1</span>) + <span class="s">'-01-01'</span>)
-  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
-  .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, cloudcover))
-  .<span class="f">map</span>(maskS2clouds);
-<span class="g">print</span>(<span class="s">'Imágenes disponibles'</span>, collection.<span class="f">size</span>());
+<span class="k">var</span> bn_s2 = [<span class="s">'B2'</span>, <span class="s">'B3'</span>, <span class="s">'B4'</span>, <span class="s">'B5'</span>, <span class="s">'B6'</span>, <span class="s">'B7'</span>, <span class="s">'B8'</span>, <span class="s">'B8A'</span>, <span class="s">'B11'</span>, <span class="s">'B12'</span>, <span class="s">'SCL'</span>];
+<span class="k">var</span> bns = [<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'RE1'</span>, <span class="s">'RE2'</span>, <span class="s">'RE3'</span>, <span class="s">'Nir'</span>, <span class="s">'Nir2'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>, <span class="s">'SCL'</span>];
 
-<span class="c">// Una mediana por año</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 2 → CREAR LA COLECCIÓN SENTINEL-2</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> s2 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"COPERNICUS/S2_SR_HARMONIZED"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn_s2, bns);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 3 → DEFINIR PARÁMETROS DE BÚSQUEDA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> startYear = <span class="n">2019</span>;  <span class="c">// Año inicio</span>
+<span class="k">var</span> endYear = <span class="n">2025</span>;    <span class="c">// Año final</span>
+<span class="k">var</span> startMonth = <span class="n">1</span>;    <span class="c">// Mes inicial</span>
+<span class="k">var</span> endMonth = <span class="n">12</span>;     <span class="c">// Mes final</span>
+<span class="k">var</span> cloudcover = <span class="n">20</span>;   <span class="c">// Porcentaje máximo de píxeles nubosos</span>
+<span class="k">var</span> AOI = AOI;         <span class="c">// Área de estudio</span>
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 4 → APLICAR FILTROS A LA COLECCIÓN</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> filtered = s2.<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, endYear + <span class="s">'-12-31'</span>)
+                 .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUDY_PIXEL_PERCENTAGE'</span>, cloudcover))
+                 .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
+                 .<span class="f">sort</span>(<span class="s">'system:time_start'</span>, <span class="n">false</span>)
+                 .<span class="f">filterBounds</span>(AOI);
+
+<span class="g">print</span>(<span class="s">"Imágenes disponibles para la zona de estudio (Sentinel-2)"</span>, filtered);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 5 → CALCULAR MEDIANAS ANUALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
 <span class="k">var</span> years = <span class="g">ee</span>.List.<span class="f">sequence</span>(startYear, endYear);
 
-<span class="k">var</span> annual = <span class="g">ee</span>.ImageCollection.<span class="f">fromImages</span>(years.<span class="f">map</span>(<span class="k">function</span> (year) {
+<span class="k">function</span> <span class="f">yearly_medians</span>(year) {
   <span class="k">var</span> start = <span class="g">ee</span>.Date.<span class="f">fromYMD</span>(year, <span class="n">1</span>, <span class="n">1</span>);
-  <span class="k">var</span> images = collection.<span class="f">filterDate</span>(start, start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>));
-  <span class="k">return</span> images.<span class="f">median</span>()
-    .<span class="f">clip</span>(AOI)
-    .<span class="f">set</span>(<span class="s">'year'</span>, year)
-    .<span class="f">set</span>(<span class="s">'n_images'</span>, images.<span class="f">size</span>());
-}));
+  <span class="k">var</span> end = start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>);
+  <span class="k">var</span> L = filtered.<span class="f">map</span>(mask_clouds);
+  <span class="k">var</span> image = L.<span class="f">filterDate</span>(start, end).<span class="f">median</span>().<span class="f">clip</span>(AOI).<span class="f">toFloat</span>();
+  <span class="k">return</span> image.<span class="f">set</span>(<span class="s">'year'</span>, year);
+}
 
-<span class="c">// Quitar los años sin imágenes</span>
-annual = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">gt</span>(<span class="s">'n_images'</span>, <span class="n">0</span>));
-<span class="g">print</span>(<span class="s">'Medianas anuales'</span>, annual);
+<span class="c">// Generar medianas por año</span>
+<span class="k">var</span> img_medians = years.<span class="f">map</span>(yearly_medians);
 
-<span class="c">// Color verdadero, una capa por año</span>
-<span class="k">var</span> visRGB = {bands: [<span class="s">'B4'</span>, <span class="s">'B3'</span>, <span class="s">'B2'</span>], min: <span class="n">0.01</span>, max: <span class="n">0.22</span>, gamma: <span class="n">1</span>};
+<span class="c">// Remover imágenes vacías</span>
+img_medians = img_medians.<span class="f">map</span>(<span class="k">function</span>(ele) {
+  <span class="k">var</span> count = <span class="g">ee</span>.<span class="f">Image</span>(ele).<span class="f">bandNames</span>().<span class="f">size</span>();
+  <span class="k">return</span> <span class="g">ee</span>.Algorithms.<span class="f">If</span>(count.<span class="f">gt</span>(<span class="n">0</span>), ele, <span class="n">0</span>);
+}).<span class="f">flatten</span>();
+img_medians = img_medians.<span class="f">removeAll</span>([<span class="n">0</span>]);
+
+<span class="c">// Colección de medianas anuales</span>
+<span class="k">var</span> colmeans = <span class="g">ee</span>.<span class="f">ImageCollection</span>(img_medians);
+<span class="k">var</span> años = <span class="g">ee</span>.<span class="f">Array</span>(colmeans.<span class="f">aggregate_array</span>(<span class="s">'year'</span>));
+
+<span class="g">print</span>(<span class="s">"Mediana de imágenes por año"</span>, colmeans);
+<span class="g">print</span>(<span class="s">"Lista de años"</span>, años);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 6 → VISUALIZACIÓN EN EL MAPA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> m_list = img_medians;
+<span class="k">var</span> len_w = img_medians.<span class="f">size</span>();
+<span class="k">var</span> visArgs_S2 = {bands: <span class="s">'Red,Green,Blue'</span>, min: <span class="n">0.01</span>, max: <span class="n">0.22</span>, gamma: <span class="n">1</span>};
+
 <span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">11</span>);
 
-annual.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>();
-    <span class="g">Map</span>.<span class="f">addLayer</span>(img, visRGB, <span class="s">'RGB '</span> + year, <span class="n">false</span>);
-  });
+len_w.<span class="f">evaluate</span>(<span class="k">function</span>(l) {
+  <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; l; i++) {
+    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(m_list.<span class="f">get</span>(i));
+    <span class="g">Map</span>.<span class="f">addLayer</span>(img, visArgs_S2, <span class="s">'RGB-'</span> + i.<span class="f">toString</span>(), <span class="n">false</span>);
+  }
 });
 
-<span class="c">// Bandas a exportar: visibles, borde rojo, NIR y SWIR</span>
-<span class="k">var</span> exportBands = [<span class="s">'B2'</span>, <span class="s">'B3'</span>, <span class="s">'B4'</span>, <span class="s">'B5'</span>, <span class="s">'B6'</span>, <span class="s">'B7'</span>, <span class="s">'B8'</span>, <span class="s">'B8A'</span>, <span class="s">'B11'</span>, <span class="s">'B12'</span>];
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 7 → EXPORTACIÓN OPCIONAL A GOOGLE DRIVE</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Una tarea de exportación por año</span>
-annual.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>());
-    <span class="g">Export</span>.image.<span class="f">toDrive</span>({
-      image: img.<span class="f">select</span>(exportBands).<span class="f">toFloat</span>(),
-      description: <span class="s">'Sentinel2_mediana_'</span> + year,
-      folder: <span class="s">'Sentinel_Median'</span>,
-      region: AOI,
-      scale: <span class="n">10</span>,
-      crs: <span class="s">'EPSG:32618'</span>,  <span class="c">// UTM 18N, cámbiala por la zona de tu AOI</span>
-      maxPixels: <span class="n">1e13</span>
-    });
+<span class="c">/*// Eliminar comentario
+
+var list = colmeans.toList(colmeans.size());
+
+// Función que exporta cada imagen de la lista
+var exportImages = function(index) {
+  var img = ee.Image(list.get(index));
+  var year = ee.Number(img.get('year')).format('%d');
+
+  Export.image.toDrive({
+    image: img,
+    description: ee.String('Sentinel2_Median_').cat(year).getInfo(),
+    folder: 'Sentinel_Median',
+    fileNamePrefix: ee.String('Median_').cat(year).getInfo(),
+    region: AOI,
+    scale: 10,
+    crs: 'EPSG:32618',  // UTM 18N, cámbiala por la zona de tu AOI
+    maxPixels: 1e13
   });
-});</pre></div>
+};
+
+// Ejecuta una exportación por año
+var count = colmeans.size();
+count.evaluate(function(n) {
+  for (var i = 0; i &lt; n; i++) {
+    exportImages(i);
+  }
+});
+
+*/</span><span class="c">// Eliminar comentario</span></pre></div>
 
     <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
     <p>Con Sentinel-2 tienes menos años que con Landsat, pero cada uno con 10 m de detalle. Elige Landsat cuando necesites mirar décadas atrás y Sentinel-2 cuando te interesen cambios recientes en áreas pequeñas.</p>

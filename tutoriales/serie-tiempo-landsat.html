@@ -141,7 +141,7 @@
       <li><a href="https://www.usgs.gov/landsat-missions/landsat-collection-2-level-2-science-products" target="_blank" rel="noopener">Productos de nivel 2 de Landsat Colección 2 (USGS)</a></li>
       <li><a href="https://developers.google.com/earth-engine/datasets/catalog/LANDSAT_LT05_C02_T1_L2" target="_blank" rel="noopener">Landsat 5 Surface Reflectance (LANDSAT/LT05/C02/T1_L2)</a></li>
       <li><a href="https://developers.google.com/earth-engine/datasets/catalog/LANDSAT_LC08_C02_T1_L2" target="_blank" rel="noopener">Landsat 8 Surface Reflectance (LANDSAT/LC08/C02/T1_L2)</a></li>
-      <li><a href="https://developers.google.com/earth-engine/apidocs/ee-imagecollection-fromimages" target="_blank" rel="noopener">ee.ImageCollection.fromImages()</a></li>
+      <li><a href="https://developers.google.com/earth-engine/apidocs/ee-algorithms-if" target="_blank" rel="noopener">ee.Algorithms.If()</a></li>
     </ul>
 
     <h2 id="satelites">Cinco satélites, una serie <a class="anchor" href="#satelites" aria-label="Enlace a esta sección">#</a></h2>
@@ -159,229 +159,369 @@
     </div>
     <p>Landsat 7 merece un comentario. El 31 de mayo de 2003 falló su corrector de líneas de escaneo (SLC), y desde entonces cada escena tiene franjas sin datos que suman cerca del 22 % de la imagen. En una mediana anual esas franjas se rellenan con otras fechas, así que el satélite sigue siendo útil. En el script lo usamos hasta mayo de 2013, cuando Landsat 8 empezó a entregar datos. Así cubrimos 2012, cuando Landsat 5 ya casi no tomaba imágenes y Landsat 8 todavía no estaba en órbita.</p>
 
-    <h2 id="bandas">Mismas bandas, distinto número <a class="anchor" href="#bandas" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Landsat 8 y 9 agregaron una banda azul costera al inicio, y por eso las demás se corrieron un número. El azul es <code>SR_B1</code> en Landsat 4, 5 y 7, pero <code>SR_B2</code> en Landsat 8 y 9. Para unir las colecciones renombramos las bandas con <code>select()</code>, que recibe una lista con las bandas de entrada y otra con los nombres nuevos.</p>
+    <h2 id="paso-0">Sección 0: Crear las funciones principales <a class="anchor" href="#paso-0" aria-label="Enlace a esta sección">#</a></h2>
+    <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
+    <p><code>scaler()</code> convierte los valores digitales en reflectancia de superficie, de 0 a 1, y la banda térmica en grados Kelvin. <code>mask_clouds()</code> oculta los píxeles marcados en la banda de calidad <code>QA_PIXEL</code>, que en el script se llama <code>BQA</code>. Cada condición atmosférica ocupa un bit de esa banda, y en la Colección 2 son estos:</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Bit</th><th>Qué marca</th><th>Variable</th></tr></thead>
+        <tbody>
+          <tr><td class="n">2</td><td>Cirros</td><td><code>cirrus</code></td></tr>
+          <tr><td class="n">3</td><td>Nubes</td><td><code>cloudsBitMask</code></td></tr>
+          <tr><td class="n">4</td><td>Sombras de nubes</td><td><code>cloudShadowBitMask</code></td></tr>
+          <tr><td class="n">5</td><td>Nieve</td><td><code>snow</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><p><strong>Ojo con los bits si vienes de la Colección 1.</strong> En la antigua banda <code>pixel_qa</code> de la Colección 1, el bit 3 era la sombra y el 5 la nube. En <code>QA_PIXEL</code> de la Colección 2 el 3 es la nube, el 4 la sombra y el 5 la nieve. Si se usan los bits viejos, las sombras de nubes no se enmascaran y quedan como manchas oscuras en la mediana.</p></div>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 0 → CREAR FUNCIONES PRINCIPALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// 0.1 → Función de factor de escala</span>
+<span class="k">function</span> <span class="f">scaler</span> (img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">"SR_B."</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
+  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">"ST_B.*"</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
+  <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
+}
+
+<span class="c">// 0.2 → Función de máscara de nubes</span>
+<span class="k">function</span> <span class="f">mask_clouds</span> (img) {
+  <span class="c">// Banda de calidad QA_PIXEL (renombrada como BQA)</span>
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'BQA'</span>);
+  <span class="c">// Bits de QA_PIXEL en Landsat Colección 2</span>
+  <span class="k">var</span> cirrus = (<span class="n">1</span> &lt;&lt; <span class="n">2</span>);              <span class="c">// bit 2: cirros</span>
+  <span class="k">var</span> cloudsBitMask = (<span class="n">1</span> &lt;&lt; <span class="n">3</span>);       <span class="c">// bit 3: nubes</span>
+  <span class="k">var</span> cloudShadowBitMask = (<span class="n">1</span> &lt;&lt; <span class="n">4</span>);  <span class="c">// bit 4: sombras de nubes</span>
+  <span class="k">var</span> snow = (<span class="n">1</span> &lt;&lt; <span class="n">5</span>);                <span class="c">// bit 5: nieve</span>
+  <span class="c">// Todos los bits deben estar en cero (condiciones despejadas)</span>
+  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cloudShadowBitMask).<span class="f">eq</span>(<span class="n">0</span>)
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudsBitMask).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
+  <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
+}</pre></div>
+
+    <h2 id="paso-1">Sección 1: Definir bandas y nombres <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Landsat 8 y 9 agregaron una banda azul costera al inicio, y por eso las demás se corrieron un número. El azul es <code>SR_B1</code> en Landsat 4, 5 y 7, pero <code>SR_B2</code> en Landsat 8 y 9. Para unir las colecciones renombramos las bandas con <code>select()</code>, que recibe una lista con las bandas de entrada y otra con los nombres nuevos. Landsat 4, 5 y 7 no tienen azul costero, así que repetimos <code>SR_B1</code> como <code>uBlue</code> para que todas las colecciones tengan las mismas ocho bandas.</p>
     <div class="tbl">
       <table>
         <thead><tr><th>Nombre común</th><th>Landsat 4, 5 y 7</th><th>Landsat 8 y 9</th></tr></thead>
         <tbody>
+          <tr><td class="n">uBlue</td><td>SR_B1 (repetida)</td><td>SR_B1, azul costero</td></tr>
           <tr><td class="n">Blue</td><td>SR_B1</td><td>SR_B2</td></tr>
           <tr><td class="n">Green</td><td>SR_B2</td><td>SR_B3</td></tr>
           <tr><td class="n">Red</td><td>SR_B3</td><td>SR_B4</td></tr>
-          <tr><td class="n">Nir</td><td>SR_B4</td><td>SR_B5</td></tr>
           <tr><td class="n">Swir1</td><td>SR_B5</td><td>SR_B6</td></tr>
+          <tr><td class="n">BQA</td><td>QA_PIXEL</td><td>QA_PIXEL</td></tr>
+          <tr><td class="n">Nir</td><td>SR_B4</td><td>SR_B5</td></tr>
           <tr><td class="n">Swir2</td><td>SR_B7</td><td>SR_B7</td></tr>
         </tbody>
       </table>
     </div>
     <div class="callout"><p><strong>Los sensores no son idénticos.</strong> Las bandas de OLI son más estrechas que las de TM y ETM+, así que un mismo lugar puede dar valores un poco distintos con Landsat 7 y con Landsat 8. Para ver tendencias generales no es un problema. Para análisis cuantitativos finos, Roy et al. (2016) publicaron coeficientes para armonizar ambos sensores.</p></div>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 1 → DEFINIR BANDAS Y NOMENCLATURAS</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-    <h2 id="paso-1">Paso 1: Crear las funciones <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
-    <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
-    <p>Usamos las mismas funciones del curso básico. El factor de escala y los bits de <code>QA_PIXEL</code> son iguales en todos los Landsat de la Colección 2, así que sirven para los cinco satélites.</p>
-    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> <span class="f">scaler</span>(img) {
-  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
-  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
-  <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
-}
+<span class="k">var</span> bn9 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B6'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn8 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B6'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn7 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn5 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bns = [<span class="s">'uBlue'</span>, <span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Swir1'</span>, <span class="s">'BQA'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir2'</span>];</pre></div>
 
-<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
-  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
-  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
-  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
-  <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
-}</pre></div>
+    <h2 id="paso-2">Sección 2: Crear y unir las colecciones <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+    <p>A cada colección le aplicamos el factor de escala y los nombres comunes, y después las unimos con <code>merge()</code>. Landsat 7 se limita a sus fechas útiles, como explicamos arriba.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 2 → CREAR Y UNIFICAR COLECCIONES LANDSAT (4, 5, 7, 8 Y 9)</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-    <h2 id="paso-2">Paso 2: Definir los parámetros <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
+<span class="k">var</span> ls4 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LT04/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn5, bns);
+<span class="k">var</span> ls5 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LT05/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn5, bns);
+<span class="k">var</span> ls7 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LE07/C02/T1_L2"</span>).<span class="f">map</span>(scaler)
+                            .<span class="f">filterDate</span>(<span class="s">'1999-04-15'</span>, <span class="s">'2013-05-30'</span>)
+                            .<span class="f">select</span>(bn7, bns);
+<span class="k">var</span> ls8 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC08/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn8, bns);
+<span class="k">var</span> ls9 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn9, bns);
+
+<span class="k">var</span> merged = ls4.<span class="f">merge</span>(ls5).<span class="f">merge</span>(ls7).<span class="f">merge</span>(ls8).<span class="f">merge</span>(ls9);</pre></div>
+
+    <h2 id="paso-3">Sección 3: Definir los parámetros <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
     <p>Reunimos al inicio los valores que vas a cambiar. Con <code>startMonth</code> y <code>endMonth</code> puedes quedarte con una sola temporada, por ejemplo 1 y 3 para enero a marzo, la época seca en buena parte del Caribe colombiano. Comparar siempre la misma temporada evita confundir un cambio real con la diferencia entre la época seca y la de lluvias.</p>
-    <div class="codebox"><pre><span class="c">// Parámetros de búsqueda</span>
-<span class="k">var</span> startYear = <span class="n">1984</span>;   <span class="c">// año inicial</span>
-<span class="k">var</span> endYear = <span class="n">2025</span>;     <span class="c">// año final</span>
-<span class="k">var</span> startMonth = <span class="n">1</span>;     <span class="c">// mes inicial</span>
-<span class="k">var</span> endMonth = <span class="n">12</span>;      <span class="c">// mes final</span>
-<span class="k">var</span> cloudcover = <span class="n">30</span>;    <span class="c">// nubosidad máxima sobre tierra (%)</span></pre></div>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 3 → DEFINIR PARÁMETROS DE BÚSQUEDA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-    <h2 id="paso-3">Paso 3: Unir las colecciones <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
-    <p>La función <code>landsat()</code> filtra una colección por zona, fechas, meses y nubosidad, y después prepara cada imagen: aplica la máscara de nubes, el factor de escala y los nombres comunes. Filtrar antes de <code>map()</code> hace que Earth Engine procese solo las imágenes que necesitas. Al final unimos las cinco colecciones con <code>merge()</code>.</p>
-    <div class="codebox"><pre><span class="c">// Nombres comunes para las bandas de todos los sensores</span>
-<span class="k">var</span> bandsTM = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];   <span class="c">// Landsat 4, 5 y 7</span>
-<span class="k">var</span> bandsOLI = [<span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B6'</span>, <span class="s">'SR_B7'</span>];  <span class="c">// Landsat 8 y 9</span>
-<span class="k">var</span> names = [<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>];
+<span class="k">var</span> startYear = <span class="n">1980</span>;  <span class="c">// Año inicio</span>
+<span class="k">var</span> endYear = <span class="n">2025</span>;    <span class="c">// Año final</span>
+<span class="k">var</span> startMonth = <span class="n">1</span>;    <span class="c">// Mes inicial</span>
+<span class="k">var</span> endMonth = <span class="n">12</span>;     <span class="c">// Mes final</span>
+<span class="k">var</span> cloudcover = <span class="n">30</span>;   <span class="c">// Cobertura de nubes (%)</span>
+<span class="k">var</span> AOI = AOI;         <span class="c">// Área de estudio</span></pre></div>
 
-<span class="c">// Filtra una colección y prepara cada imagen</span>
-<span class="k">function</span> <span class="f">landsat</span>(id, bands) {
-  <span class="k">return</span> <span class="g">ee</span>.<span class="f">ImageCollection</span>(id)
-    .<span class="f">filterBounds</span>(AOI)
-    .<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, (endYear + <span class="n">1</span>) + <span class="s">'-01-01'</span>)
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, cloudcover))
-    .<span class="f">map</span>(<span class="k">function</span> (img) {
-      <span class="k">return</span> <span class="f">scaler</span>(<span class="f">mask_clouds</span>(img)).<span class="f">select</span>(bands, names);
-    });
-}
+    <h2 id="paso-4">Sección 4: Filtrar la colección <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Filtramos la colección unida por fechas, nubosidad sobre tierra (<code>CLOUD_COVER_LAND</code>), meses y área de estudio, y la ordenamos por fecha. Earth Engine solo procesa las imágenes que pasan los filtros, aunque <code>scaler()</code> se haya aplicado antes.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 4 → APLICAR FILTROS A LA COLECCIÓN FUSIONADA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Landsat 4, 5, 7, 8 y 9 en una sola colección</span>
-<span class="k">var</span> collection = <span class="f">landsat</span>(<span class="s">'LANDSAT/LT04/C02/T1_L2'</span>, bandsTM)
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LT05/C02/T1_L2'</span>, bandsTM))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LE07/C02/T1_L2'</span>, bandsTM).<span class="f">filterDate</span>(<span class="s">'1999-04-15'</span>, <span class="s">'2013-05-30'</span>))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC08/C02/T1_L2'</span>, bandsOLI))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC09/C02/T1_L2'</span>, bandsOLI));
-<span class="g">print</span>(<span class="s">'Imágenes disponibles'</span>, collection.<span class="f">size</span>());</pre></div>
+<span class="k">var</span> filtered = merged.<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, endYear + <span class="s">'-12-31'</span>)
+                     .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, cloudcover))
+                     .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
+                     .<span class="f">sort</span>(<span class="s">'system:time_start'</span>, <span class="n">false</span>)
+                     .<span class="f">filterBounds</span>(AOI);
 
-    <h2 id="paso-4">Paso 4: Crear una mediana por año <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Recorremos la lista de años con <code>map()</code>. Para cada año filtramos la colección, calculamos la mediana y guardamos el año como propiedad. También guardamos cuántas imágenes entraron en la mediana (<code>n_images</code>), y con ese dato eliminamos los años vacíos. En los primeros años del archivo puede no haber ninguna escena de tu zona.</p>
-    <div class="codebox"><pre><span class="c">// Una mediana por año</span>
+<span class="g">print</span>(<span class="s">"Imágenes disponibles para la zona de estudio (Landsat 4, 5, 7, 8 y 9)"</span>, filtered);</pre></div>
+
+    <h2 id="paso-5">Sección 5: Calcular las medianas anuales <a class="anchor" href="#paso-5" aria-label="Enlace a esta sección">#</a></h2>
+    <p><code>yearly_medians()</code> recibe un año, toma las imágenes sin nubes de ese año y calcula su mediana. Al aplicarla a la lista de años obtenemos una mediana por año. En los primeros años del archivo puede no haber ninguna escena de tu zona, y esa mediana queda sin bandas. <code>ee.Algorithms.If()</code> cambia esas imágenes vacías por un 0, y <code>removeAll([0])</code> las elimina de la lista. Al final convertimos la lista en una colección, <code>colmeans</code>.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 5 → CALCULAR MEDIANAS ANUALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
 <span class="k">var</span> years = <span class="g">ee</span>.List.<span class="f">sequence</span>(startYear, endYear);
 
-<span class="k">var</span> annual = <span class="g">ee</span>.ImageCollection.<span class="f">fromImages</span>(years.<span class="f">map</span>(<span class="k">function</span> (year) {
+<span class="k">function</span> <span class="f">yearly_medians</span>(year) {
   <span class="k">var</span> start = <span class="g">ee</span>.Date.<span class="f">fromYMD</span>(year, <span class="n">1</span>, <span class="n">1</span>);
-  <span class="k">var</span> images = collection.<span class="f">filterDate</span>(start, start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>));
-  <span class="k">return</span> images.<span class="f">median</span>()
-    .<span class="f">clip</span>(AOI)
-    .<span class="f">set</span>(<span class="s">'year'</span>, year)
-    .<span class="f">set</span>(<span class="s">'n_images'</span>, images.<span class="f">size</span>());
-}));
+  <span class="k">var</span> end = start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>);
+  <span class="k">var</span> L = filtered.<span class="f">map</span>(mask_clouds);
+  <span class="k">var</span> image = L.<span class="f">filterDate</span>(start, end).<span class="f">median</span>().<span class="f">clip</span>(AOI).<span class="f">toFloat</span>();
+  <span class="k">return</span> image.<span class="f">set</span>(<span class="s">'year'</span>, year);
+}
 
-<span class="c">// Quitar los años sin imágenes</span>
-annual = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">gt</span>(<span class="s">'n_images'</span>, <span class="n">0</span>));
-<span class="g">print</span>(<span class="s">'Medianas anuales'</span>, annual);</pre></div>
+<span class="c">// Generar medianas por año</span>
+<span class="k">var</span> img_medians = years.<span class="f">map</span>(yearly_medians);
 
-    <h2 id="paso-5">Paso 5: Visualizar la serie <a class="anchor" href="#paso-5" aria-label="Enlace a esta sección">#</a></h2>
-    <p><code>aggregate_array('year')</code> devuelve la lista de años que quedaron en la colección, y <code>evaluate()</code> la trae al navegador. Así podemos recorrerla con un ciclo normal de JavaScript y agregar una capa por año. Las capas se cargan apagadas: actívalas una por una en el panel <strong>Layers</strong> para ver cómo cambia tu zona.</p>
-    <div class="codebox"><pre><span class="c">// Color verdadero, una capa por año</span>
-<span class="k">var</span> visRGB = {bands: [<span class="s">'Red'</span>, <span class="s">'Green'</span>, <span class="s">'Blue'</span>], min: <span class="n">0.002</span>, max: <span class="n">0.25</span>, gamma: <span class="n">1</span>};
+<span class="c">// Remover imágenes vacías</span>
+img_medians = img_medians.<span class="f">map</span>(<span class="k">function</span>(ele) {
+  <span class="k">var</span> count = <span class="g">ee</span>.<span class="f">Image</span>(ele).<span class="f">bandNames</span>().<span class="f">size</span>();
+  <span class="k">return</span> <span class="g">ee</span>.Algorithms.<span class="f">If</span>(count.<span class="f">gt</span>(<span class="n">0</span>), ele, <span class="n">0</span>);
+}).<span class="f">flatten</span>();
+img_medians = img_medians.<span class="f">removeAll</span>([<span class="n">0</span>]);
+
+<span class="c">// Colección de medianas anuales</span>
+<span class="k">var</span> colmeans = <span class="g">ee</span>.<span class="f">ImageCollection</span>(img_medians);
+<span class="k">var</span> años = <span class="g">ee</span>.<span class="f">Array</span>(colmeans.<span class="f">aggregate_array</span>(<span class="s">'year'</span>));
+
+<span class="g">print</span>(<span class="s">"Mediana de imágenes por año"</span>, colmeans);
+<span class="g">print</span>(<span class="s">"Lista de años"</span>, años);</pre></div>
+    <div class="callout"><p><strong>¿Y la reproyección?</strong> No reproyectamos las medianas dentro del script. Las operaciones de esta serie trabajan píxel a píxel, y Earth Engine calcula cada resultado en la escala que se le pide. La proyección y el tamaño de píxel finales se fijan al exportar, con <code>crs</code> y <code>scale</code>. Usar <code>reproject()</code> antes obliga a calcular todo a esa escala, incluso lo que ves en el mapa, y suele causar errores de memoria en series largas.</p></div>
+
+    <h2 id="paso-6">Sección 6: Visualizar la serie <a class="anchor" href="#paso-6" aria-label="Enlace a esta sección">#</a></h2>
+    <p><code>evaluate()</code> trae al navegador el número de medianas, y con un ciclo normal de JavaScript agregamos una capa por año. Las capas se cargan apagadas y se numeran desde 0, en orden: actívalas una por una en el panel <strong>Layers</strong> para ver cómo cambia tu zona.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 6 → VISUALIZACIÓN EN EL MAPA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> m_list = img_medians;
+<span class="k">var</span> len_w = img_medians.<span class="f">size</span>();
+<span class="k">var</span> visArgs_LAND = {bands: <span class="s">'Red,Green,Blue'</span>, min: <span class="n">0.002</span>, max: <span class="n">0.25</span>, gamma: <span class="n">1</span>};
+
 <span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);
 
-annual.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>();
-    <span class="g">Map</span>.<span class="f">addLayer</span>(img, visRGB, <span class="s">'RGB '</span> + year, <span class="n">false</span>);
-  });
+len_w.<span class="f">evaluate</span>(<span class="k">function</span>(l) {
+  <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; l; i++) {
+    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(m_list.<span class="f">get</span>(i));
+    <span class="g">Map</span>.<span class="f">addLayer</span>(img, visArgs_LAND, <span class="s">'RGB-'</span> + i.<span class="f">toString</span>(), <span class="n">false</span>);
+  }
 });</pre></div>
 
-    <h2 id="paso-6">Paso 6: Exportar cada año <a class="anchor" href="#paso-6" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Cada año se exporta como una tarea independiente, así que en la pestaña <strong>Tasks</strong> verás una tarea por año y tendrás que ejecutar cada una. Indicamos <code>crs</code> para que todas salgan en la misma proyección. <code>EPSG:32618</code> es UTM zona 18 Norte, que cubre buena parte de Colombia; cámbiala por la zona UTM de tu AOI.</p>
-    <div class="codebox"><pre><span class="c">// Una tarea de exportación por año</span>
-annual.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>());
-    <span class="g">Export</span>.image.<span class="f">toDrive</span>({
-      image: img.<span class="f">toFloat</span>(),
-      description: <span class="s">'Landsat_mediana_'</span> + year,
-      folder: <span class="s">'Landsat_Median'</span>,
-      region: AOI,
-      scale: <span class="n">30</span>,
-      crs: <span class="s">'EPSG:32618'</span>,  <span class="c">// UTM 18N, cámbiala por la zona de tu AOI</span>
-      maxPixels: <span class="n">1e13</span>
-    });
+    <h2 id="paso-7">Sección 7: Exportar cada año <a class="anchor" href="#paso-7" aria-label="Enlace a esta sección">#</a></h2>
+    <p>La exportación viene desactivada: todo el bloque está entre <code>/*</code> y <code>*/</code>, así que Earth Engine lo ignora. Para usarla, borra las dos líneas que dicen <code>Eliminar comentario</code> y vuelve a ejecutar. En la pestaña <strong>Tasks</strong> aparecerá una tarea por año y tendrás que ejecutar cada una. <code>crs</code> fija la proyección de salida: <code>EPSG:32618</code> es UTM zona 18 Norte, que cubre buena parte de Colombia; cámbiala por la zona UTM de tu AOI.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 7 → EXPORTACIÓN OPCIONAL A GOOGLE DRIVE</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">/*// Eliminar comentario
+
+var list = colmeans.toList(colmeans.size());
+
+// Función que exporta cada imagen de la lista
+var exportImages = function(index) {
+  var img = ee.Image(list.get(index));
+  var year = ee.Number(img.get('year')).format('%d');
+
+  Export.image.toDrive({
+    image: img,
+    description: ee.String('Landsat_Median_').cat(year).getInfo(),
+    folder: 'Landsat_Median',
+    fileNamePrefix: ee.String('Median_').cat(year).getInfo(),
+    region: AOI,
+    scale: 30,
+    crs: 'EPSG:32618',  // UTM 18N, cámbiala por la zona de tu AOI
+    maxPixels: 1e13
   });
-});</pre></div>
+};
+
+// Ejecuta una exportación por año
+var count = colmeans.size();
+count.evaluate(function(n) {
+  for (var i = 0; i &lt; n; i++) {
+    exportImages(i);
+  }
+});
+
+*/</span><span class="c">// Eliminar comentario</span></pre></div>
 
     <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
-    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> <span class="f">scaler</span>(img) {
-  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
-  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 0 → CREAR FUNCIONES PRINCIPALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// 0.1 → Función de factor de escala</span>
+<span class="k">function</span> <span class="f">scaler</span> (img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">"SR_B."</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
+  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">"ST_B.*"</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
   <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
 }
 
-<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
-  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
-  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
-  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
+<span class="c">// 0.2 → Función de máscara de nubes</span>
+<span class="k">function</span> <span class="f">mask_clouds</span> (img) {
+  <span class="c">// Banda de calidad QA_PIXEL (renombrada como BQA)</span>
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'BQA'</span>);
+  <span class="c">// Bits de QA_PIXEL en Landsat Colección 2</span>
+  <span class="k">var</span> cirrus = (<span class="n">1</span> &lt;&lt; <span class="n">2</span>);              <span class="c">// bit 2: cirros</span>
+  <span class="k">var</span> cloudsBitMask = (<span class="n">1</span> &lt;&lt; <span class="n">3</span>);       <span class="c">// bit 3: nubes</span>
+  <span class="k">var</span> cloudShadowBitMask = (<span class="n">1</span> &lt;&lt; <span class="n">4</span>);  <span class="c">// bit 4: sombras de nubes</span>
+  <span class="k">var</span> snow = (<span class="n">1</span> &lt;&lt; <span class="n">5</span>);                <span class="c">// bit 5: nieve</span>
+  <span class="c">// Todos los bits deben estar en cero (condiciones despejadas)</span>
+  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cloudShadowBitMask).<span class="f">eq</span>(<span class="n">0</span>)
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudsBitMask).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>))
     .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
   <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
 }
 
-<span class="c">// Parámetros de búsqueda</span>
-<span class="k">var</span> startYear = <span class="n">1984</span>;   <span class="c">// año inicial</span>
-<span class="k">var</span> endYear = <span class="n">2025</span>;     <span class="c">// año final</span>
-<span class="k">var</span> startMonth = <span class="n">1</span>;     <span class="c">// mes inicial</span>
-<span class="k">var</span> endMonth = <span class="n">12</span>;      <span class="c">// mes final</span>
-<span class="k">var</span> cloudcover = <span class="n">30</span>;    <span class="c">// nubosidad máxima sobre tierra (%)</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 1 → DEFINIR BANDAS Y NOMENCLATURAS</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Nombres comunes para las bandas de todos los sensores</span>
-<span class="k">var</span> bandsTM = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];   <span class="c">// Landsat 4, 5 y 7</span>
-<span class="k">var</span> bandsOLI = [<span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B6'</span>, <span class="s">'SR_B7'</span>];  <span class="c">// Landsat 8 y 9</span>
-<span class="k">var</span> names = [<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>];
+<span class="k">var</span> bn9 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B6'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn8 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B6'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn7 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn5 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bns = [<span class="s">'uBlue'</span>, <span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Swir1'</span>, <span class="s">'BQA'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir2'</span>];
 
-<span class="c">// Filtra una colección y prepara cada imagen</span>
-<span class="k">function</span> <span class="f">landsat</span>(id, bands) {
-  <span class="k">return</span> <span class="g">ee</span>.<span class="f">ImageCollection</span>(id)
-    .<span class="f">filterBounds</span>(AOI)
-    .<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, (endYear + <span class="n">1</span>) + <span class="s">'-01-01'</span>)
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, cloudcover))
-    .<span class="f">map</span>(<span class="k">function</span> (img) {
-      <span class="k">return</span> <span class="f">scaler</span>(<span class="f">mask_clouds</span>(img)).<span class="f">select</span>(bands, names);
-    });
-}
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 2 → CREAR Y UNIFICAR COLECCIONES LANDSAT (4, 5, 7, 8 Y 9)</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Landsat 4, 5, 7, 8 y 9 en una sola colección</span>
-<span class="k">var</span> collection = <span class="f">landsat</span>(<span class="s">'LANDSAT/LT04/C02/T1_L2'</span>, bandsTM)
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LT05/C02/T1_L2'</span>, bandsTM))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LE07/C02/T1_L2'</span>, bandsTM).<span class="f">filterDate</span>(<span class="s">'1999-04-15'</span>, <span class="s">'2013-05-30'</span>))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC08/C02/T1_L2'</span>, bandsOLI))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC09/C02/T1_L2'</span>, bandsOLI));
-<span class="g">print</span>(<span class="s">'Imágenes disponibles'</span>, collection.<span class="f">size</span>());
+<span class="k">var</span> ls4 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LT04/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn5, bns);
+<span class="k">var</span> ls5 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LT05/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn5, bns);
+<span class="k">var</span> ls7 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LE07/C02/T1_L2"</span>).<span class="f">map</span>(scaler)
+                            .<span class="f">filterDate</span>(<span class="s">'1999-04-15'</span>, <span class="s">'2013-05-30'</span>)
+                            .<span class="f">select</span>(bn7, bns);
+<span class="k">var</span> ls8 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC08/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn8, bns);
+<span class="k">var</span> ls9 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn9, bns);
 
-<span class="c">// Una mediana por año</span>
+<span class="k">var</span> merged = ls4.<span class="f">merge</span>(ls5).<span class="f">merge</span>(ls7).<span class="f">merge</span>(ls8).<span class="f">merge</span>(ls9);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 3 → DEFINIR PARÁMETROS DE BÚSQUEDA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> startYear = <span class="n">1980</span>;  <span class="c">// Año inicio</span>
+<span class="k">var</span> endYear = <span class="n">2025</span>;    <span class="c">// Año final</span>
+<span class="k">var</span> startMonth = <span class="n">1</span>;    <span class="c">// Mes inicial</span>
+<span class="k">var</span> endMonth = <span class="n">12</span>;     <span class="c">// Mes final</span>
+<span class="k">var</span> cloudcover = <span class="n">30</span>;   <span class="c">// Cobertura de nubes (%)</span>
+<span class="k">var</span> AOI = AOI;         <span class="c">// Área de estudio</span>
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 4 → APLICAR FILTROS A LA COLECCIÓN FUSIONADA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> filtered = merged.<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, endYear + <span class="s">'-12-31'</span>)
+                     .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, cloudcover))
+                     .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
+                     .<span class="f">sort</span>(<span class="s">'system:time_start'</span>, <span class="n">false</span>)
+                     .<span class="f">filterBounds</span>(AOI);
+
+<span class="g">print</span>(<span class="s">"Imágenes disponibles para la zona de estudio (Landsat 4, 5, 7, 8 y 9)"</span>, filtered);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 5 → CALCULAR MEDIANAS ANUALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
 <span class="k">var</span> years = <span class="g">ee</span>.List.<span class="f">sequence</span>(startYear, endYear);
 
-<span class="k">var</span> annual = <span class="g">ee</span>.ImageCollection.<span class="f">fromImages</span>(years.<span class="f">map</span>(<span class="k">function</span> (year) {
+<span class="k">function</span> <span class="f">yearly_medians</span>(year) {
   <span class="k">var</span> start = <span class="g">ee</span>.Date.<span class="f">fromYMD</span>(year, <span class="n">1</span>, <span class="n">1</span>);
-  <span class="k">var</span> images = collection.<span class="f">filterDate</span>(start, start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>));
-  <span class="k">return</span> images.<span class="f">median</span>()
-    .<span class="f">clip</span>(AOI)
-    .<span class="f">set</span>(<span class="s">'year'</span>, year)
-    .<span class="f">set</span>(<span class="s">'n_images'</span>, images.<span class="f">size</span>());
-}));
+  <span class="k">var</span> end = start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>);
+  <span class="k">var</span> L = filtered.<span class="f">map</span>(mask_clouds);
+  <span class="k">var</span> image = L.<span class="f">filterDate</span>(start, end).<span class="f">median</span>().<span class="f">clip</span>(AOI).<span class="f">toFloat</span>();
+  <span class="k">return</span> image.<span class="f">set</span>(<span class="s">'year'</span>, year);
+}
 
-<span class="c">// Quitar los años sin imágenes</span>
-annual = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">gt</span>(<span class="s">'n_images'</span>, <span class="n">0</span>));
-<span class="g">print</span>(<span class="s">'Medianas anuales'</span>, annual);
+<span class="c">// Generar medianas por año</span>
+<span class="k">var</span> img_medians = years.<span class="f">map</span>(yearly_medians);
 
-<span class="c">// Color verdadero, una capa por año</span>
-<span class="k">var</span> visRGB = {bands: [<span class="s">'Red'</span>, <span class="s">'Green'</span>, <span class="s">'Blue'</span>], min: <span class="n">0.002</span>, max: <span class="n">0.25</span>, gamma: <span class="n">1</span>};
+<span class="c">// Remover imágenes vacías</span>
+img_medians = img_medians.<span class="f">map</span>(<span class="k">function</span>(ele) {
+  <span class="k">var</span> count = <span class="g">ee</span>.<span class="f">Image</span>(ele).<span class="f">bandNames</span>().<span class="f">size</span>();
+  <span class="k">return</span> <span class="g">ee</span>.Algorithms.<span class="f">If</span>(count.<span class="f">gt</span>(<span class="n">0</span>), ele, <span class="n">0</span>);
+}).<span class="f">flatten</span>();
+img_medians = img_medians.<span class="f">removeAll</span>([<span class="n">0</span>]);
+
+<span class="c">// Colección de medianas anuales</span>
+<span class="k">var</span> colmeans = <span class="g">ee</span>.<span class="f">ImageCollection</span>(img_medians);
+<span class="k">var</span> años = <span class="g">ee</span>.<span class="f">Array</span>(colmeans.<span class="f">aggregate_array</span>(<span class="s">'year'</span>));
+
+<span class="g">print</span>(<span class="s">"Mediana de imágenes por año"</span>, colmeans);
+<span class="g">print</span>(<span class="s">"Lista de años"</span>, años);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 6 → VISUALIZACIÓN EN EL MAPA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> m_list = img_medians;
+<span class="k">var</span> len_w = img_medians.<span class="f">size</span>();
+<span class="k">var</span> visArgs_LAND = {bands: <span class="s">'Red,Green,Blue'</span>, min: <span class="n">0.002</span>, max: <span class="n">0.25</span>, gamma: <span class="n">1</span>};
+
 <span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);
 
-annual.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>();
-    <span class="g">Map</span>.<span class="f">addLayer</span>(img, visRGB, <span class="s">'RGB '</span> + year, <span class="n">false</span>);
-  });
+len_w.<span class="f">evaluate</span>(<span class="k">function</span>(l) {
+  <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; l; i++) {
+    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(m_list.<span class="f">get</span>(i));
+    <span class="g">Map</span>.<span class="f">addLayer</span>(img, visArgs_LAND, <span class="s">'RGB-'</span> + i.<span class="f">toString</span>(), <span class="n">false</span>);
+  }
 });
 
-<span class="c">// Una tarea de exportación por año</span>
-annual.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>());
-    <span class="g">Export</span>.image.<span class="f">toDrive</span>({
-      image: img.<span class="f">toFloat</span>(),
-      description: <span class="s">'Landsat_mediana_'</span> + year,
-      folder: <span class="s">'Landsat_Median'</span>,
-      region: AOI,
-      scale: <span class="n">30</span>,
-      crs: <span class="s">'EPSG:32618'</span>,  <span class="c">// UTM 18N, cámbiala por la zona de tu AOI</span>
-      maxPixels: <span class="n">1e13</span>
-    });
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 7 → EXPORTACIÓN OPCIONAL A GOOGLE DRIVE</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">/*// Eliminar comentario
+
+var list = colmeans.toList(colmeans.size());
+
+// Función que exporta cada imagen de la lista
+var exportImages = function(index) {
+  var img = ee.Image(list.get(index));
+  var year = ee.Number(img.get('year')).format('%d');
+
+  Export.image.toDrive({
+    image: img,
+    description: ee.String('Landsat_Median_').cat(year).getInfo(),
+    folder: 'Landsat_Median',
+    fileNamePrefix: ee.String('Median_').cat(year).getInfo(),
+    region: AOI,
+    scale: 30,
+    crs: 'EPSG:32618',  // UTM 18N, cámbiala por la zona de tu AOI
+    maxPixels: 1e13
   });
-});</pre></div>
+};
+
+// Ejecuta una exportación por año
+var count = colmeans.size();
+count.evaluate(function(n) {
+  for (var i = 0; i &lt; n; i++) {
+    exportImages(i);
+  }
+});
+
+*/</span><span class="c">// Eliminar comentario</span></pre></div>
 
     <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
     <p>Ya tienes una serie de cuatro décadas lista para analizar. En la siguiente lección construiremos la misma serie con Sentinel-2, más corta pero con 10 m de resolución. Después usaremos estas medianas anuales para calcular índices y detectar agua año a año.</p>

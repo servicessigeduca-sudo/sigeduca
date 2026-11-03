@@ -6,7 +6,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Índices espectrales en series de tiempo con Landsat en Google Earth Engine · SIG EDUCA</title>
-<meta name="description" content="Aplica una función de índices a toda una serie anual de Landsat, grafica su evolución y mapea dónde cambió la vegetación.">
+<meta name="description" content="Calcula el EVI de cada año de una serie de Landsat con una función cargada desde un módulo con require().">
 <!-- seo:inicio -->
 <link rel="canonical" href="https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/indices-serie-tiempo.html">
 <link rel="icon" type="image/png" href="../assets/img/favicon.png">
@@ -16,14 +16,14 @@
 <meta property="og:site_name" content="SIG EDUCA">
 <meta property="og:locale" content="es_ES">
 <meta property="og:title" content="Índices espectrales en series de tiempo con Landsat en Google Earth Engine · SIG EDUCA">
-<meta property="og:description" content="Aplica una función de índices a toda una serie anual de Landsat, grafica su evolución y mapea dónde cambió la vegetación.">
+<meta property="og:description" content="Calcula el EVI de cada año de una serie de Landsat con una función cargada desde un módulo con require().">
 <meta property="og:url" content="https://servicessigeduca-sudo.github.io/sigeduca/tutoriales/indices-serie-tiempo.html">
 <meta property="og:image" content="https://servicessigeduca-sudo.github.io/sigeduca/assets/img/compartir.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Índices espectrales en series de tiempo con Landsat en Google Earth Engine · SIG EDUCA">
-<meta name="twitter:description" content="Aplica una función de índices a toda una serie anual de Landsat, grafica su evolución y mapea dónde cambió la vegetación.">
+<meta name="twitter:description" content="Calcula el EVI de cada año de una serie de Landsat con una función cargada desde un módulo con require().">
 <meta name="twitter:image" content="https://servicessigeduca-sudo.github.io/sigeduca/assets/img/compartir.png">
 <!-- seo:fin -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -122,360 +122,383 @@
     <div class="crumb"><a href="../index.html#ruta">cursos</a> / <a href="../cursos/curso-gee-intermedio.html">google earth engine intermedio</a></div>
     <h1>Índices espectrales en series de tiempo con Landsat en Google Earth Engine</h1>
     <div class="meta-row"><span class="lvl i">intermedio</span><span>Lección 3 de 6</span><span>20 min</span><span>Google Earth Engine</span></div>
-    <p class="lead">Aplica una función de índices a toda una serie anual de Landsat, grafica su evolución y mapea dónde cambió la vegetación.</p>
+    <p class="lead">Calcula el EVI de cada año de una serie de Landsat con una función cargada desde un módulo con require().</p>
     
     <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Un índice calculado en una sola fecha muestra cómo está la vegetación o el agua en ese momento. Calculado año tras año, muestra tendencias: una zona que se deforesta, un humedal que se seca o un cultivo que se expande.</p>
-    <p>En esta lección aplicaremos una función de índices a toda la serie anual de Landsat con <code>map()</code>. Después haremos un gráfico de su evolución y un mapa del cambio entre el primer y el último año.</p>
+    <p>Un índice calculado en una sola fecha muestra cómo está la vegetación en ese momento. Calculado año tras año, muestra tendencias: una zona que se deforesta, un humedal que se seca o un cultivo que se expande.</p>
+    <p>En esta lección calcularemos el EVI de cada mediana anual de Landsat. La función del índice viene de un módulo, un script aparte que guarda funciones para reutilizarlas en otros scripts.</p>
 
     <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
     <ul class="check">
+      <li>Cargar funciones de un módulo con <code>require()</code>.</li>
       <li>Aplicar una función a cada imagen de una colección con <code>map()</code>.</li>
-      <li>Calcular NDVI, EVI, NDMI y MNDWI para cada año.</li>
-      <li>Graficar el valor medio de los índices en el tiempo.</li>
-      <li>Mapear dónde cambió el EVI entre el primer y el último año.</li>
+      <li>Calcular el EVI para cada año de la serie.</li>
+      <li>Visualizar y exportar los índices.</li>
     </ul>
 
     <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
     <ul class="check">
-      <li><a href="https://www.usgs.gov/landsat-missions/landsat-surface-reflectance-derived-spectral-indices" target="_blank" rel="noopener">Índices espectrales derivados de reflectancia de superficie (USGS)</a></li>
-      <li><a href="https://developers.google.com/earth-engine/apidocs/ui-chart-feature-byfeature" target="_blank" rel="noopener">ui.Chart.feature.byFeature()</a></li>
-      <li><a href="https://developers.google.com/earth-engine/apidocs/ee-image-reduceregion" target="_blank" rel="noopener">ee.Image.reduceRegion()</a></li>
+      <li><a href="https://www.usgs.gov/landsat-missions/landsat-enhanced-vegetation-index" target="_blank" rel="noopener">Landsat Enhanced Vegetation Index (USGS)</a></li>
+      <li><a href="https://developers.google.com/earth-engine/guides/getstarted#modules" target="_blank" rel="noopener">Módulos y require() (guía de Earth Engine)</a></li>
     </ul>
 
-    <h2 id="indices">Los índices de esta lección <a class="anchor" href="#indices" aria-label="Enlace a esta sección">#</a></h2>
-    <div class="tbl">
-      <table>
-        <thead><tr><th>Índice</th><th>Qué mide</th><th>Origen</th></tr></thead>
-        <tbody>
-          <tr><td class="n">NDVI</td><td>Vigor y densidad de la vegetación</td><td>Rouse et al. (1974)</td></tr>
-          <tr><td class="n">EVI</td><td>Vigor en vegetación densa, sin saturarse tan rápido</td><td>Huete et al. (2002)</td></tr>
-          <tr><td class="n">NDMI</td><td>Humedad de la vegetación</td><td>Hardisky et al. (1983); Wilson y Sader (2002)</td></tr>
-          <tr><td class="n">MNDWI</td><td>Presencia de agua</td><td>Xu (2006)</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p>Los vimos en detalle en <a href="indices-vegetacion-landsat.html">Índices de vegetación con Landsat 9</a> y en <a href="deteccion-agua-landsat.html">Detección de agua con Landsat 9</a>. Aquí la novedad no son los índices, sino la forma de calcularlos: una sola función aplicada a toda la colección.</p>
+    <h2 id="evi">¿Por qué el EVI? <a class="anchor" href="#evi" aria-label="Enlace a esta sección">#</a></h2>
+    <p>En bosques y cultivos muy densos, el NDVI se acerca a su máximo y deja de cambiar aunque la vegetación siga creciendo. Se dice que se satura. Huete y sus colaboradores (2002) diseñaron el EVI para reducir ese efecto: corrige la influencia del suelo y de la atmósfera con las bandas roja y azul. Lo vimos en <a href="indices-vegetacion-landsat.html">Índices de vegetación con Landsat 9</a>.</p>
 
-    <h2 id="ndvi-evi">¿Por qué NDVI y EVI juntos? <a class="anchor" href="#ndvi-evi" aria-label="Enlace a esta sección">#</a></h2>
-    <p>En bosques y cultivos muy densos, el NDVI se acerca a su máximo y deja de cambiar aunque la vegetación siga creciendo. Se dice que se satura. Huete y sus colaboradores diseñaron el EVI para reducir ese efecto. Si en tu gráfico el NDVI casi no se mueve pero el EVI sí, probablemente estás viendo vegetación densa donde el NDVI ya no distingue diferencias.</p>
-
-    <h2 id="paso-1">Paso 1: Construir la serie anual <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <h2 id="paso-1">Secciones 0 a 5: Construir la serie anual <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
     <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
-    <p>Partimos de la serie que construimos en <a href="serie-tiempo-landsat.html">Series de tiempo con Landsat</a>: las mismas funciones, la misma unión de Landsat 4 a 9 y la misma mediana por año. Esta vez la empezamos en 2000.</p>
-    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> <span class="f">scaler</span>(img) {
-  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
-  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
+    <p>Las secciones 0 a 5 son las mismas de <a href="serie-tiempo-landsat.html">Series de tiempo con Landsat</a>: funciones, bandas, unión de Landsat 4 a 9, parámetros, filtros y medianas anuales. Esta vez la serie empieza en 2020.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 0 → CREAR FUNCIONES PRINCIPALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// 0.1 → Función de factor de escala</span>
+<span class="k">function</span> <span class="f">scaler</span> (img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">"SR_B."</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
+  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">"ST_B.*"</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
   <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
 }
 
-<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
-  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
-  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
-  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
+<span class="c">// 0.2 → Función de máscara de nubes</span>
+<span class="k">function</span> <span class="f">mask_clouds</span> (img) {
+  <span class="c">// Banda de calidad QA_PIXEL (renombrada como BQA)</span>
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'BQA'</span>);
+  <span class="c">// Bits de QA_PIXEL en Landsat Colección 2</span>
+  <span class="k">var</span> cirrus = (<span class="n">1</span> &lt;&lt; <span class="n">2</span>);              <span class="c">// bit 2: cirros</span>
+  <span class="k">var</span> cloudsBitMask = (<span class="n">1</span> &lt;&lt; <span class="n">3</span>);       <span class="c">// bit 3: nubes</span>
+  <span class="k">var</span> cloudShadowBitMask = (<span class="n">1</span> &lt;&lt; <span class="n">4</span>);  <span class="c">// bit 4: sombras de nubes</span>
+  <span class="k">var</span> snow = (<span class="n">1</span> &lt;&lt; <span class="n">5</span>);                <span class="c">// bit 5: nieve</span>
+  <span class="c">// Todos los bits deben estar en cero (condiciones despejadas)</span>
+  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cloudShadowBitMask).<span class="f">eq</span>(<span class="n">0</span>)
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudsBitMask).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>))
     .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
   <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
 }
 
-<span class="c">// Parámetros de búsqueda</span>
-<span class="k">var</span> startYear = <span class="n">2000</span>;   <span class="c">// año inicial</span>
-<span class="k">var</span> endYear = <span class="n">2025</span>;     <span class="c">// año final</span>
-<span class="k">var</span> startMonth = <span class="n">1</span>;     <span class="c">// mes inicial</span>
-<span class="k">var</span> endMonth = <span class="n">12</span>;      <span class="c">// mes final</span>
-<span class="k">var</span> cloudcover = <span class="n">30</span>;    <span class="c">// nubosidad máxima sobre tierra (%)</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 1 → DEFINIR BANDAS Y NOMENCLATURAS</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Nombres comunes para las bandas de todos los sensores</span>
-<span class="k">var</span> bandsTM = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];   <span class="c">// Landsat 4, 5 y 7</span>
-<span class="k">var</span> bandsOLI = [<span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B6'</span>, <span class="s">'SR_B7'</span>];  <span class="c">// Landsat 8 y 9</span>
-<span class="k">var</span> names = [<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>];
+<span class="k">var</span> bn9 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B6'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn8 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B6'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn7 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn5 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bns = [<span class="s">'uBlue'</span>, <span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Swir1'</span>, <span class="s">'BQA'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir2'</span>];
 
-<span class="c">// Filtra una colección y prepara cada imagen</span>
-<span class="k">function</span> <span class="f">landsat</span>(id, bands) {
-  <span class="k">return</span> <span class="g">ee</span>.<span class="f">ImageCollection</span>(id)
-    .<span class="f">filterBounds</span>(AOI)
-    .<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, (endYear + <span class="n">1</span>) + <span class="s">'-01-01'</span>)
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, cloudcover))
-    .<span class="f">map</span>(<span class="k">function</span> (img) {
-      <span class="k">return</span> <span class="f">scaler</span>(<span class="f">mask_clouds</span>(img)).<span class="f">select</span>(bands, names);
-    });
-}
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 2 → CREAR Y UNIFICAR COLECCIONES LANDSAT (4, 5, 7, 8 Y 9)</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Landsat 4, 5, 7, 8 y 9 en una sola colección</span>
-<span class="k">var</span> collection = <span class="f">landsat</span>(<span class="s">'LANDSAT/LT04/C02/T1_L2'</span>, bandsTM)
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LT05/C02/T1_L2'</span>, bandsTM))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LE07/C02/T1_L2'</span>, bandsTM).<span class="f">filterDate</span>(<span class="s">'1999-04-15'</span>, <span class="s">'2013-05-30'</span>))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC08/C02/T1_L2'</span>, bandsOLI))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC09/C02/T1_L2'</span>, bandsOLI));
-<span class="g">print</span>(<span class="s">'Imágenes disponibles'</span>, collection.<span class="f">size</span>());
+<span class="k">var</span> ls4 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LT04/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn5, bns);
+<span class="k">var</span> ls5 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LT05/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn5, bns);
+<span class="k">var</span> ls7 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LE07/C02/T1_L2"</span>).<span class="f">map</span>(scaler)
+                            .<span class="f">filterDate</span>(<span class="s">'1999-04-15'</span>, <span class="s">'2013-05-30'</span>)
+                            .<span class="f">select</span>(bn7, bns);
+<span class="k">var</span> ls8 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC08/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn8, bns);
+<span class="k">var</span> ls9 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn9, bns);
 
-<span class="c">// Una mediana por año</span>
+<span class="k">var</span> merged = ls4.<span class="f">merge</span>(ls5).<span class="f">merge</span>(ls7).<span class="f">merge</span>(ls8).<span class="f">merge</span>(ls9);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 3 → DEFINIR PARÁMETROS DE BÚSQUEDA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> startYear = <span class="n">2020</span>;  <span class="c">// Año inicio</span>
+<span class="k">var</span> endYear = <span class="n">2025</span>;    <span class="c">// Año final</span>
+<span class="k">var</span> startMonth = <span class="n">1</span>;    <span class="c">// Mes inicial</span>
+<span class="k">var</span> endMonth = <span class="n">12</span>;     <span class="c">// Mes final</span>
+<span class="k">var</span> cloudcover = <span class="n">30</span>;   <span class="c">// Cobertura de nubes (%)</span>
+<span class="k">var</span> AOI = AOI;         <span class="c">// Área de estudio</span>
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 4 → APLICAR FILTROS A LA COLECCIÓN FUSIONADA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> filtered = merged.<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, endYear + <span class="s">'-12-31'</span>)
+                     .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, cloudcover))
+                     .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
+                     .<span class="f">sort</span>(<span class="s">'system:time_start'</span>, <span class="n">false</span>)
+                     .<span class="f">filterBounds</span>(AOI);
+
+<span class="g">print</span>(<span class="s">"Imágenes disponibles para la zona de estudio (Landsat 4, 5, 7, 8 y 9)"</span>, filtered);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 5 → CALCULAR MEDIANAS ANUALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
 <span class="k">var</span> years = <span class="g">ee</span>.List.<span class="f">sequence</span>(startYear, endYear);
 
-<span class="k">var</span> annual = <span class="g">ee</span>.ImageCollection.<span class="f">fromImages</span>(years.<span class="f">map</span>(<span class="k">function</span> (year) {
+<span class="k">function</span> <span class="f">yearly_medians</span>(year) {
   <span class="k">var</span> start = <span class="g">ee</span>.Date.<span class="f">fromYMD</span>(year, <span class="n">1</span>, <span class="n">1</span>);
-  <span class="k">var</span> images = collection.<span class="f">filterDate</span>(start, start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>));
-  <span class="k">return</span> images.<span class="f">median</span>()
-    .<span class="f">clip</span>(AOI)
-    .<span class="f">set</span>(<span class="s">'year'</span>, year)
-    .<span class="f">set</span>(<span class="s">'n_images'</span>, images.<span class="f">size</span>());
-}));
-
-<span class="c">// Quitar los años sin imágenes</span>
-annual = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">gt</span>(<span class="s">'n_images'</span>, <span class="n">0</span>));
-<span class="g">print</span>(<span class="s">'Medianas anuales'</span>, annual);</pre></div>
-
-    <h2 id="paso-2">Paso 2: Calcular los índices de cada año <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
-    <p>La función recibe una imagen anual y devuelve otra con cuatro bandas, una por índice. Usamos <code>addBands()</code> y luego <code>select()</code> en lugar de crear una imagen nueva, porque así la imagen conserva sus propiedades, incluido el año que necesitamos para el gráfico. Después aplicamos la función a toda la colección con <code>map()</code>.</p>
-    <div class="codebox"><pre><span class="c">// Índices espectrales de cada imagen anual</span>
-<span class="k">function</span> <span class="f">addIndices</span>(img) {
-  <span class="k">var</span> ndvi = img.<span class="f">normalizedDifference</span>([<span class="s">'Nir'</span>, <span class="s">'Red'</span>]).<span class="f">rename</span>(<span class="s">'NDVI'</span>);
-  <span class="k">var</span> evi = img.<span class="f">expression</span>(
-    <span class="s">'2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))'</span>, {
-      <span class="s">'NIR'</span>: img.<span class="f">select</span>(<span class="s">'Nir'</span>),
-      <span class="s">'RED'</span>: img.<span class="f">select</span>(<span class="s">'Red'</span>),
-      <span class="s">'BLUE'</span>: img.<span class="f">select</span>(<span class="s">'Blue'</span>)
-    }).<span class="f">rename</span>(<span class="s">'EVI'</span>);
-  <span class="k">var</span> ndmi = img.<span class="f">normalizedDifference</span>([<span class="s">'Nir'</span>, <span class="s">'Swir1'</span>]).<span class="f">rename</span>(<span class="s">'NDMI'</span>);
-  <span class="k">var</span> mndwi = img.<span class="f">normalizedDifference</span>([<span class="s">'Green'</span>, <span class="s">'Swir1'</span>]).<span class="f">rename</span>(<span class="s">'MNDWI'</span>);
-  <span class="c">// addBands conserva las propiedades de la imagen, incluido el año</span>
-  <span class="k">return</span> img.<span class="f">addBands</span>([ndvi, evi, ndmi, mndwi])
-    .<span class="f">select</span>([<span class="s">'NDVI'</span>, <span class="s">'EVI'</span>, <span class="s">'NDMI'</span>, <span class="s">'MNDWI'</span>]);
+  <span class="k">var</span> end = start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>);
+  <span class="k">var</span> L = filtered.<span class="f">map</span>(mask_clouds);
+  <span class="k">var</span> image = L.<span class="f">filterDate</span>(start, end).<span class="f">median</span>().<span class="f">clip</span>(AOI).<span class="f">toFloat</span>();
+  <span class="k">return</span> image.<span class="f">set</span>(<span class="s">'year'</span>, year);
 }
 
-<span class="k">var</span> indices = annual.<span class="f">map</span>(addIndices);
-<span class="g">print</span>(<span class="s">'Índices por año'</span>, indices);</pre></div>
+<span class="c">// Generar medianas por año</span>
+<span class="k">var</span> img_medians = years.<span class="f">map</span>(yearly_medians);
 
-    <h2 id="paso-3">Paso 3: Visualizar el EVI de cada año <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Agregamos una capa de EVI por año, con la misma paleta de vegetación del curso básico.</p>
-    <div class="codebox"><pre><span class="c">// EVI de cada año</span>
-<span class="k">var</span> vegPalette = {min: <span class="n">0</span>, max: <span class="n">0.8</span>, palette: [<span class="s">'DF923D'</span>, <span class="s">'F1B555'</span>, <span class="s">'FCD163'</span>, <span class="s">'99B718'</span>,
-  <span class="s">'74A901'</span>, <span class="s">'529400'</span>, <span class="s">'3E8601'</span>, <span class="s">'207401'</span>, <span class="s">'056201'</span>, <span class="s">'004C00'</span>]};
-<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);
+<span class="c">// Remover imágenes vacías</span>
+img_medians = img_medians.<span class="f">map</span>(<span class="k">function</span>(ele) {
+  <span class="k">var</span> count = <span class="g">ee</span>.<span class="f">Image</span>(ele).<span class="f">bandNames</span>().<span class="f">size</span>();
+  <span class="k">return</span> <span class="g">ee</span>.Algorithms.<span class="f">If</span>(count.<span class="f">gt</span>(<span class="n">0</span>), ele, <span class="n">0</span>);
+}).<span class="f">flatten</span>();
+img_medians = img_medians.<span class="f">removeAll</span>([<span class="n">0</span>]);
 
-indices.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(indices.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>());
-    <span class="g">Map</span>.<span class="f">addLayer</span>(img.<span class="f">select</span>(<span class="s">'EVI'</span>), vegPalette, <span class="s">'EVI '</span> + year, <span class="n">false</span>);
+<span class="c">// Colección de medianas anuales</span>
+<span class="k">var</span> colmeans = <span class="g">ee</span>.<span class="f">ImageCollection</span>(img_medians);
+<span class="k">var</span> años = <span class="g">ee</span>.<span class="f">Array</span>(colmeans.<span class="f">aggregate_array</span>(<span class="s">'year'</span>));
+
+<span class="g">print</span>(<span class="s">"Mediana de imágenes por año"</span>, colmeans);
+<span class="g">print</span>(<span class="s">"Lista de años"</span>, años);</pre></div>
+
+    <h2 id="paso-6">Sección 6: Calcular el índice de cada año <a class="anchor" href="#paso-6" aria-label="Enlace a esta sección">#</a></h2>
+    <p>El módulo <code>LIST_EDUCAINDEX</code> guarda la función <code>EVI</code>. La exporta con <code>exports</code>, y nuestro script la carga con <code>require()</code> en la variable <code>x</code>. Este es el fragmento del módulo que usamos:</p>
+    <div class="codebox"><pre><span class="c">// Módulo LIST_EDUCAINDEX (fragmento): función EVI</span>
+exports.EVI = <span class="k">function</span>(image){
+  <span class="k">return</span> image.<span class="f">expression</span>(
+    <span class="s">'2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))'</span>, {
+      <span class="s">'NIR'</span>: image.<span class="f">select</span>([<span class="s">'Nir'</span>]),
+      <span class="s">'RED'</span>: image.<span class="f">select</span>([<span class="s">'Red'</span>]),
+      <span class="s">'BLUE'</span>: image.<span class="f">select</span>([<span class="s">'Blue'</span>])
+    }).<span class="f">rename</span>(<span class="s">'evi'</span>).<span class="f">toFloat</span>();
+};</pre></div>
+    <div class="callout"><p><strong>Sobre el módulo.</strong> <code>require()</code> carga funciones guardadas en otro script del Code Editor, en este caso <code>users/sigeduca/routines:Indexes/LIST_EDUCAINDEX</code>. Si al ejecutar aparece un error de acceso, crea un script nuevo en tu propio repositorio, pega el código del módulo que mostramos aquí, guárdalo como <code>LIST_EDUCAINDEX</code> y cambia la ruta de <code>require()</code> por la tuya, por ejemplo <code>users/TU_USUARIO/TU_REPOSITORIO:LIST_EDUCAINDEX</code>.</p></div>
+    <p><code>XIndex()</code> calcula el EVI de una imagen y le copia sus propiedades con <code>copyProperties()</code>, para que cada resultado conserve su año. <code>copyProperties()</code> devuelve un objeto genérico, por eso lo envolvemos en <code>ee.Image()</code>. Después aplicamos la función a toda la colección con <code>map()</code>.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 6 → CÁLCULO DE ÍNDICES ESPECTRALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> x = <span class="g">require</span>(<span class="s">'users/sigeduca/routines:Indexes/LIST_EDUCAINDEX'</span>); <span class="c">// MÓDULO DE EVI</span>
+
+<span class="c">// Crear función EVI</span>
+<span class="k">function</span> <span class="f">XIndex</span> (image){
+  <span class="k">var</span> INDEX = x.<span class="f">EVI</span>(image);
+  <span class="k">return</span> <span class="g">ee</span>.<span class="f">Image</span>(INDEX.<span class="f">copyProperties</span>(image));
+}
+
+<span class="k">var</span> CalIndex = colmeans.<span class="f">map</span>(XIndex);
+<span class="g">print</span>(<span class="s">'Índices espectrales: '</span>, CalIndex);</pre></div>
+
+    <h2 id="paso-7">Sección 7: Visualizar el índice <a class="anchor" href="#paso-7" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Mostramos el EVI de la primera imagen de la colección, que corresponde al primer año de la serie. Las medianas siguen el orden de la lista de años, aunque en la sección 4 hayamos ordenado las imágenes de la más reciente a la más antigua.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 7 → VISUALIZACIÓN EN EL MAPA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="g">Map</span>.<span class="f">addLayer</span>(CalIndex.<span class="f">first</span>(), {}, <span class="s">'EVI'</span>, <span class="n">true</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">12</span>);</pre></div>
+
+    <h2 id="paso-8">Sección 8: Exportar los índices <a class="anchor" href="#paso-8" aria-label="Enlace a esta sección">#</a></h2>
+    <p>La exportación viene desactivada: todo el bloque está entre <code>/*</code> y <code>*/</code>, así que Earth Engine lo ignora. Para usarla, borra las dos líneas que dicen <code>Eliminar comentario</code> y vuelve a ejecutar. En la pestaña <strong>Tasks</strong> aparecerá una tarea por año y tendrás que ejecutar cada una. <code>crs</code> fija la proyección de salida: <code>EPSG:32618</code> es UTM zona 18 Norte, que cubre buena parte de Colombia; cámbiala por la zona UTM de tu AOI.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 8 → EXPORTACIÓN OPCIONAL A GOOGLE DRIVE</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">/*// Eliminar comentario
+
+var list = CalIndex.toList(CalIndex.size());
+
+// Función que exporta cada imagen de la lista
+var exportImages = function(index) {
+  var img = ee.Image(list.get(index));
+  var year = ee.Number(img.get('year')).format('%d');
+
+  Export.image.toDrive({
+    image: img,
+    description: ee.String('index_Median_').cat(year).getInfo(),
+    folder: 'Landsat_Index_Median',
+    fileNamePrefix: ee.String('Index_Median_').cat(year).getInfo(),
+    region: AOI,
+    scale: 30,
+    crs: 'EPSG:32618',  // UTM 18N, cámbiala por la zona de tu AOI
+    maxPixels: 1e13
   });
-});</pre></div>
+};
 
-    <h2 id="paso-4">Paso 4: Graficar la evolución <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Para cada año calculamos el valor medio de cada índice dentro del AOI con <code>reduceRegion()</code> y guardamos el resultado en un <code>Feature</code> sin geometría. La colección de Features que resulta es una tabla, y <code>ui.Chart.feature.byFeature()</code> la dibuja con los años en el eje horizontal. Con <code>bestEffort: true</code>, Earth Engine aumenta el tamaño de píxel si el AOI es muy grande, para que el cálculo no falle.</p>
-    <div class="codebox"><pre><span class="c">// Valor medio de cada índice en el AOI, año por año</span>
-<span class="k">var</span> stats = <span class="g">ee</span>.<span class="f">FeatureCollection</span>(indices.<span class="f">map</span>(<span class="k">function</span> (img) {
-  <span class="k">var</span> mean = img.<span class="f">reduceRegion</span>({
-    reducer: <span class="g">ee</span>.Reducer.<span class="f">mean</span>(),
-    geometry: AOI,
-    scale: <span class="n">30</span>,
-    bestEffort: <span class="n">true</span>,
-    maxPixels: <span class="n">1e10</span>
-  });
-  <span class="k">return</span> <span class="g">ee</span>.<span class="f">Feature</span>(<span class="n">null</span>, mean).<span class="f">set</span>(<span class="s">'year'</span>, img.<span class="f">get</span>(<span class="s">'year'</span>));
-}));
+// Ejecuta una exportación por año
+var count = CalIndex.size();
+count.evaluate(function(n) {
+  for (var i = 0; i &lt; n; i++) {
+    exportImages(i);
+  }
+});
 
-<span class="k">var</span> chart = <span class="g">ui</span>.Chart.feature.<span class="f">byFeature</span>(stats, <span class="s">'year'</span>, [<span class="s">'NDVI'</span>, <span class="s">'EVI'</span>])
-  .<span class="f">setChartType</span>(<span class="s">'LineChart'</span>)
-  .<span class="f">setOptions</span>({
-    title: <span class="s">'NDVI y EVI medios por año'</span>,
-    hAxis: {title: <span class="s">'Año'</span>, format: <span class="s">'####'</span>},
-    vAxis: {title: <span class="s">'Valor del índice'</span>},
-    lineWidth: <span class="n">2</span>,
-    pointSize: <span class="n">4</span>
-  });
-<span class="g">print</span>(chart);</pre></div>
-    <div class="callout"><p><strong>Cómo leer el gráfico.</strong> Una caída en un solo año puede deberse a una sequía, por ejemplo durante El Niño, a un incendio o a nubes que la máscara no quitó. Una caída que se mantiene varios años suele indicar un cambio de cobertura, como la deforestación. Activa las capas de esos años en el mapa para confirmar qué pasó.</p></div>
-
-    <h2 id="paso-5">Paso 5: Mapear el cambio <a class="anchor" href="#paso-5" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Restamos el EVI del primer año al del último. Los tonos rojos marcan pérdida de vegetación, los verdes ganancia, y el blanco las zonas sin cambio.</p>
-    <div class="codebox"><pre><span class="c">// Cambio del EVI entre el primer y el último año</span>
-<span class="k">var</span> first = <span class="g">ee</span>.<span class="f">Image</span>(indices.<span class="f">sort</span>(<span class="s">'year'</span>).<span class="f">first</span>()).<span class="f">select</span>(<span class="s">'EVI'</span>);
-<span class="k">var</span> last = <span class="g">ee</span>.<span class="f">Image</span>(indices.<span class="f">sort</span>(<span class="s">'year'</span>, <span class="n">false</span>).<span class="f">first</span>()).<span class="f">select</span>(<span class="s">'EVI'</span>);
-<span class="k">var</span> change = last.<span class="f">subtract</span>(first).<span class="f">rename</span>(<span class="s">'EVI_change'</span>);
-<span class="g">Map</span>.<span class="f">addLayer</span>(change, {min: -<span class="n">0.3</span>, max: <span class="n">0.3</span>, palette: [<span class="s">'d7191c'</span>, <span class="s">'f7f7f7'</span>, <span class="s">'1a9641'</span>]}, <span class="s">'Cambio de EVI'</span>);</pre></div>
-
-    <h2 id="paso-6">Paso 6: Exportar los índices <a class="anchor" href="#paso-6" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Exportamos una imagen por año con los cuatro índices como bandas.</p>
-    <div class="codebox"><pre><span class="c">// Una tarea de exportación por año</span>
-indices.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(indices.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>());
-    <span class="g">Export</span>.image.<span class="f">toDrive</span>({
-      image: img.<span class="f">toFloat</span>(),
-      description: <span class="s">'Indices_'</span> + year,
-      folder: <span class="s">'Landsat_Index_Median'</span>,
-      region: AOI,
-      scale: <span class="n">30</span>,
-      crs: <span class="s">'EPSG:32618'</span>,  <span class="c">// UTM 18N, cámbiala por la zona de tu AOI</span>
-      maxPixels: <span class="n">1e13</span>
-    });
-  });
-});</pre></div>
+*/</span><span class="c">// Eliminar comentario</span></pre></div>
 
     <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
-    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> <span class="f">scaler</span>(img) {
-  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
-  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 0 → CREAR FUNCIONES PRINCIPALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// 0.1 → Función de factor de escala</span>
+<span class="k">function</span> <span class="f">scaler</span> (img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">"SR_B."</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
+  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">"ST_B.*"</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
   <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
 }
 
-<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
-  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
-  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
-  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
+<span class="c">// 0.2 → Función de máscara de nubes</span>
+<span class="k">function</span> <span class="f">mask_clouds</span> (img) {
+  <span class="c">// Banda de calidad QA_PIXEL (renombrada como BQA)</span>
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'BQA'</span>);
+  <span class="c">// Bits de QA_PIXEL en Landsat Colección 2</span>
+  <span class="k">var</span> cirrus = (<span class="n">1</span> &lt;&lt; <span class="n">2</span>);              <span class="c">// bit 2: cirros</span>
+  <span class="k">var</span> cloudsBitMask = (<span class="n">1</span> &lt;&lt; <span class="n">3</span>);       <span class="c">// bit 3: nubes</span>
+  <span class="k">var</span> cloudShadowBitMask = (<span class="n">1</span> &lt;&lt; <span class="n">4</span>);  <span class="c">// bit 4: sombras de nubes</span>
+  <span class="k">var</span> snow = (<span class="n">1</span> &lt;&lt; <span class="n">5</span>);                <span class="c">// bit 5: nieve</span>
+  <span class="c">// Todos los bits deben estar en cero (condiciones despejadas)</span>
+  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cloudShadowBitMask).<span class="f">eq</span>(<span class="n">0</span>)
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudsBitMask).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>))
     .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
   <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
 }
 
-<span class="c">// Parámetros de búsqueda</span>
-<span class="k">var</span> startYear = <span class="n">2000</span>;   <span class="c">// año inicial</span>
-<span class="k">var</span> endYear = <span class="n">2025</span>;     <span class="c">// año final</span>
-<span class="k">var</span> startMonth = <span class="n">1</span>;     <span class="c">// mes inicial</span>
-<span class="k">var</span> endMonth = <span class="n">12</span>;      <span class="c">// mes final</span>
-<span class="k">var</span> cloudcover = <span class="n">30</span>;    <span class="c">// nubosidad máxima sobre tierra (%)</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 1 → DEFINIR BANDAS Y NOMENCLATURAS</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Nombres comunes para las bandas de todos los sensores</span>
-<span class="k">var</span> bandsTM = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];   <span class="c">// Landsat 4, 5 y 7</span>
-<span class="k">var</span> bandsOLI = [<span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B6'</span>, <span class="s">'SR_B7'</span>];  <span class="c">// Landsat 8 y 9</span>
-<span class="k">var</span> names = [<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>];
+<span class="k">var</span> bn9 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B6'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn8 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B6'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn7 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn5 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bns = [<span class="s">'uBlue'</span>, <span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Swir1'</span>, <span class="s">'BQA'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir2'</span>];
 
-<span class="c">// Filtra una colección y prepara cada imagen</span>
-<span class="k">function</span> <span class="f">landsat</span>(id, bands) {
-  <span class="k">return</span> <span class="g">ee</span>.<span class="f">ImageCollection</span>(id)
-    .<span class="f">filterBounds</span>(AOI)
-    .<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, (endYear + <span class="n">1</span>) + <span class="s">'-01-01'</span>)
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, cloudcover))
-    .<span class="f">map</span>(<span class="k">function</span> (img) {
-      <span class="k">return</span> <span class="f">scaler</span>(<span class="f">mask_clouds</span>(img)).<span class="f">select</span>(bands, names);
-    });
-}
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 2 → CREAR Y UNIFICAR COLECCIONES LANDSAT (4, 5, 7, 8 Y 9)</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Landsat 4, 5, 7, 8 y 9 en una sola colección</span>
-<span class="k">var</span> collection = <span class="f">landsat</span>(<span class="s">'LANDSAT/LT04/C02/T1_L2'</span>, bandsTM)
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LT05/C02/T1_L2'</span>, bandsTM))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LE07/C02/T1_L2'</span>, bandsTM).<span class="f">filterDate</span>(<span class="s">'1999-04-15'</span>, <span class="s">'2013-05-30'</span>))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC08/C02/T1_L2'</span>, bandsOLI))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC09/C02/T1_L2'</span>, bandsOLI));
-<span class="g">print</span>(<span class="s">'Imágenes disponibles'</span>, collection.<span class="f">size</span>());
+<span class="k">var</span> ls4 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LT04/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn5, bns);
+<span class="k">var</span> ls5 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LT05/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn5, bns);
+<span class="k">var</span> ls7 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LE07/C02/T1_L2"</span>).<span class="f">map</span>(scaler)
+                            .<span class="f">filterDate</span>(<span class="s">'1999-04-15'</span>, <span class="s">'2013-05-30'</span>)
+                            .<span class="f">select</span>(bn7, bns);
+<span class="k">var</span> ls8 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC08/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn8, bns);
+<span class="k">var</span> ls9 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn9, bns);
 
-<span class="c">// Una mediana por año</span>
+<span class="k">var</span> merged = ls4.<span class="f">merge</span>(ls5).<span class="f">merge</span>(ls7).<span class="f">merge</span>(ls8).<span class="f">merge</span>(ls9);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 3 → DEFINIR PARÁMETROS DE BÚSQUEDA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> startYear = <span class="n">2020</span>;  <span class="c">// Año inicio</span>
+<span class="k">var</span> endYear = <span class="n">2025</span>;    <span class="c">// Año final</span>
+<span class="k">var</span> startMonth = <span class="n">1</span>;    <span class="c">// Mes inicial</span>
+<span class="k">var</span> endMonth = <span class="n">12</span>;     <span class="c">// Mes final</span>
+<span class="k">var</span> cloudcover = <span class="n">30</span>;   <span class="c">// Cobertura de nubes (%)</span>
+<span class="k">var</span> AOI = AOI;         <span class="c">// Área de estudio</span>
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 4 → APLICAR FILTROS A LA COLECCIÓN FUSIONADA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> filtered = merged.<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, endYear + <span class="s">'-12-31'</span>)
+                     .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, cloudcover))
+                     .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
+                     .<span class="f">sort</span>(<span class="s">'system:time_start'</span>, <span class="n">false</span>)
+                     .<span class="f">filterBounds</span>(AOI);
+
+<span class="g">print</span>(<span class="s">"Imágenes disponibles para la zona de estudio (Landsat 4, 5, 7, 8 y 9)"</span>, filtered);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 5 → CALCULAR MEDIANAS ANUALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
 <span class="k">var</span> years = <span class="g">ee</span>.List.<span class="f">sequence</span>(startYear, endYear);
 
-<span class="k">var</span> annual = <span class="g">ee</span>.ImageCollection.<span class="f">fromImages</span>(years.<span class="f">map</span>(<span class="k">function</span> (year) {
+<span class="k">function</span> <span class="f">yearly_medians</span>(year) {
   <span class="k">var</span> start = <span class="g">ee</span>.Date.<span class="f">fromYMD</span>(year, <span class="n">1</span>, <span class="n">1</span>);
-  <span class="k">var</span> images = collection.<span class="f">filterDate</span>(start, start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>));
-  <span class="k">return</span> images.<span class="f">median</span>()
-    .<span class="f">clip</span>(AOI)
-    .<span class="f">set</span>(<span class="s">'year'</span>, year)
-    .<span class="f">set</span>(<span class="s">'n_images'</span>, images.<span class="f">size</span>());
-}));
-
-<span class="c">// Quitar los años sin imágenes</span>
-annual = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">gt</span>(<span class="s">'n_images'</span>, <span class="n">0</span>));
-<span class="g">print</span>(<span class="s">'Medianas anuales'</span>, annual);
-
-<span class="c">// Índices espectrales de cada imagen anual</span>
-<span class="k">function</span> <span class="f">addIndices</span>(img) {
-  <span class="k">var</span> ndvi = img.<span class="f">normalizedDifference</span>([<span class="s">'Nir'</span>, <span class="s">'Red'</span>]).<span class="f">rename</span>(<span class="s">'NDVI'</span>);
-  <span class="k">var</span> evi = img.<span class="f">expression</span>(
-    <span class="s">'2.5 * ((NIR - RED) / (NIR + 6 * RED - 7.5 * BLUE + 1))'</span>, {
-      <span class="s">'NIR'</span>: img.<span class="f">select</span>(<span class="s">'Nir'</span>),
-      <span class="s">'RED'</span>: img.<span class="f">select</span>(<span class="s">'Red'</span>),
-      <span class="s">'BLUE'</span>: img.<span class="f">select</span>(<span class="s">'Blue'</span>)
-    }).<span class="f">rename</span>(<span class="s">'EVI'</span>);
-  <span class="k">var</span> ndmi = img.<span class="f">normalizedDifference</span>([<span class="s">'Nir'</span>, <span class="s">'Swir1'</span>]).<span class="f">rename</span>(<span class="s">'NDMI'</span>);
-  <span class="k">var</span> mndwi = img.<span class="f">normalizedDifference</span>([<span class="s">'Green'</span>, <span class="s">'Swir1'</span>]).<span class="f">rename</span>(<span class="s">'MNDWI'</span>);
-  <span class="c">// addBands conserva las propiedades de la imagen, incluido el año</span>
-  <span class="k">return</span> img.<span class="f">addBands</span>([ndvi, evi, ndmi, mndwi])
-    .<span class="f">select</span>([<span class="s">'NDVI'</span>, <span class="s">'EVI'</span>, <span class="s">'NDMI'</span>, <span class="s">'MNDWI'</span>]);
+  <span class="k">var</span> end = start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>);
+  <span class="k">var</span> L = filtered.<span class="f">map</span>(mask_clouds);
+  <span class="k">var</span> image = L.<span class="f">filterDate</span>(start, end).<span class="f">median</span>().<span class="f">clip</span>(AOI).<span class="f">toFloat</span>();
+  <span class="k">return</span> image.<span class="f">set</span>(<span class="s">'year'</span>, year);
 }
 
-<span class="k">var</span> indices = annual.<span class="f">map</span>(addIndices);
-<span class="g">print</span>(<span class="s">'Índices por año'</span>, indices);
+<span class="c">// Generar medianas por año</span>
+<span class="k">var</span> img_medians = years.<span class="f">map</span>(yearly_medians);
 
-<span class="c">// EVI de cada año</span>
-<span class="k">var</span> vegPalette = {min: <span class="n">0</span>, max: <span class="n">0.8</span>, palette: [<span class="s">'DF923D'</span>, <span class="s">'F1B555'</span>, <span class="s">'FCD163'</span>, <span class="s">'99B718'</span>,
-  <span class="s">'74A901'</span>, <span class="s">'529400'</span>, <span class="s">'3E8601'</span>, <span class="s">'207401'</span>, <span class="s">'056201'</span>, <span class="s">'004C00'</span>]};
-<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);
+<span class="c">// Remover imágenes vacías</span>
+img_medians = img_medians.<span class="f">map</span>(<span class="k">function</span>(ele) {
+  <span class="k">var</span> count = <span class="g">ee</span>.<span class="f">Image</span>(ele).<span class="f">bandNames</span>().<span class="f">size</span>();
+  <span class="k">return</span> <span class="g">ee</span>.Algorithms.<span class="f">If</span>(count.<span class="f">gt</span>(<span class="n">0</span>), ele, <span class="n">0</span>);
+}).<span class="f">flatten</span>();
+img_medians = img_medians.<span class="f">removeAll</span>([<span class="n">0</span>]);
 
-indices.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(indices.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>());
-    <span class="g">Map</span>.<span class="f">addLayer</span>(img.<span class="f">select</span>(<span class="s">'EVI'</span>), vegPalette, <span class="s">'EVI '</span> + year, <span class="n">false</span>);
+<span class="c">// Colección de medianas anuales</span>
+<span class="k">var</span> colmeans = <span class="g">ee</span>.<span class="f">ImageCollection</span>(img_medians);
+<span class="k">var</span> años = <span class="g">ee</span>.<span class="f">Array</span>(colmeans.<span class="f">aggregate_array</span>(<span class="s">'year'</span>));
+
+<span class="g">print</span>(<span class="s">"Mediana de imágenes por año"</span>, colmeans);
+<span class="g">print</span>(<span class="s">"Lista de años"</span>, años);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 6 → CÁLCULO DE ÍNDICES ESPECTRALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> x = <span class="g">require</span>(<span class="s">'users/sigeduca/routines:Indexes/LIST_EDUCAINDEX'</span>); <span class="c">// MÓDULO DE EVI</span>
+
+<span class="c">// Crear función EVI</span>
+<span class="k">function</span> <span class="f">XIndex</span> (image){
+  <span class="k">var</span> INDEX = x.<span class="f">EVI</span>(image);
+  <span class="k">return</span> <span class="g">ee</span>.<span class="f">Image</span>(INDEX.<span class="f">copyProperties</span>(image));
+}
+
+<span class="k">var</span> CalIndex = colmeans.<span class="f">map</span>(XIndex);
+<span class="g">print</span>(<span class="s">'Índices espectrales: '</span>, CalIndex);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 7 → VISUALIZACIÓN EN EL MAPA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="g">Map</span>.<span class="f">addLayer</span>(CalIndex.<span class="f">first</span>(), {}, <span class="s">'EVI'</span>, <span class="n">true</span>);
+<span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">12</span>);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 8 → EXPORTACIÓN OPCIONAL A GOOGLE DRIVE</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">/*// Eliminar comentario
+
+var list = CalIndex.toList(CalIndex.size());
+
+// Función que exporta cada imagen de la lista
+var exportImages = function(index) {
+  var img = ee.Image(list.get(index));
+  var year = ee.Number(img.get('year')).format('%d');
+
+  Export.image.toDrive({
+    image: img,
+    description: ee.String('index_Median_').cat(year).getInfo(),
+    folder: 'Landsat_Index_Median',
+    fileNamePrefix: ee.String('Index_Median_').cat(year).getInfo(),
+    region: AOI,
+    scale: 30,
+    crs: 'EPSG:32618',  // UTM 18N, cámbiala por la zona de tu AOI
+    maxPixels: 1e13
   });
+};
+
+// Ejecuta una exportación por año
+var count = CalIndex.size();
+count.evaluate(function(n) {
+  for (var i = 0; i &lt; n; i++) {
+    exportImages(i);
+  }
 });
 
-<span class="c">// Valor medio de cada índice en el AOI, año por año</span>
-<span class="k">var</span> stats = <span class="g">ee</span>.<span class="f">FeatureCollection</span>(indices.<span class="f">map</span>(<span class="k">function</span> (img) {
-  <span class="k">var</span> mean = img.<span class="f">reduceRegion</span>({
-    reducer: <span class="g">ee</span>.Reducer.<span class="f">mean</span>(),
-    geometry: AOI,
-    scale: <span class="n">30</span>,
-    bestEffort: <span class="n">true</span>,
-    maxPixels: <span class="n">1e10</span>
-  });
-  <span class="k">return</span> <span class="g">ee</span>.<span class="f">Feature</span>(<span class="n">null</span>, mean).<span class="f">set</span>(<span class="s">'year'</span>, img.<span class="f">get</span>(<span class="s">'year'</span>));
-}));
-
-<span class="k">var</span> chart = <span class="g">ui</span>.Chart.feature.<span class="f">byFeature</span>(stats, <span class="s">'year'</span>, [<span class="s">'NDVI'</span>, <span class="s">'EVI'</span>])
-  .<span class="f">setChartType</span>(<span class="s">'LineChart'</span>)
-  .<span class="f">setOptions</span>({
-    title: <span class="s">'NDVI y EVI medios por año'</span>,
-    hAxis: {title: <span class="s">'Año'</span>, format: <span class="s">'####'</span>},
-    vAxis: {title: <span class="s">'Valor del índice'</span>},
-    lineWidth: <span class="n">2</span>,
-    pointSize: <span class="n">4</span>
-  });
-<span class="g">print</span>(chart);
-
-<span class="c">// Cambio del EVI entre el primer y el último año</span>
-<span class="k">var</span> first = <span class="g">ee</span>.<span class="f">Image</span>(indices.<span class="f">sort</span>(<span class="s">'year'</span>).<span class="f">first</span>()).<span class="f">select</span>(<span class="s">'EVI'</span>);
-<span class="k">var</span> last = <span class="g">ee</span>.<span class="f">Image</span>(indices.<span class="f">sort</span>(<span class="s">'year'</span>, <span class="n">false</span>).<span class="f">first</span>()).<span class="f">select</span>(<span class="s">'EVI'</span>);
-<span class="k">var</span> change = last.<span class="f">subtract</span>(first).<span class="f">rename</span>(<span class="s">'EVI_change'</span>);
-<span class="g">Map</span>.<span class="f">addLayer</span>(change, {min: -<span class="n">0.3</span>, max: <span class="n">0.3</span>, palette: [<span class="s">'d7191c'</span>, <span class="s">'f7f7f7'</span>, <span class="s">'1a9641'</span>]}, <span class="s">'Cambio de EVI'</span>);
-
-<span class="c">// Una tarea de exportación por año</span>
-indices.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(indices.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>());
-    <span class="g">Export</span>.image.<span class="f">toDrive</span>({
-      image: img.<span class="f">toFloat</span>(),
-      description: <span class="s">'Indices_'</span> + year,
-      folder: <span class="s">'Landsat_Index_Median'</span>,
-      region: AOI,
-      scale: <span class="n">30</span>,
-      crs: <span class="s">'EPSG:32618'</span>,  <span class="c">// UTM 18N, cámbiala por la zona de tu AOI</span>
-      maxPixels: <span class="n">1e13</span>
-    });
-  });
-});</pre></div>
+*/</span><span class="c">// Eliminar comentario</span></pre></div>
 
     <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Con <code>map()</code> y una función, cualquier cálculo que hiciste sobre una imagen sirve para toda una serie. Puedes agregar a <code>addIndices()</code> otros índices del curso básico, como SAVI o NBR, y el resto del script seguirá funcionando igual. En la siguiente lección usaremos la misma idea para clasificar el agua de cada año con el método DSWE.</p>
+    <p>Con <code>map()</code> y una función, cualquier cálculo que hiciste sobre una imagen sirve para toda una serie. Y con un módulo, esa función se escribe una sola vez y se reutiliza en todos tus scripts. En la siguiente lección usaremos la misma idea para clasificar el agua de cada año con el método DSWE.</p>
 
     <h2 id="referencias">Referencias <a class="anchor" href="#referencias" aria-label="Enlace a esta sección">#</a></h2>
     <ul class="refs">
-      <li>Rouse, J. W., Haas, R. H., Schell, J. A. y Deering, D. W. (1974). Monitoring vegetation systems in the Great Plains with ERTS. <em>Third ERTS Symposium</em>, NASA SP-351, 309–317.</li>
-      <li>Hardisky, M. A., Klemas, V. y Smart, R. M. (1983). The influence of soil salinity, growth form, and leaf moisture on the spectral radiance of <em>Spartina alterniflora</em> canopies. <em>Photogrammetric Engineering and Remote Sensing</em>, 49(1), 77–83.</li>
       <li>Huete, A., Didan, K., Miura, T., Rodriguez, E. P., Gao, X. y Ferreira, L. G. (2002). Overview of the radiometric and biophysical performance of the MODIS vegetation indices. <em>Remote Sensing of Environment</em>, 83(1–2), 195–213.</li>
-      <li>Wilson, E. H. y Sader, S. A. (2002). Detection of forest harvest type using multiple dates of Landsat TM imagery. <em>Remote Sensing of Environment</em>, 80(3), 385–396.</li>
-      <li>Xu, H. (2006). Modification of normalised difference water index (NDWI) to enhance open water features in remotely sensed imagery. <em>International Journal of Remote Sensing</em>, 27(14), 3025–3033.</li>
     </ul>
 
     <div class="pager two">

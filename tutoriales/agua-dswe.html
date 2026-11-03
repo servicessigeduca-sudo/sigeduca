@@ -126,14 +126,14 @@
     
     <h2 id="introduccion">Introducción <a class="anchor" href="#introduccion" aria-label="Enlace a esta sección">#</a></h2>
     <p>En el curso básico detectamos agua con un índice y un umbral. Eso funciona bien en lagos y ríos abiertos, pero falla en las orillas, en los humedales con vegetación y en los píxeles que solo están cubiertos de agua en parte. DSWE (<em>Dynamic Surface Water Extent</em>) aborda ese problema combinando cinco pruebas espectrales en lugar de una.</p>
-    <p>En esta lección aplicaremos DSWE a cada año de la serie de Landsat para obtener un mapa anual de agua con distintos niveles de confianza.</p>
+    <p>En esta lección aplicaremos DSWE a cada año de la serie de Landsat para obtener una máscara anual de agua.</p>
 
     <h2 id="objetivos">Objetivos <a class="anchor" href="#objetivos" aria-label="Enlace a esta sección">#</a></h2>
     <ul class="check">
       <li>Entender las cinco pruebas de DSWE y las clases que producen.</li>
-      <li>Escribir DSWE como una función de Earth Engine.</li>
+      <li>Cargar la función DSWE desde un módulo.</li>
       <li>Aplicarla a una serie anual de Landsat.</li>
-      <li>Visualizar y exportar las clases y la máscara de agua de cada año.</li>
+      <li>Visualizar y exportar la máscara de agua de cada año.</li>
     </ul>
 
     <h2 id="recursos">Recursos <a class="anchor" href="#recursos" aria-label="Enlace a esta sección">#</a></h2>
@@ -145,8 +145,7 @@
 
     <h2 id="origen">De dónde viene DSWE <a class="anchor" href="#origen" aria-label="Enlace a esta sección">#</a></h2>
     <p>DSWE fue desarrollado por John W. Jones, del Servicio Geológico de Estados Unidos (USGS). La primera versión (Jones, 2015) nació para seguir el agua en los humedales de los Everglades, en Florida, donde buena parte de la inundación ocurre bajo la vegetación y es difícil de ver desde el satélite. Jones comparó sus resultados con los niveles de agua que mide en campo la red EDEN (<em>Everglades Depth Estimation Network</em>). En 2019 publicó una revisión de las dos pruebas de agua parcial, que mejoró la detección de píxeles cubiertos solo en parte por agua (Jones, 2019).</p>
-    <p>El USGS distribuye DSWE como producto oficial de Landsat, pero solo para Estados Unidos. Para cualquier otro lugar, como Colombia, hay que calcularlo. En Earth Engine basta con traducir a código la descripción del algoritmo que publica el propio USGS.</p>
-    <p>Una de las implementaciones de DSWE más usadas en Earth Engine es la de RivWidthCloud, un algoritmo para medir el ancho de los ríos publicado por Yang, Pavelsky, Allen y Donchyts (2020). La función de esta lección sigue la misma lógica, con un ajuste importante que explicamos en el paso 2.</p>
+    <p>El USGS distribuye DSWE como producto oficial de Landsat, pero solo para Estados Unidos. Para cualquier otro lugar, como Colombia, hay que calcularlo. Nuestro módulo parte de la implementación de RivWidthCloud, un algoritmo para medir el ancho de los ríos publicado por Yang, Pavelsky, Allen y Donchyts (2020), adaptada a Landsat Colección 2.</p>
 
     <h2 id="pruebas">Las cinco pruebas <a class="anchor" href="#pruebas" aria-label="Enlace a esta sección">#</a></h2>
     <p>DSWE trabaja con reflectancia de superficie, de 0 a 1, y usa cinco valores: MNDWI, NDVI, MBSRV (verde + rojo), MBSRN (NIR + SWIR1) y AWEsh. AWEsh es la versión para zonas con sombras del índice de Feyisa et al. (2014) que vimos en el curso básico.</p>
@@ -178,334 +177,523 @@
         </tbody>
       </table>
     </div>
-    <p>En la práctica, las clases 1 y 2 son agua abierta, y las 3 y 4 son zonas que pueden estar inundadas en parte, como humedales u orillas. Como máscara de agua usaremos las clases 1 y 2.</p>
+    <p>En la práctica, las clases 1 y 2 son agua abierta, y las 3 y 4 son zonas que pueden estar inundadas en parte, como humedales u orillas. La función <code>ClassifyWaterJones2019()</code> del módulo devuelve una máscara de agua (<code>waterMask</code>) con las clases 1 y 2.</p>
     <div class="callout"><p><strong>DSWE se diseñó para escenas individuales.</strong> Al aplicarlo a una mediana anual obtenemos el agua típica del año, no la máxima: un desborde que duró dos semanas puede no aparecer. Si te interesa la temporada de lluvias, ajusta <code>startMonth</code> y <code>endMonth</code> para que la mediana use solo esos meses.</p></div>
 
-    <h2 id="paso-1">Paso 1: Construir la serie anual <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
+    <h2 id="paso-1">Secciones 0 a 5: Construir la serie anual <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
     <div class="callout"><p>El script usa una geometría llamada <code>AOI</code>. Dibújala con las herramientas de geometría del mapa en el Code Editor y renómbrala como <code>AOI</code> en el panel de importaciones.</p></div>
-    <p>Partimos de la serie que construimos en <a href="serie-tiempo-landsat.html">Series de tiempo con Landsat</a>: las mismas funciones, la misma unión de Landsat 4 a 9 y la misma mediana por año. Esta vez la empezamos en 2000.</p>
-    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> <span class="f">scaler</span>(img) {
-  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
-  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
+    <p>Las secciones 0 a 5 son las mismas de <a href="serie-tiempo-landsat.html">Series de tiempo con Landsat</a>: funciones, bandas, unión de Landsat 4 a 9, parámetros, filtros y medianas anuales. Esta vez la serie empieza en 2010.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 0 → CREAR FUNCIONES PRINCIPALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// 0.1 → Función de factor de escala</span>
+<span class="k">function</span> <span class="f">scaler</span> (img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">"SR_B."</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
+  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">"ST_B.*"</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
   <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
 }
 
-<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
-  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
-  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
-  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
+<span class="c">// 0.2 → Función de máscara de nubes</span>
+<span class="k">function</span> <span class="f">mask_clouds</span> (img) {
+  <span class="c">// Banda de calidad QA_PIXEL (renombrada como BQA)</span>
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'BQA'</span>);
+  <span class="c">// Bits de QA_PIXEL en Landsat Colección 2</span>
+  <span class="k">var</span> cirrus = (<span class="n">1</span> &lt;&lt; <span class="n">2</span>);              <span class="c">// bit 2: cirros</span>
+  <span class="k">var</span> cloudsBitMask = (<span class="n">1</span> &lt;&lt; <span class="n">3</span>);       <span class="c">// bit 3: nubes</span>
+  <span class="k">var</span> cloudShadowBitMask = (<span class="n">1</span> &lt;&lt; <span class="n">4</span>);  <span class="c">// bit 4: sombras de nubes</span>
+  <span class="k">var</span> snow = (<span class="n">1</span> &lt;&lt; <span class="n">5</span>);                <span class="c">// bit 5: nieve</span>
+  <span class="c">// Todos los bits deben estar en cero (condiciones despejadas)</span>
+  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cloudShadowBitMask).<span class="f">eq</span>(<span class="n">0</span>)
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudsBitMask).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>))
     .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
   <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
 }
 
-<span class="c">// Parámetros de búsqueda</span>
-<span class="k">var</span> startYear = <span class="n">2000</span>;   <span class="c">// año inicial</span>
-<span class="k">var</span> endYear = <span class="n">2025</span>;     <span class="c">// año final</span>
-<span class="k">var</span> startMonth = <span class="n">1</span>;     <span class="c">// mes inicial</span>
-<span class="k">var</span> endMonth = <span class="n">12</span>;      <span class="c">// mes final</span>
-<span class="k">var</span> cloudcover = <span class="n">30</span>;    <span class="c">// nubosidad máxima sobre tierra (%)</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 1 → DEFINIR BANDAS Y NOMENCLATURAS</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Nombres comunes para las bandas de todos los sensores</span>
-<span class="k">var</span> bandsTM = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];   <span class="c">// Landsat 4, 5 y 7</span>
-<span class="k">var</span> bandsOLI = [<span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B6'</span>, <span class="s">'SR_B7'</span>];  <span class="c">// Landsat 8 y 9</span>
-<span class="k">var</span> names = [<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>];
+<span class="k">var</span> bn9 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B6'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn8 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B6'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn7 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn5 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bns = [<span class="s">'uBlue'</span>, <span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Swir1'</span>, <span class="s">'BQA'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir2'</span>];
 
-<span class="c">// Filtra una colección y prepara cada imagen</span>
-<span class="k">function</span> <span class="f">landsat</span>(id, bands) {
-  <span class="k">return</span> <span class="g">ee</span>.<span class="f">ImageCollection</span>(id)
-    .<span class="f">filterBounds</span>(AOI)
-    .<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, (endYear + <span class="n">1</span>) + <span class="s">'-01-01'</span>)
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, cloudcover))
-    .<span class="f">map</span>(<span class="k">function</span> (img) {
-      <span class="k">return</span> <span class="f">scaler</span>(<span class="f">mask_clouds</span>(img)).<span class="f">select</span>(bands, names);
-    });
-}
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 2 → CREAR Y UNIFICAR COLECCIONES LANDSAT (4, 5, 7, 8 Y 9)</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Landsat 4, 5, 7, 8 y 9 en una sola colección</span>
-<span class="k">var</span> collection = <span class="f">landsat</span>(<span class="s">'LANDSAT/LT04/C02/T1_L2'</span>, bandsTM)
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LT05/C02/T1_L2'</span>, bandsTM))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LE07/C02/T1_L2'</span>, bandsTM).<span class="f">filterDate</span>(<span class="s">'1999-04-15'</span>, <span class="s">'2013-05-30'</span>))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC08/C02/T1_L2'</span>, bandsOLI))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC09/C02/T1_L2'</span>, bandsOLI));
-<span class="g">print</span>(<span class="s">'Imágenes disponibles'</span>, collection.<span class="f">size</span>());
+<span class="k">var</span> ls4 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LT04/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn5, bns);
+<span class="k">var</span> ls5 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LT05/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn5, bns);
+<span class="k">var</span> ls7 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LE07/C02/T1_L2"</span>).<span class="f">map</span>(scaler)
+                            .<span class="f">filterDate</span>(<span class="s">'1999-04-15'</span>, <span class="s">'2013-05-30'</span>)
+                            .<span class="f">select</span>(bn7, bns);
+<span class="k">var</span> ls8 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC08/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn8, bns);
+<span class="k">var</span> ls9 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn9, bns);
 
-<span class="c">// Una mediana por año</span>
+<span class="k">var</span> merged = ls4.<span class="f">merge</span>(ls5).<span class="f">merge</span>(ls7).<span class="f">merge</span>(ls8).<span class="f">merge</span>(ls9);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 3 → DEFINIR PARÁMETROS DE BÚSQUEDA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> startYear = <span class="n">2010</span>;  <span class="c">// Año inicio</span>
+<span class="k">var</span> endYear = <span class="n">2025</span>;    <span class="c">// Año final</span>
+<span class="k">var</span> startMonth = <span class="n">1</span>;    <span class="c">// Mes inicial</span>
+<span class="k">var</span> endMonth = <span class="n">12</span>;     <span class="c">// Mes final</span>
+<span class="k">var</span> cloudcover = <span class="n">30</span>;   <span class="c">// Cobertura de nubes (%)</span>
+<span class="k">var</span> AOI = AOI;         <span class="c">// Área de estudio</span>
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 4 → APLICAR FILTROS A LA COLECCIÓN FUSIONADA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> filtered = merged.<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, endYear + <span class="s">'-12-31'</span>)
+                     .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, cloudcover))
+                     .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
+                     .<span class="f">sort</span>(<span class="s">'system:time_start'</span>, <span class="n">false</span>)
+                     .<span class="f">filterBounds</span>(AOI);
+
+<span class="g">print</span>(<span class="s">"Imágenes disponibles para la zona de estudio (Landsat 4, 5, 7, 8 y 9)"</span>, filtered);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 5 → CALCULAR MEDIANAS ANUALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
 <span class="k">var</span> years = <span class="g">ee</span>.List.<span class="f">sequence</span>(startYear, endYear);
 
-<span class="k">var</span> annual = <span class="g">ee</span>.ImageCollection.<span class="f">fromImages</span>(years.<span class="f">map</span>(<span class="k">function</span> (year) {
+<span class="k">function</span> <span class="f">yearly_medians</span>(year) {
   <span class="k">var</span> start = <span class="g">ee</span>.Date.<span class="f">fromYMD</span>(year, <span class="n">1</span>, <span class="n">1</span>);
-  <span class="k">var</span> images = collection.<span class="f">filterDate</span>(start, start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>));
-  <span class="k">return</span> images.<span class="f">median</span>()
-    .<span class="f">clip</span>(AOI)
-    .<span class="f">set</span>(<span class="s">'year'</span>, year)
-    .<span class="f">set</span>(<span class="s">'n_images'</span>, images.<span class="f">size</span>());
-}));
+  <span class="k">var</span> end = start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>);
+  <span class="k">var</span> L = filtered.<span class="f">map</span>(mask_clouds);
+  <span class="k">var</span> image = L.<span class="f">filterDate</span>(start, end).<span class="f">median</span>().<span class="f">clip</span>(AOI).<span class="f">toFloat</span>();
+  <span class="k">return</span> image.<span class="f">set</span>(<span class="s">'year'</span>, year);
+}
 
-<span class="c">// Quitar los años sin imágenes</span>
-annual = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">gt</span>(<span class="s">'n_images'</span>, <span class="n">0</span>));
-<span class="g">print</span>(<span class="s">'Medianas anuales'</span>, annual);</pre></div>
+<span class="c">// Generar medianas por año</span>
+<span class="k">var</span> img_medians = years.<span class="f">map</span>(yearly_medians);
 
-    <h2 id="paso-2">Paso 2: Escribir la función DSWE <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Traducimos las pruebas y la tabla de clases a código. Cada prueba devuelve una imagen de ceros y unos. Al multiplicarlas por 1, 10, 100, 1000 y 10 000 y sumarlas obtenemos el código de cinco cifras de cada píxel; los ceros a la izquierda desaparecen, así que 00111 queda como 111. Después, <code>remap()</code> convierte cada código en su clase.</p>
-    <div class="callout"><p><strong>Agua oscura y valores negativos.</strong> El factor de escala de la Colección 2 resta 0,2, así que en el mar o en lagos profundos algunas bandas quedan un poco por debajo de 0. <code>normalizedDifference()</code> enmascara cualquier píxel con un valor negativo, y sin corrección esas zonas quedarían sin clasificar, sobre todo en las costas. Por eso, antes de las pruebas, llevamos a 0 las bandas negativas con <code>max(0)</code>.</p></div>
-    <div class="codebox"><pre><span class="c">// DSWE: cinco pruebas espectrales sobre reflectancia de superficie (Jones, 2019)</span>
-<span class="k">function</span> <span class="f">dswe</span>(img) {
-  <span class="c">// En agua oscura (mar, lagos profundos) la reflectancia escalada puede ser un poco</span>
-  <span class="c">// negativa, y normalizedDifference() enmascara esos píxeles. Por eso usamos 0 como mínimo.</span>
-  <span class="k">var</span> r = img.<span class="f">select</span>([<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>]).<span class="f">max</span>(<span class="n">0</span>);
-  <span class="k">var</span> blue = r.<span class="f">select</span>(<span class="s">'Blue'</span>);
-  <span class="k">var</span> green = r.<span class="f">select</span>(<span class="s">'Green'</span>);
-  <span class="k">var</span> red = r.<span class="f">select</span>(<span class="s">'Red'</span>);
-  <span class="k">var</span> nir = r.<span class="f">select</span>(<span class="s">'Nir'</span>);
-  <span class="k">var</span> swir1 = r.<span class="f">select</span>(<span class="s">'Swir1'</span>);
-  <span class="k">var</span> swir2 = r.<span class="f">select</span>(<span class="s">'Swir2'</span>);
+<span class="c">// Remover imágenes vacías</span>
+img_medians = img_medians.<span class="f">map</span>(<span class="k">function</span>(ele) {
+  <span class="k">var</span> count = <span class="g">ee</span>.<span class="f">Image</span>(ele).<span class="f">bandNames</span>().<span class="f">size</span>();
+  <span class="k">return</span> <span class="g">ee</span>.Algorithms.<span class="f">If</span>(count.<span class="f">gt</span>(<span class="n">0</span>), ele, <span class="n">0</span>);
+}).<span class="f">flatten</span>();
+img_medians = img_medians.<span class="f">removeAll</span>([<span class="n">0</span>]);
 
-  <span class="c">// Valores que usan las pruebas</span>
-  <span class="k">var</span> mndwi = r.<span class="f">normalizedDifference</span>([<span class="s">'Green'</span>, <span class="s">'Swir1'</span>]);
-  <span class="k">var</span> ndvi = r.<span class="f">normalizedDifference</span>([<span class="s">'Nir'</span>, <span class="s">'Red'</span>]);
-  <span class="k">var</span> mbsrv = green.<span class="f">add</span>(red);   <span class="c">// verde + rojo</span>
-  <span class="k">var</span> mbsrn = nir.<span class="f">add</span>(swir1);   <span class="c">// NIR + SWIR1</span>
-  <span class="k">var</span> awesh = blue.<span class="f">add</span>(green.<span class="f">multiply</span>(<span class="n">2.5</span>))
-    .<span class="f">subtract</span>(mbsrn.<span class="f">multiply</span>(<span class="n">1.5</span>))
-    .<span class="f">subtract</span>(swir2.<span class="f">multiply</span>(<span class="n">0.25</span>));
+<span class="c">// Colección de medianas anuales</span>
+<span class="k">var</span> colmeans = <span class="g">ee</span>.<span class="f">ImageCollection</span>(img_medians);
+<span class="k">var</span> años = <span class="g">ee</span>.<span class="f">Array</span>(colmeans.<span class="f">aggregate_array</span>(<span class="s">'year'</span>));
 
-  <span class="c">// Las cinco pruebas: 1 si se cumple, 0 si no</span>
+<span class="g">print</span>(<span class="s">"Mediana de imágenes por año"</span>, colmeans);
+<span class="g">print</span>(<span class="s">"Lista de años"</span>, años);</pre></div>
+
+    <h2 id="modulo">El módulo de Jones (2019) <a class="anchor" href="#modulo" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Las pruebas y la tabla de clases están en el módulo <code>Jones_2019</code>. Cada prueba devuelve una imagen de ceros y unos. Al multiplicarlas por 1, 10, 100, 1000 y 10 000 y sumarlas obtenemos el código de cinco cifras de cada píxel; los ceros a la izquierda desaparecen, así que 00111 queda como 111. Después, cada grupo de códigos se convierte en su clase.</p>
+    <div class="callout"><p><strong>Agua oscura y valores negativos.</strong> El factor de escala de la Colección 2 resta 0,2, así que en el mar o en lagos profundos algunas bandas quedan un poco por debajo de 0. <code>normalizedDifference()</code> enmascara cualquier píxel con un valor negativo, y sin corrección esas zonas quedarían sin clasificar, sobre todo en las costas. Por eso, al inicio de <code>Dswe()</code>, llevamos a 0 las bandas negativas con <code>max(0)</code>.</p></div>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">//// Main references </span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">//[3] * Jones, J. W. (2019). Improved automated detection of subpixel-scale inundation—Revised dynamic surface water extent (DSWE) partial surface water tests. Remote Sensing, 11(4), 374.</span>
+
+
+<span class="c">/*This code is code was retrieved from 
+github.com/seanyx/RivWidthCloudPaper/blob/master/RivWidthCloud_JavaScript/functions_Landsat578/functions_waterClassification_Jones2019.js
+
+water test functions for determing DSWE
+
+ADAPTACIÓN A LANDSAT COLECCIÓN 2:
+El original usaba Landsat Colección 1 SR, guardada x 10 000, por eso los umbrales de las
+pruebas 4 y 5 eran 900, 1500, 1000, 3000 y 2500. Aquí la imagen llega escalada con scaler()
+(reflectancia de 0 a 1), así que esos umbrales pasan a 0.09, 0.15, 0.1, 0.3 y 0.25,
+los mismos que publica el USGS para la Colección 2.
+Además, las bandas negativas se llevan a 0 al inicio de Dswe(), porque normalizedDifference()
+enmascara los píxeles negativos y el agua oscura de las costas quedaba sin clasificar.
+*/</span>
+
+<span class="c">// water test functions for determing DSWE</span>
+<span class="k">var</span> Mndwi = <span class="k">function</span>(image) {
+  <span class="k">return</span>(image.<span class="f">normalizedDifference</span>([<span class="s">'Green'</span>, <span class="s">'Swir1'</span>]).<span class="f">rename</span>(<span class="s">'mndwi'</span>));
+};
+<span class="k">var</span> Mbsrv = <span class="k">function</span>(image) {
+  <span class="k">return</span>(image.<span class="f">select</span>([<span class="s">'Green'</span>]).<span class="f">add</span>(image.<span class="f">select</span>([<span class="s">'Red'</span>])).<span class="f">rename</span>(<span class="s">'mbsrv'</span>));
+};
+<span class="k">var</span> Mbsrn = <span class="k">function</span>(image) {
+  <span class="k">return</span>(image.<span class="f">select</span>([<span class="s">'Nir'</span>]).<span class="f">add</span>(image.<span class="f">select</span>([<span class="s">'Swir1'</span>])).<span class="f">rename</span>(<span class="s">'mbsrn'</span>));
+};
+<span class="k">var</span> Ndvi = <span class="k">function</span>(image) {
+  <span class="k">return</span>(image.<span class="f">normalizedDifference</span>([<span class="s">'Nir'</span>, <span class="s">'Red'</span>]).<span class="f">rename</span>(<span class="s">'ndvi'</span>));
+};
+<span class="k">var</span> Awesh = <span class="k">function</span>(image) {
+  <span class="k">return</span>(image
+  .<span class="f">expression</span>(<span class="s">'Blue + 2.5 * Green + (-1.5) * mbsrn + (-0.25) * Swir2'</span>, {
+    <span class="s">'Blue'</span>: image.<span class="f">select</span>([<span class="s">'Blue'</span>]),
+    <span class="s">'Green'</span>: image.<span class="f">select</span>([<span class="s">'Green'</span>]),
+    <span class="s">'mbsrn'</span>: <span class="f">Mbsrn</span>(image).<span class="f">select</span>([<span class="s">'mbsrn'</span>]),
+    <span class="s">'Swir2'</span>: image.<span class="f">select</span>([<span class="s">'Swir2'</span>])
+  }));
+};
+
+<span class="k">var</span> Dswe = <span class="k">function</span>(i) {
+  <span class="c">// En agua oscura (mar, lagos profundos) la reflectancia escalada puede ser negativa,</span>
+  <span class="c">// y normalizedDifference() enmascara esos píxeles. Se usa 0 como mínimo.</span>
+  i = i.<span class="f">select</span>([<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>]).<span class="f">max</span>(<span class="n">0</span>);
+  <span class="k">var</span> mndwi = <span class="f">Mndwi</span>(i);
+  <span class="k">var</span> mbsrv = <span class="f">Mbsrv</span>(i);
+  <span class="k">var</span> mbsrn = <span class="f">Mbsrn</span>(i);
+  <span class="k">var</span> awesh = <span class="f">Awesh</span>(i);
+  <span class="k">var</span> swir1 = i.<span class="f">select</span>([<span class="s">'Swir1'</span>]);
+  <span class="k">var</span> nir = i.<span class="f">select</span>([<span class="s">'Nir'</span>]);
+  <span class="k">var</span> ndvi = <span class="f">Ndvi</span>(i);
+  <span class="k">var</span> blue = i.<span class="f">select</span>([<span class="s">'Blue'</span>]);
+  <span class="k">var</span> swir2 = i.<span class="f">select</span>([<span class="s">'Swir2'</span>]);
+  
+  
   <span class="k">var</span> t1 = mndwi.<span class="f">gt</span>(<span class="n">0.124</span>);
   <span class="k">var</span> t2 = mbsrv.<span class="f">gt</span>(mbsrn);
   <span class="k">var</span> t3 = awesh.<span class="f">gt</span>(<span class="n">0</span>);
-  <span class="k">var</span> t4 = mndwi.<span class="f">gt</span>(-<span class="n">0.44</span>).<span class="f">and</span>(swir1.<span class="f">lt</span>(<span class="n">0.09</span>)).<span class="f">and</span>(nir.<span class="f">lt</span>(<span class="n">0.15</span>)).<span class="f">and</span>(ndvi.<span class="f">lt</span>(<span class="n">0.7</span>));
-  <span class="k">var</span> t5 = mndwi.<span class="f">gt</span>(-<span class="n">0.5</span>).<span class="f">and</span>(blue.<span class="f">lt</span>(<span class="n">0.1</span>)).<span class="f">and</span>(swir1.<span class="f">lt</span>(<span class="n">0.3</span>))
-    .<span class="f">and</span>(swir2.<span class="f">lt</span>(<span class="n">0.1</span>)).<span class="f">and</span>(nir.<span class="f">lt</span>(<span class="n">0.25</span>));
+  <span class="k">var</span> t4 = mndwi.<span class="f">gt</span>(-<span class="n">0.44</span>)
+  .<span class="f">and</span>(swir1.<span class="f">lt</span>(<span class="n">0.09</span>))   <span class="c">// original: 900</span>
+  .<span class="f">and</span>(nir.<span class="f">lt</span>(<span class="n">0.15</span>))     <span class="c">// original: 1500</span>
+  .<span class="f">and</span>(ndvi.<span class="f">lt</span>(<span class="n">0.7</span>));
+  <span class="k">var</span> t5 = mndwi.<span class="f">gt</span>(-<span class="n">0.5</span>)
+  .<span class="f">and</span>(blue.<span class="f">lt</span>(<span class="n">0.1</span>))     <span class="c">// original: 1000</span>
+  .<span class="f">and</span>(swir1.<span class="f">lt</span>(<span class="n">0.3</span>))    <span class="c">// original: 3000</span>
+  .<span class="f">and</span>(swir2.<span class="f">lt</span>(<span class="n">0.1</span>))    <span class="c">// original: 1000</span>
+  .<span class="f">and</span>(nir.<span class="f">lt</span>(<span class="n">0.25</span>));    <span class="c">// original: 2500</span>
+  
+  <span class="k">var</span> t = t1.<span class="f">add</span>(t2.<span class="f">multiply</span>(<span class="n">10</span>)).<span class="f">add</span>(t3.<span class="f">multiply</span>(<span class="n">100</span>)).<span class="f">add</span>(t4.<span class="f">multiply</span>(<span class="n">1000</span>)).<span class="f">add</span>(t5.<span class="f">multiply</span>(<span class="n">10000</span>));
+  
+  <span class="k">var</span> noWater = t.<span class="f">eq</span>(<span class="n">0</span>)
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">1</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">10</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">100</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">1000</span>));
+  <span class="k">var</span> hWater = t.<span class="f">eq</span>(<span class="n">1111</span>)
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">10111</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">11011</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">11101</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">11110</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">11111</span>));
+  <span class="k">var</span> mWater = t.<span class="f">eq</span>(<span class="n">111</span>)
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">1011</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">1101</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">1110</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">10011</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">10101</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">10110</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">11001</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">11010</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">11100</span>));
+  <span class="k">var</span> pWetland = t.<span class="f">eq</span>(<span class="n">11000</span>);
+  <span class="k">var</span> lWater = t.<span class="f">eq</span>(<span class="n">11</span>)
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">101</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">110</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">1001</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">1010</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">1100</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">10000</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">10001</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">10010</span>))
+  .<span class="f">or</span>(t.<span class="f">eq</span>(<span class="n">10100</span>));
+  
+  <span class="k">var</span> iDswe = noWater.<span class="f">multiply</span>(<span class="n">0</span>)
+  .<span class="f">add</span>(hWater.<span class="f">multiply</span>(<span class="n">1</span>))
+  .<span class="f">add</span>(mWater.<span class="f">multiply</span>(<span class="n">2</span>))
+  .<span class="f">add</span>(pWetland.<span class="f">multiply</span>(<span class="n">3</span>))
+  .<span class="f">add</span>(lWater.<span class="f">multiply</span>(<span class="n">4</span>));
+  
+  <span class="k">return</span>(iDswe.<span class="f">rename</span>(<span class="s">'dswe'</span>));
+};
 
-  <span class="c">// Código de cinco cifras, una por prueba (t5 t4 t3 t2 t1)</span>
-  <span class="k">var</span> testCode = t1.<span class="f">add</span>(t2.<span class="f">multiply</span>(<span class="n">10</span>)).<span class="f">add</span>(t3.<span class="f">multiply</span>(<span class="n">100</span>))
-    .<span class="f">add</span>(t4.<span class="f">multiply</span>(<span class="n">1000</span>)).<span class="f">add</span>(t5.<span class="f">multiply</span>(<span class="n">10000</span>));
-
-  <span class="c">// Tabla de clases del USGS</span>
-  <span class="k">var</span> dsweClass = testCode.<span class="f">remap</span>(
-    [<span class="n">0</span>, <span class="n">1</span>, <span class="n">10</span>, <span class="n">100</span>, <span class="n">1000</span>,                                             <span class="c">// 0: no agua</span>
-     <span class="n">1111</span>, <span class="n">10111</span>, <span class="n">11011</span>, <span class="n">11101</span>, <span class="n">11110</span>, <span class="n">11111</span>,                         <span class="c">// 1: agua, confianza alta</span>
-     <span class="n">111</span>, <span class="n">1011</span>, <span class="n">1101</span>, <span class="n">1110</span>, <span class="n">10011</span>, <span class="n">10101</span>, <span class="n">10110</span>, <span class="n">11001</span>, <span class="n">11010</span>, <span class="n">11100</span>, <span class="c">// 2: agua, confianza moderada</span>
-     <span class="n">11000</span>,                                                           <span class="c">// 3: agua parcial, conservadora</span>
-     <span class="n">11</span>, <span class="n">101</span>, <span class="n">110</span>, <span class="n">1001</span>, <span class="n">1010</span>, <span class="n">1100</span>, <span class="n">10000</span>, <span class="n">10001</span>, <span class="n">10010</span>, <span class="n">10100</span>],     <span class="c">// 4: agua parcial, agresiva</span>
-    [<span class="n">0</span>, <span class="n">0</span>, <span class="n">0</span>, <span class="n">0</span>, <span class="n">0</span>,
-     <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>,
-     <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>,
-     <span class="n">3</span>,
-     <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>]).<span class="f">rename</span>(<span class="s">'dswe'</span>);
-
-  <span class="c">// Máscara de agua: confianza alta o moderada</span>
-  <span class="k">var</span> waterMask = dsweClass.<span class="f">eq</span>(<span class="n">1</span>).<span class="f">or</span>(dsweClass.<span class="f">eq</span>(<span class="n">2</span>)).<span class="f">rename</span>(<span class="s">'waterMask'</span>);
-  <span class="k">return</span> img.<span class="f">addBands</span>([dsweClass, waterMask]);
-}</pre></div>
+exports.ClassifyWaterJones2019 = <span class="k">function</span>(img) {
+  <span class="k">var</span> dswe = <span class="f">Dswe</span>(img);
+  <span class="k">var</span> waterMask = dswe.<span class="f">eq</span>(<span class="n">1</span>).<span class="f">or</span>(dswe.<span class="f">eq</span>(<span class="n">2</span>)).<span class="f">rename</span>([<span class="s">'waterMask'</span>]);
+  <span class="k">return</span>(waterMask);
+};</pre></div>
     <div class="callout"><p><strong>Ojo con los umbrales si usas otro código.</strong> En RivWidthCloud, las pruebas 4 y 5 usan valores como 900, 1500 o 3000, porque se escribieron para Landsat Colección 1, que guardaba la reflectancia multiplicada por 10 000. Nuestras imágenes ya pasaron por <code>scaler()</code> y están entre 0 y 1, así que esos umbrales equivalen a 0,09, 0,15 y 0,3, los mismos que publica el USGS para la Colección 2. Si se dejan los valores de la Colección 1 con datos escalados, las condiciones de reflectancia se cumplen siempre, y DSWE marca como agua más píxeles de los que debería.</p></div>
+    <div class="callout"><p><strong>Sobre el módulo.</strong> <code>require()</code> carga funciones guardadas en otro script del Code Editor, en este caso <code>users/sigeduca/routines:Indexes/Jones_2019</code>. Si al ejecutar aparece un error de acceso, crea un script nuevo en tu propio repositorio, pega el código del módulo que mostramos aquí, guárdalo como <code>Jones_2019</code> y cambia la ruta de <code>require()</code> por la tuya, por ejemplo <code>users/TU_USUARIO/TU_REPOSITORIO:Jones_2019</code>.</p></div>
 
-    <h2 id="paso-3">Paso 3: Aplicar DSWE a la serie <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Como <code>dswe()</code> devuelve la misma imagen con dos bandas nuevas, cada año conserva su reflectancia y su año, y ahora también tiene las bandas <code>dswe</code> y <code>waterMask</code>.</p>
-    <div class="codebox"><pre><span class="c">// DSWE para cada año de la serie</span>
-<span class="k">var</span> water = annual.<span class="f">map</span>(dswe);
-<span class="g">print</span>(<span class="s">'Serie con DSWE'</span>, water);</pre></div>
+    <h2 id="paso-6">Sección 6: Aplicar DSWE a la serie <a class="anchor" href="#paso-6" aria-label="Enlace a esta sección">#</a></h2>
+    <p><code>Jones()</code> agrega la máscara de agua como banda nueva, así que cada año conserva su reflectancia y su año. Después seleccionamos solo <code>waterMask</code> y guardamos esas máscaras en <code>masked</code>.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 6 → APLICAR DSWE JONES (2019)</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-    <h2 id="paso-4">Paso 4: Visualizar las clases <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Para cada año agregamos tres capas apagadas: la imagen en color verdadero, las clases DSWE y la máscara de agua. Las clases van de blanco (no agua) a azul oscuro (confianza alta), azul claro (moderada), verde (agua parcial conservadora) y beige (agua parcial agresiva).</p>
-    <div class="codebox"><pre><span class="c">// Color verdadero, clases DSWE y máscara de agua de cada año</span>
-<span class="k">var</span> visRGB = {bands: [<span class="s">'Red'</span>, <span class="s">'Green'</span>, <span class="s">'Blue'</span>], min: <span class="n">0.002</span>, max: <span class="n">0.25</span>, gamma: <span class="n">1</span>};
-<span class="k">var</span> dsweVis = {min: <span class="n">0</span>, max: <span class="n">4</span>, palette: [<span class="s">'ffffff'</span>, <span class="s">'0000ff'</span>, <span class="s">'4f9dff'</span>, <span class="s">'6bbf59'</span>, <span class="s">'d9c99e'</span>]};
+<span class="k">var</span> x = <span class="g">require</span>(<span class="s">'users/sigeduca/routines:Indexes/Jones_2019'</span>); <span class="c">// MÓDULO DE JONES</span>
+
+<span class="c">// Crear función Jones (DSWE)</span>
+<span class="k">function</span> <span class="f">Jones</span> (image){
+  <span class="k">var</span> river = x.<span class="f">ClassifyWaterJones2019</span>(image);
+  <span class="k">return</span> image.<span class="f">addBands</span>(river);
+}
+
+<span class="k">var</span> water_jones_2019 = colmeans.<span class="f">map</span>(Jones);
+<span class="k">var</span> masked = water_jones_2019.<span class="f">select</span>(<span class="s">"waterMask"</span>); <span class="c">// colección de máscaras de agua</span>
+
+<span class="g">print</span>(<span class="s">"Máscara de agua, Jones (2019)"</span>, masked);</pre></div>
+
+    <h2 id="paso-7">Sección 7: Visualizar la serie <a class="anchor" href="#paso-7" aria-label="Enlace a esta sección">#</a></h2>
+    <p>Para cada año agregamos dos capas apagadas: la imagen en color verdadero y la máscara de agua, en la que el agua aparece en blanco y lo demás en negro.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 7 → VISUALIZACIÓN EN EL MAPA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// Visualización RGB</span>
+
+<span class="k">var</span> m_list = img_medians;
+<span class="k">var</span> len_w = img_medians.<span class="f">size</span>();
+<span class="k">var</span> visArgs_LAND = {bands: <span class="s">'Red,Green,Blue'</span>, min: <span class="n">0.002</span>, max: <span class="n">0.25</span>, gamma: <span class="n">1</span>};
+
 <span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);
 
-water.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(water.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>());
-    <span class="g">Map</span>.<span class="f">addLayer</span>(img, visRGB, <span class="s">'RGB '</span> + year, <span class="n">false</span>);
-    <span class="g">Map</span>.<span class="f">addLayer</span>(img.<span class="f">select</span>(<span class="s">'dswe'</span>), dsweVis, <span class="s">'DSWE '</span> + year, <span class="n">false</span>);
-    <span class="g">Map</span>.<span class="f">addLayer</span>(img.<span class="f">select</span>(<span class="s">'waterMask'</span>).<span class="f">selfMask</span>(), {palette: [<span class="s">'0000ff'</span>]}, <span class="s">'Agua '</span> + year, <span class="n">false</span>);
-  });
+len_w.<span class="f">evaluate</span>(<span class="k">function</span>(l) {
+  <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; l; i++) {
+    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(m_list.<span class="f">get</span>(i));
+    <span class="g">Map</span>.<span class="f">addLayer</span>(img, visArgs_LAND, <span class="s">'RGB-'</span> + i.<span class="f">toString</span>(), <span class="n">false</span>);
+  }
+});
+
+<span class="c">// Visualización de la máscara de agua de Jones</span>
+<span class="k">var</span> list_masked = masked.<span class="f">toList</span>(masked.<span class="f">size</span>());
+<span class="k">var</span> len_masked = list_masked.<span class="f">size</span>();
+
+len_masked.<span class="f">evaluate</span>(<span class="k">function</span>(l) {
+  <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; l; i++) {
+    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(list_masked.<span class="f">get</span>(i));
+    <span class="g">Map</span>.<span class="f">addLayer</span>(img, {}, <span class="s">'mascara jones -'</span> + i.<span class="f">toString</span>(), <span class="n">false</span>);
+  }
 });</pre></div>
 
-    <h2 id="paso-5">Paso 5: Exportar las clases <a class="anchor" href="#paso-5" aria-label="Enlace a esta sección">#</a></h2>
-    <p>Exportamos las dos bandas como enteros de 8 bits. Los píxeles sin datos por nubes se guardan con el valor 255, el mismo que usa el USGS para el relleno, para que no se confundan con la clase 0.</p>
-    <div class="codebox"><pre><span class="c">// Una tarea de exportación por año</span>
-water.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(water.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>());
-    <span class="g">Export</span>.image.<span class="f">toDrive</span>({
-      image: img.<span class="f">select</span>([<span class="s">'dswe'</span>, <span class="s">'waterMask'</span>]).<span class="f">unmask</span>(<span class="n">255</span>).<span class="f">toByte</span>(),
-      description: <span class="s">'DSWE_'</span> + year,
-      folder: <span class="s">'Jones_DSWE'</span>,
-      region: AOI,
-      scale: <span class="n">30</span>,
-      crs: <span class="s">'EPSG:32618'</span>,  <span class="c">// UTM 18N, cámbiala por la zona de tu AOI</span>
-      maxPixels: <span class="n">1e13</span>
-    });
+    <h2 id="paso-8">Sección 8: Exportar las máscaras <a class="anchor" href="#paso-8" aria-label="Enlace a esta sección">#</a></h2>
+    <p>La exportación viene desactivada: todo el bloque está entre <code>/*</code> y <code>*/</code>, así que Earth Engine lo ignora. Para usarla, borra las dos líneas que dicen <code>Eliminar comentario</code> y vuelve a ejecutar. En la pestaña <strong>Tasks</strong> aparecerá una tarea por año y tendrás que ejecutar cada una. <code>crs</code> fija la proyección de salida: <code>EPSG:32618</code> es UTM zona 18 Norte, que cubre buena parte de Colombia; cámbiala por la zona UTM de tu AOI.</p>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 8 → EXPORTACIÓN OPCIONAL A GOOGLE DRIVE</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">/*// Eliminar comentario
+
+var list = masked.toList(masked.size());
+
+// Función que exporta cada imagen de la lista
+var exportImages = function(index) {
+  var img = ee.Image(list.get(index));
+  var year = ee.Number(img.get('year')).format('%d');
+
+  Export.image.toDrive({
+    image: img,
+    description: ee.String('Jones_Median_').cat(year).getInfo(),
+    folder: 'Jones_Median',
+    fileNamePrefix: ee.String('Jones_Median_').cat(year).getInfo(),
+    region: AOI,
+    scale: 30,
+    crs: 'EPSG:32618',  // UTM 18N, cámbiala por la zona de tu AOI
+    maxPixels: 1e13
   });
-});</pre></div>
+};
+
+// Ejecuta una exportación por año
+var count = masked.size();
+count.evaluate(function(n) {
+  for (var i = 0; i &lt; n; i++) {
+    exportImages(i);
+  }
+});
+
+*/</span><span class="c">// Eliminar comentario</span></pre></div>
 
     <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Este es el script completo. Cópialo, pégalo en el <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Code Editor</a>, dibuja tu <code>AOI</code> y presiona <kbd>Run</kbd>.</p>
-    <div class="codebox"><pre><span class="c">// Factor de escala: convierte los valores digitales en reflectancia</span>
-<span class="k">function</span> <span class="f">scaler</span>(img) {
-  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">'SR_B.'</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
-  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">'ST_B.*'</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 0 → CREAR FUNCIONES PRINCIPALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">// 0.1 → Función de factor de escala</span>
+<span class="k">function</span> <span class="f">scaler</span> (img) {
+  <span class="k">var</span> optical = img.<span class="f">select</span>(<span class="s">"SR_B."</span>).<span class="f">multiply</span>(<span class="n">0.0000275</span>).<span class="f">add</span>(-<span class="n">0.2</span>).<span class="f">toFloat</span>();
+  <span class="k">var</span> thermal = img.<span class="f">select</span>(<span class="s">"ST_B.*"</span>).<span class="f">multiply</span>(<span class="n">0.00341802</span>).<span class="f">add</span>(<span class="n">149</span>).<span class="f">toFloat</span>();
   <span class="k">return</span> img.<span class="f">addBands</span>(optical, <span class="n">null</span>, <span class="n">true</span>).<span class="f">addBands</span>(thermal, <span class="n">null</span>, <span class="n">true</span>);
 }
 
-<span class="c">// Máscara de nubes con la banda QA_PIXEL</span>
-<span class="k">function</span> <span class="f">mask_clouds</span>(img) {
-  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'QA_PIXEL'</span>);
-  <span class="k">var</span> cirrus = <span class="n">1</span> &lt;&lt; <span class="n">2</span>;       <span class="c">// bit 2, cirros</span>
-  <span class="k">var</span> cloud = <span class="n">1</span> &lt;&lt; <span class="n">3</span>;        <span class="c">// bit 3, nubes</span>
-  <span class="k">var</span> cloudShadow = <span class="n">1</span> &lt;&lt; <span class="n">4</span>;  <span class="c">// bit 4, sombra de nubes</span>
-  <span class="k">var</span> snow = <span class="n">1</span> &lt;&lt; <span class="n">5</span>;         <span class="c">// bit 5, nieve</span>
-  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>)
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloud).<span class="f">eq</span>(<span class="n">0</span>))
-    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudShadow).<span class="f">eq</span>(<span class="n">0</span>))
+<span class="c">// 0.2 → Función de máscara de nubes</span>
+<span class="k">function</span> <span class="f">mask_clouds</span> (img) {
+  <span class="c">// Banda de calidad QA_PIXEL (renombrada como BQA)</span>
+  <span class="k">var</span> qa = img.<span class="f">select</span>(<span class="s">'BQA'</span>);
+  <span class="c">// Bits de QA_PIXEL en Landsat Colección 2</span>
+  <span class="k">var</span> cirrus = (<span class="n">1</span> &lt;&lt; <span class="n">2</span>);              <span class="c">// bit 2: cirros</span>
+  <span class="k">var</span> cloudsBitMask = (<span class="n">1</span> &lt;&lt; <span class="n">3</span>);       <span class="c">// bit 3: nubes</span>
+  <span class="k">var</span> cloudShadowBitMask = (<span class="n">1</span> &lt;&lt; <span class="n">4</span>);  <span class="c">// bit 4: sombras de nubes</span>
+  <span class="k">var</span> snow = (<span class="n">1</span> &lt;&lt; <span class="n">5</span>);                <span class="c">// bit 5: nieve</span>
+  <span class="c">// Todos los bits deben estar en cero (condiciones despejadas)</span>
+  <span class="k">var</span> mask = qa.<span class="f">bitwiseAnd</span>(cloudShadowBitMask).<span class="f">eq</span>(<span class="n">0</span>)
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cloudsBitMask).<span class="f">eq</span>(<span class="n">0</span>))
+    .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(cirrus).<span class="f">eq</span>(<span class="n">0</span>))
     .<span class="f">and</span>(qa.<span class="f">bitwiseAnd</span>(snow).<span class="f">eq</span>(<span class="n">0</span>));
   <span class="k">return</span> img.<span class="f">updateMask</span>(mask);
 }
 
-<span class="c">// Parámetros de búsqueda</span>
-<span class="k">var</span> startYear = <span class="n">2000</span>;   <span class="c">// año inicial</span>
-<span class="k">var</span> endYear = <span class="n">2025</span>;     <span class="c">// año final</span>
-<span class="k">var</span> startMonth = <span class="n">1</span>;     <span class="c">// mes inicial</span>
-<span class="k">var</span> endMonth = <span class="n">12</span>;      <span class="c">// mes final</span>
-<span class="k">var</span> cloudcover = <span class="n">30</span>;    <span class="c">// nubosidad máxima sobre tierra (%)</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 1 → DEFINIR BANDAS Y NOMENCLATURAS</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Nombres comunes para las bandas de todos los sensores</span>
-<span class="k">var</span> bandsTM = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];   <span class="c">// Landsat 4, 5 y 7</span>
-<span class="k">var</span> bandsOLI = [<span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B6'</span>, <span class="s">'SR_B7'</span>];  <span class="c">// Landsat 8 y 9</span>
-<span class="k">var</span> names = [<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>];
+<span class="k">var</span> bn9 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B6'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn8 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B6'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B5'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn7 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bn5 = [<span class="s">'SR_B1'</span>, <span class="s">'SR_B1'</span>, <span class="s">'SR_B2'</span>, <span class="s">'SR_B3'</span>, <span class="s">'SR_B5'</span>, <span class="s">'QA_PIXEL'</span>, <span class="s">'SR_B4'</span>, <span class="s">'SR_B7'</span>];
+<span class="k">var</span> bns = [<span class="s">'uBlue'</span>, <span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Swir1'</span>, <span class="s">'BQA'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir2'</span>];
 
-<span class="c">// Filtra una colección y prepara cada imagen</span>
-<span class="k">function</span> <span class="f">landsat</span>(id, bands) {
-  <span class="k">return</span> <span class="g">ee</span>.<span class="f">ImageCollection</span>(id)
-    .<span class="f">filterBounds</span>(AOI)
-    .<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, (endYear + <span class="n">1</span>) + <span class="s">'-01-01'</span>)
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
-    .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, cloudcover))
-    .<span class="f">map</span>(<span class="k">function</span> (img) {
-      <span class="k">return</span> <span class="f">scaler</span>(<span class="f">mask_clouds</span>(img)).<span class="f">select</span>(bands, names);
-    });
-}
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 2 → CREAR Y UNIFICAR COLECCIONES LANDSAT (4, 5, 7, 8 Y 9)</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">// Landsat 4, 5, 7, 8 y 9 en una sola colección</span>
-<span class="k">var</span> collection = <span class="f">landsat</span>(<span class="s">'LANDSAT/LT04/C02/T1_L2'</span>, bandsTM)
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LT05/C02/T1_L2'</span>, bandsTM))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LE07/C02/T1_L2'</span>, bandsTM).<span class="f">filterDate</span>(<span class="s">'1999-04-15'</span>, <span class="s">'2013-05-30'</span>))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC08/C02/T1_L2'</span>, bandsOLI))
-  .<span class="f">merge</span>(<span class="f">landsat</span>(<span class="s">'LANDSAT/LC09/C02/T1_L2'</span>, bandsOLI));
-<span class="g">print</span>(<span class="s">'Imágenes disponibles'</span>, collection.<span class="f">size</span>());
+<span class="k">var</span> ls4 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LT04/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn5, bns);
+<span class="k">var</span> ls5 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LT05/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn5, bns);
+<span class="k">var</span> ls7 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LE07/C02/T1_L2"</span>).<span class="f">map</span>(scaler)
+                            .<span class="f">filterDate</span>(<span class="s">'1999-04-15'</span>, <span class="s">'2013-05-30'</span>)
+                            .<span class="f">select</span>(bn7, bns);
+<span class="k">var</span> ls8 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC08/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn8, bns);
+<span class="k">var</span> ls9 = <span class="g">ee</span>.<span class="f">ImageCollection</span>(<span class="s">"LANDSAT/LC09/C02/T1_L2"</span>).<span class="f">map</span>(scaler).<span class="f">select</span>(bn9, bns);
 
-<span class="c">// Una mediana por año</span>
+<span class="k">var</span> merged = ls4.<span class="f">merge</span>(ls5).<span class="f">merge</span>(ls7).<span class="f">merge</span>(ls8).<span class="f">merge</span>(ls9);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 3 → DEFINIR PARÁMETROS DE BÚSQUEDA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> startYear = <span class="n">2010</span>;  <span class="c">// Año inicio</span>
+<span class="k">var</span> endYear = <span class="n">2025</span>;    <span class="c">// Año final</span>
+<span class="k">var</span> startMonth = <span class="n">1</span>;    <span class="c">// Mes inicial</span>
+<span class="k">var</span> endMonth = <span class="n">12</span>;     <span class="c">// Mes final</span>
+<span class="k">var</span> cloudcover = <span class="n">30</span>;   <span class="c">// Cobertura de nubes (%)</span>
+<span class="k">var</span> AOI = AOI;         <span class="c">// Área de estudio</span>
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 4 → APLICAR FILTROS A LA COLECCIÓN FUSIONADA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> filtered = merged.<span class="f">filterDate</span>(startYear + <span class="s">'-01-01'</span>, endYear + <span class="s">'-12-31'</span>)
+                     .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">lte</span>(<span class="s">'CLOUD_COVER_LAND'</span>, cloudcover))
+                     .<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">calendarRange</span>(startMonth, endMonth, <span class="s">'month'</span>))
+                     .<span class="f">sort</span>(<span class="s">'system:time_start'</span>, <span class="n">false</span>)
+                     .<span class="f">filterBounds</span>(AOI);
+
+<span class="g">print</span>(<span class="s">"Imágenes disponibles para la zona de estudio (Landsat 4, 5, 7, 8 y 9)"</span>, filtered);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 5 → CALCULAR MEDIANAS ANUALES</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
 <span class="k">var</span> years = <span class="g">ee</span>.List.<span class="f">sequence</span>(startYear, endYear);
 
-<span class="k">var</span> annual = <span class="g">ee</span>.ImageCollection.<span class="f">fromImages</span>(years.<span class="f">map</span>(<span class="k">function</span> (year) {
+<span class="k">function</span> <span class="f">yearly_medians</span>(year) {
   <span class="k">var</span> start = <span class="g">ee</span>.Date.<span class="f">fromYMD</span>(year, <span class="n">1</span>, <span class="n">1</span>);
-  <span class="k">var</span> images = collection.<span class="f">filterDate</span>(start, start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>));
-  <span class="k">return</span> images.<span class="f">median</span>()
-    .<span class="f">clip</span>(AOI)
-    .<span class="f">set</span>(<span class="s">'year'</span>, year)
-    .<span class="f">set</span>(<span class="s">'n_images'</span>, images.<span class="f">size</span>());
-}));
-
-<span class="c">// Quitar los años sin imágenes</span>
-annual = annual.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">gt</span>(<span class="s">'n_images'</span>, <span class="n">0</span>));
-<span class="g">print</span>(<span class="s">'Medianas anuales'</span>, annual);
-
-<span class="c">// DSWE: cinco pruebas espectrales sobre reflectancia de superficie (Jones, 2019)</span>
-<span class="k">function</span> <span class="f">dswe</span>(img) {
-  <span class="c">// En agua oscura (mar, lagos profundos) la reflectancia escalada puede ser un poco</span>
-  <span class="c">// negativa, y normalizedDifference() enmascara esos píxeles. Por eso usamos 0 como mínimo.</span>
-  <span class="k">var</span> r = img.<span class="f">select</span>([<span class="s">'Blue'</span>, <span class="s">'Green'</span>, <span class="s">'Red'</span>, <span class="s">'Nir'</span>, <span class="s">'Swir1'</span>, <span class="s">'Swir2'</span>]).<span class="f">max</span>(<span class="n">0</span>);
-  <span class="k">var</span> blue = r.<span class="f">select</span>(<span class="s">'Blue'</span>);
-  <span class="k">var</span> green = r.<span class="f">select</span>(<span class="s">'Green'</span>);
-  <span class="k">var</span> red = r.<span class="f">select</span>(<span class="s">'Red'</span>);
-  <span class="k">var</span> nir = r.<span class="f">select</span>(<span class="s">'Nir'</span>);
-  <span class="k">var</span> swir1 = r.<span class="f">select</span>(<span class="s">'Swir1'</span>);
-  <span class="k">var</span> swir2 = r.<span class="f">select</span>(<span class="s">'Swir2'</span>);
-
-  <span class="c">// Valores que usan las pruebas</span>
-  <span class="k">var</span> mndwi = r.<span class="f">normalizedDifference</span>([<span class="s">'Green'</span>, <span class="s">'Swir1'</span>]);
-  <span class="k">var</span> ndvi = r.<span class="f">normalizedDifference</span>([<span class="s">'Nir'</span>, <span class="s">'Red'</span>]);
-  <span class="k">var</span> mbsrv = green.<span class="f">add</span>(red);   <span class="c">// verde + rojo</span>
-  <span class="k">var</span> mbsrn = nir.<span class="f">add</span>(swir1);   <span class="c">// NIR + SWIR1</span>
-  <span class="k">var</span> awesh = blue.<span class="f">add</span>(green.<span class="f">multiply</span>(<span class="n">2.5</span>))
-    .<span class="f">subtract</span>(mbsrn.<span class="f">multiply</span>(<span class="n">1.5</span>))
-    .<span class="f">subtract</span>(swir2.<span class="f">multiply</span>(<span class="n">0.25</span>));
-
-  <span class="c">// Las cinco pruebas: 1 si se cumple, 0 si no</span>
-  <span class="k">var</span> t1 = mndwi.<span class="f">gt</span>(<span class="n">0.124</span>);
-  <span class="k">var</span> t2 = mbsrv.<span class="f">gt</span>(mbsrn);
-  <span class="k">var</span> t3 = awesh.<span class="f">gt</span>(<span class="n">0</span>);
-  <span class="k">var</span> t4 = mndwi.<span class="f">gt</span>(-<span class="n">0.44</span>).<span class="f">and</span>(swir1.<span class="f">lt</span>(<span class="n">0.09</span>)).<span class="f">and</span>(nir.<span class="f">lt</span>(<span class="n">0.15</span>)).<span class="f">and</span>(ndvi.<span class="f">lt</span>(<span class="n">0.7</span>));
-  <span class="k">var</span> t5 = mndwi.<span class="f">gt</span>(-<span class="n">0.5</span>).<span class="f">and</span>(blue.<span class="f">lt</span>(<span class="n">0.1</span>)).<span class="f">and</span>(swir1.<span class="f">lt</span>(<span class="n">0.3</span>))
-    .<span class="f">and</span>(swir2.<span class="f">lt</span>(<span class="n">0.1</span>)).<span class="f">and</span>(nir.<span class="f">lt</span>(<span class="n">0.25</span>));
-
-  <span class="c">// Código de cinco cifras, una por prueba (t5 t4 t3 t2 t1)</span>
-  <span class="k">var</span> testCode = t1.<span class="f">add</span>(t2.<span class="f">multiply</span>(<span class="n">10</span>)).<span class="f">add</span>(t3.<span class="f">multiply</span>(<span class="n">100</span>))
-    .<span class="f">add</span>(t4.<span class="f">multiply</span>(<span class="n">1000</span>)).<span class="f">add</span>(t5.<span class="f">multiply</span>(<span class="n">10000</span>));
-
-  <span class="c">// Tabla de clases del USGS</span>
-  <span class="k">var</span> dsweClass = testCode.<span class="f">remap</span>(
-    [<span class="n">0</span>, <span class="n">1</span>, <span class="n">10</span>, <span class="n">100</span>, <span class="n">1000</span>,                                             <span class="c">// 0: no agua</span>
-     <span class="n">1111</span>, <span class="n">10111</span>, <span class="n">11011</span>, <span class="n">11101</span>, <span class="n">11110</span>, <span class="n">11111</span>,                         <span class="c">// 1: agua, confianza alta</span>
-     <span class="n">111</span>, <span class="n">1011</span>, <span class="n">1101</span>, <span class="n">1110</span>, <span class="n">10011</span>, <span class="n">10101</span>, <span class="n">10110</span>, <span class="n">11001</span>, <span class="n">11010</span>, <span class="n">11100</span>, <span class="c">// 2: agua, confianza moderada</span>
-     <span class="n">11000</span>,                                                           <span class="c">// 3: agua parcial, conservadora</span>
-     <span class="n">11</span>, <span class="n">101</span>, <span class="n">110</span>, <span class="n">1001</span>, <span class="n">1010</span>, <span class="n">1100</span>, <span class="n">10000</span>, <span class="n">10001</span>, <span class="n">10010</span>, <span class="n">10100</span>],     <span class="c">// 4: agua parcial, agresiva</span>
-    [<span class="n">0</span>, <span class="n">0</span>, <span class="n">0</span>, <span class="n">0</span>, <span class="n">0</span>,
-     <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>, <span class="n">1</span>,
-     <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>, <span class="n">2</span>,
-     <span class="n">3</span>,
-     <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>, <span class="n">4</span>]).<span class="f">rename</span>(<span class="s">'dswe'</span>);
-
-  <span class="c">// Máscara de agua: confianza alta o moderada</span>
-  <span class="k">var</span> waterMask = dsweClass.<span class="f">eq</span>(<span class="n">1</span>).<span class="f">or</span>(dsweClass.<span class="f">eq</span>(<span class="n">2</span>)).<span class="f">rename</span>(<span class="s">'waterMask'</span>);
-  <span class="k">return</span> img.<span class="f">addBands</span>([dsweClass, waterMask]);
+  <span class="k">var</span> end = start.<span class="f">advance</span>(<span class="n">1</span>, <span class="s">'year'</span>);
+  <span class="k">var</span> L = filtered.<span class="f">map</span>(mask_clouds);
+  <span class="k">var</span> image = L.<span class="f">filterDate</span>(start, end).<span class="f">median</span>().<span class="f">clip</span>(AOI).<span class="f">toFloat</span>();
+  <span class="k">return</span> image.<span class="f">set</span>(<span class="s">'year'</span>, year);
 }
 
-<span class="c">// DSWE para cada año de la serie</span>
-<span class="k">var</span> water = annual.<span class="f">map</span>(dswe);
-<span class="g">print</span>(<span class="s">'Serie con DSWE'</span>, water);
+<span class="c">// Generar medianas por año</span>
+<span class="k">var</span> img_medians = years.<span class="f">map</span>(yearly_medians);
 
-<span class="c">// Color verdadero, clases DSWE y máscara de agua de cada año</span>
-<span class="k">var</span> visRGB = {bands: [<span class="s">'Red'</span>, <span class="s">'Green'</span>, <span class="s">'Blue'</span>], min: <span class="n">0.002</span>, max: <span class="n">0.25</span>, gamma: <span class="n">1</span>};
-<span class="k">var</span> dsweVis = {min: <span class="n">0</span>, max: <span class="n">4</span>, palette: [<span class="s">'ffffff'</span>, <span class="s">'0000ff'</span>, <span class="s">'4f9dff'</span>, <span class="s">'6bbf59'</span>, <span class="s">'d9c99e'</span>]};
+<span class="c">// Remover imágenes vacías</span>
+img_medians = img_medians.<span class="f">map</span>(<span class="k">function</span>(ele) {
+  <span class="k">var</span> count = <span class="g">ee</span>.<span class="f">Image</span>(ele).<span class="f">bandNames</span>().<span class="f">size</span>();
+  <span class="k">return</span> <span class="g">ee</span>.Algorithms.<span class="f">If</span>(count.<span class="f">gt</span>(<span class="n">0</span>), ele, <span class="n">0</span>);
+}).<span class="f">flatten</span>();
+img_medians = img_medians.<span class="f">removeAll</span>([<span class="n">0</span>]);
+
+<span class="c">// Colección de medianas anuales</span>
+<span class="k">var</span> colmeans = <span class="g">ee</span>.<span class="f">ImageCollection</span>(img_medians);
+<span class="k">var</span> años = <span class="g">ee</span>.<span class="f">Array</span>(colmeans.<span class="f">aggregate_array</span>(<span class="s">'year'</span>));
+
+<span class="g">print</span>(<span class="s">"Mediana de imágenes por año"</span>, colmeans);
+<span class="g">print</span>(<span class="s">"Lista de años"</span>, años);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 6 → APLICAR DSWE JONES (2019)</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="k">var</span> x = <span class="g">require</span>(<span class="s">'users/sigeduca/routines:Indexes/Jones_2019'</span>); <span class="c">// MÓDULO DE JONES</span>
+
+<span class="c">// Crear función Jones (DSWE)</span>
+<span class="k">function</span> <span class="f">Jones</span> (image){
+  <span class="k">var</span> river = x.<span class="f">ClassifyWaterJones2019</span>(image);
+  <span class="k">return</span> image.<span class="f">addBands</span>(river);
+}
+
+<span class="k">var</span> water_jones_2019 = colmeans.<span class="f">map</span>(Jones);
+<span class="k">var</span> masked = water_jones_2019.<span class="f">select</span>(<span class="s">"waterMask"</span>); <span class="c">// colección de máscaras de agua</span>
+
+<span class="g">print</span>(<span class="s">"Máscara de agua, Jones (2019)"</span>, masked);
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 7 → VISUALIZACIÓN EN EL MAPA</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// Visualización RGB</span>
+
+<span class="k">var</span> m_list = img_medians;
+<span class="k">var</span> len_w = img_medians.<span class="f">size</span>();
+<span class="k">var</span> visArgs_LAND = {bands: <span class="s">'Red,Green,Blue'</span>, min: <span class="n">0.002</span>, max: <span class="n">0.25</span>, gamma: <span class="n">1</span>};
+
 <span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);
 
-water.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(water.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>());
-    <span class="g">Map</span>.<span class="f">addLayer</span>(img, visRGB, <span class="s">'RGB '</span> + year, <span class="n">false</span>);
-    <span class="g">Map</span>.<span class="f">addLayer</span>(img.<span class="f">select</span>(<span class="s">'dswe'</span>), dsweVis, <span class="s">'DSWE '</span> + year, <span class="n">false</span>);
-    <span class="g">Map</span>.<span class="f">addLayer</span>(img.<span class="f">select</span>(<span class="s">'waterMask'</span>).<span class="f">selfMask</span>(), {palette: [<span class="s">'0000ff'</span>]}, <span class="s">'Agua '</span> + year, <span class="n">false</span>);
-  });
+len_w.<span class="f">evaluate</span>(<span class="k">function</span>(l) {
+  <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; l; i++) {
+    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(m_list.<span class="f">get</span>(i));
+    <span class="g">Map</span>.<span class="f">addLayer</span>(img, visArgs_LAND, <span class="s">'RGB-'</span> + i.<span class="f">toString</span>(), <span class="n">false</span>);
+  }
 });
 
-<span class="c">// Una tarea de exportación por año</span>
-water.<span class="f">aggregate_array</span>(<span class="s">'year'</span>).<span class="f">evaluate</span>(<span class="k">function</span> (list) {
-  list.<span class="f">forEach</span>(<span class="k">function</span> (year) {
-    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(water.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">'year'</span>, year)).<span class="f">first</span>());
-    <span class="g">Export</span>.image.<span class="f">toDrive</span>({
-      image: img.<span class="f">select</span>([<span class="s">'dswe'</span>, <span class="s">'waterMask'</span>]).<span class="f">unmask</span>(<span class="n">255</span>).<span class="f">toByte</span>(),
-      description: <span class="s">'DSWE_'</span> + year,
-      folder: <span class="s">'Jones_DSWE'</span>,
-      region: AOI,
-      scale: <span class="n">30</span>,
-      crs: <span class="s">'EPSG:32618'</span>,  <span class="c">// UTM 18N, cámbiala por la zona de tu AOI</span>
-      maxPixels: <span class="n">1e13</span>
-    });
+<span class="c">// Visualización de la máscara de agua de Jones</span>
+<span class="k">var</span> list_masked = masked.<span class="f">toList</span>(masked.<span class="f">size</span>());
+<span class="k">var</span> len_masked = list_masked.<span class="f">size</span>();
+
+len_masked.<span class="f">evaluate</span>(<span class="k">function</span>(l) {
+  <span class="k">for</span> (<span class="k">var</span> i = <span class="n">0</span>; i &lt; l; i++) {
+    <span class="k">var</span> img = <span class="g">ee</span>.<span class="f">Image</span>(list_masked.<span class="f">get</span>(i));
+    <span class="g">Map</span>.<span class="f">addLayer</span>(img, {}, <span class="s">'mascara jones -'</span> + i.<span class="f">toString</span>(), <span class="n">false</span>);
+  }
+});
+
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// 8 → EXPORTACIÓN OPCIONAL A GOOGLE DRIVE</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+
+<span class="c">/*// Eliminar comentario
+
+var list = masked.toList(masked.size());
+
+// Función que exporta cada imagen de la lista
+var exportImages = function(index) {
+  var img = ee.Image(list.get(index));
+  var year = ee.Number(img.get('year')).format('%d');
+
+  Export.image.toDrive({
+    image: img,
+    description: ee.String('Jones_Median_').cat(year).getInfo(),
+    folder: 'Jones_Median',
+    fileNamePrefix: ee.String('Jones_Median_').cat(year).getInfo(),
+    region: AOI,
+    scale: 30,
+    crs: 'EPSG:32618',  // UTM 18N, cámbiala por la zona de tu AOI
+    maxPixels: 1e13
   });
-});</pre></div>
+};
+
+// Ejecuta una exportación por año
+var count = masked.size();
+count.evaluate(function(n) {
+  for (var i = 0; i &lt; n; i++) {
+    exportImages(i);
+  }
+});
+
+*/</span><span class="c">// Eliminar comentario</span></pre></div>
 
     <h2 id="conclusion">Conclusiones <a class="anchor" href="#conclusion" aria-label="Enlace a esta sección">#</a></h2>
-    <p>DSWE da algo que un umbral simple no da: un nivel de confianza para cada píxel y una forma de reconocer el agua parcial. En la siguiente lección usaremos la máscara de cada año para medir el área de agua y graficar cómo cambia.</p>
+    <p>DSWE da algo que un umbral simple no da: varias pruebas que se confirman entre sí y una forma de reconocer el agua parcial. En la siguiente lección usaremos la máscara de cada año para medir el área de agua y graficar cómo cambia.</p>
     <p>Si trabajas con Sentinel-2, el proyecto OPERA del JPL de la NASA publica DSWx-HLS, un producto basado en DSWE que combina imágenes de Landsat y Sentinel-2. También está en el catálogo de Earth Engine como <code>OPERA/DSWX/L3_V1/HLS</code>.</p>
 
     <h2 id="referencias">Referencias <a class="anchor" href="#referencias" aria-label="Enlace a esta sección">#</a></h2>
