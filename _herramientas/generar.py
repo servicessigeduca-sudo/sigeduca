@@ -102,11 +102,20 @@ APPS = [
      "imagen": "assets/img/apps/easy-dem-v2.jpg",
      "id": "easy-download-dems",
      "presentacion": "Conseguir un modelo digital de elevación suele exigir crear una cuenta en un portal, buscar las teselas de tu zona y unirlas a mano. Easy Download DEMs resuelve todo eso en el navegador, a partir del catálogo de Google Earth Engine. Dibujas tu área sobre el mapa y eliges el modelo. Antes de descargar, ves su ficha técnica, el relieve con sombreado y las estadísticas de tu área. Obtienes un GeoTIFF recortado, listo para abrir en QGIS o ArcGIS Pro. No necesitas registrarte ni saber programar.",
-     "pasos": ["<strong>Paso 1, dibuja el área de interés.</strong> Elige <strong>Rectángulo</strong> o <strong>Polígono</strong> y dibuja sobre el mapa. Con <strong>Editar área</strong> la ajustas y con <strong>Limpiar</strong> empiezas de nuevo.",
-               "<strong>Paso 2, elige el modelo de elevación.</strong> El predeterminado es SRTM de 30 m. Debajo de la lista aparece la ficha del modelo: resolución, tipo, origen, cobertura, precisión, para qué se recomienda y su ID en Earth Engine. Si no sabes cuál usar, pulsa <strong>Ver guía para elegir el modelo</strong>.",
-               "<strong>Paso 3, revisa el resultado.</strong> El mapa muestra el modelo con sombreado, una leyenda con la elevación mínima y máxima, y las estadísticas de tu área: elevación media, pendiente media y máxima, y superficie en km².",
-               "<strong>Paso 4, descarga la capa.</strong> Elige la capa, <strong>Elevación (m)</strong>, que es la altura sobre el nivel del mar en metros, y el formato: <strong>GeoTIFF directo</strong> o <strong>ZIP</strong>. La app te muestra el tamaño estimado del archivo. Pulsa <strong>Preparar descarga</strong> y luego el enlace <strong>Descargar</strong> que aparece debajo.",
-               "Recibirás un GeoTIFF en coordenadas geográficas (EPSG:4326, WGS 84) a la resolución original del modelo, listo para abrir en QGIS o ArcGIS Pro."],
+     "pasos": [
+         {"titulo": "Dibuja el área de interés",
+          "texto": "Elige <strong>Rectángulo</strong> o <strong>Polígono</strong> y dibuja sobre el mapa. Con <strong>Editar área</strong> la ajustas y con <strong>Limpiar</strong> empiezas de nuevo.",
+          "imgs": [["assets/img/apps/easy-dem-v2/paso-1.png", "Paso 1 del panel: botones Rectángulo, Polígono, Editar área y Limpiar", 422, 147]]},
+         {"titulo": "Elige el modelo de elevación",
+          "texto": "Abre la lista y elige uno de los siete modelos. El predeterminado es SRTM de 30 m. Debajo aparece su ficha: resolución, tipo, origen, cobertura, precisión, para qué se recomienda y su ID en Earth Engine. Si no sabes cuál usar, pulsa <strong>Ver guía para elegir el modelo</strong>.",
+          "imgs": [["assets/img/apps/easy-dem-v2/paso-2-lista.png", "Paso 2 del panel: lista desplegable con los siete modelos de elevación", 422, 349],
+                   ["assets/img/apps/easy-dem-v2/paso-2-ficha.png", "Paso 2 del panel: ficha del modelo SRTM 30 m", 422, 350]]},
+         {"titulo": "Revisa el resultado",
+          "texto": "El mapa muestra el modelo con sombreado. En el panel ves la leyenda con la elevación mínima y máxima, y las estadísticas de tu área: elevación media, pendiente media y máxima, y superficie en km².",
+          "imgs": [["assets/img/apps/easy-dem-v2/paso-3.png", "Paso 3 del panel: leyenda de elevación y estadísticas del área", 422, 206]]},
+         {"titulo": "Descarga la capa",
+          "texto": "Elige la capa, <strong>Elevación (m)</strong>, que es la altura sobre el nivel del mar en metros, y el formato: <strong>GeoTIFF directo</strong> o <strong>ZIP</strong>. Revisa el tamaño estimado, pulsa <strong>Preparar descarga</strong> y luego el enlace <strong>Descargar</strong> que aparece debajo. Recibirás un GeoTIFF en EPSG:4326 (WGS 84) a la resolución original del modelo, listo para abrir en QGIS o ArcGIS Pro.",
+          "imgs": [["assets/img/apps/easy-dem-v2/paso-4.png", "Paso 4 del panel: capa, formato, Preparar descarga y enlace de descarga con los datos del archivo", 422, 556]]}],
      "datos": [["SRTM", "30 m", "NASA / USGS, misión del transbordador (febrero de 2000)"],
                ["NASADEM", "30 m", "NASA"],
                ["Copernicus GLO-30", "30 m", "ESA / Copernicus"],
@@ -806,7 +815,15 @@ def seo(titulo, descripcion, ruta, prefijo):
 
 def pagina_app(a):
     titulo = f"{a['nombre']} · App de SIG EDUCA"
-    pasos = "\n".join(f"      <li>{p}</li>" for p in a.get("pasos", []))
+    def paso_html(n, p):
+        if isinstance(p, str):
+            return f"      <li>{p}</li>"
+        imgs = "".join(f'<img src="../{im[0]}" alt="{html.escape(im[1])}" loading="lazy" width="{im[2]}" height="{im[3]}">' for im in p.get("imgs", []))
+        return (f'      <li class="flujo-paso"><span class="flujo-n" aria-hidden="true">{n}</span>'
+                f'<div class="flujo-txt"><h3>Paso {n}: {p["titulo"]}</h3><p>{p["texto"]}</p></div>'
+                + (f'<div class="flujo-img">{imgs}</div>' if imgs else "") + "</li>")
+    pasos = "\n".join(paso_html(n, p) for n, p in enumerate(a.get("pasos", []), 1))
+    clase_pasos = "flujo" if any(not isinstance(p, str) for p in a.get("pasos", [])) else "pasos-app"
     datos = "".join(f'          <tr><td class="n">{html.escape(d[0])}</td><td>{html.escape(d[1])}</td><td>{html.escape(d[2])}</td></tr>\n' for d in a.get("datos", []))
     notas = "\n".join(f'    <div class="callout"><p>{n}</p></div>' for n in a.get("notas", []))
     abrir = f'<a class="btn" href="{html.escape(a["url"])}" target="_blank" rel="noopener">Abrir la app ↗</a>'
@@ -814,7 +831,7 @@ def pagina_app(a):
     if pasos:
         secciones += f'''
     <h2 id="como-usarla">Cómo usarla <a class="anchor" href="#como-usarla" aria-label="Enlace a esta sección">#</a></h2>
-    <ol class="pasos-app">
+    <ol class="{clase_pasos}">
 {pasos}
     </ol>'''
     if datos:

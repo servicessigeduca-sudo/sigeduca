@@ -356,3 +356,15 @@ main>.app-tipo{display:block;margin-bottom:6px}
 .pasos-app li{margin:0 0 10px;line-height:1.6}
 .mod-ruta{font:500 .74rem var(--mono);color:var(--muted);overflow-wrap:anywhere;background:none;padding:0}
 .app-body .mod-ruta + p{margin-top:2px}
+/* Flujo de pasos de las apps */
+.flujo{list-style:none;padding:0;margin:18px 0 6px}
+.flujo-paso{position:relative;display:grid;grid-template-columns:34px minmax(0,1fr) minmax(0,300px);gap:8px 20px;padding-bottom:30px}
+.flujo-paso::before{content:"";position:absolute;left:16px;top:40px;bottom:6px;width:2px;background:var(--line)}
+.flujo-paso:last-child{padding-bottom:6px}
+.flujo-paso:last-child::before{display:none}
+.flujo-n{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:600;font-size:.95rem}
+.flujo-txt h3{margin:5px 0 6px;font-size:1.02rem}
+.flujo-txt p{margin:0;line-height:1.6}
+.flujo-img{display:grid;gap:10px;align-content:start}
+.flujo-img img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:#fff}
+@media (max-width:760px){.flujo-paso{grid-template-columns:34px minmax(0,1fr)}.flujo-img{grid-column:2;max-width:340px}}
