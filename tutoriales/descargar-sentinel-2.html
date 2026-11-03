@@ -175,7 +175,7 @@
     <h2 id="paso-2">Paso 2: Visualizar la imagen <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>Creamos una variable con los parámetros de visualización usando las bandas B4, B3 y B2 (color verdadero), agregamos la imagen con <code>Map.addLayer()</code> y centramos el mapa en la región de interés con <code>Map.centerObject()</code>.</p>
     <div class="codebox"><pre><span class="k">var</span> visArgs_SENT = {bands: <span class="s">'B4,B3,B2'</span>, min: <span class="n">130</span>, max: <span class="n">2360</span>, gamma: <span class="n">1</span>};
-<span class="g">Map</span>.<span class="f">addLayer</span>(firts_s2, visArgs_SENT, <span class="s">"sentinel 2 first image"</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(firts_s2, visArgs_SENT, <span class="s">"Primera imagen de Sentinel-2"</span>);
 <span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);</pre></div>
     <figure class="shot"><img src="../assets/img/descargar-sentinel-2/resultado.jpg" alt="Imagen de Sentinel-2 en color verdadero recortada a la región de interés" loading="lazy" width="627" height="453"><figcaption>Imagen de Sentinel-2 recortada al AOI.</figcaption></figure>
 
@@ -210,7 +210,7 @@
 
 <span class="c">// Visualización</span>
 <span class="k">var</span> visArgs_SENT = {bands: <span class="s">'B4,B3,B2'</span>, min: <span class="n">130</span>, max: <span class="n">2360</span>, gamma: <span class="n">1</span>};
-<span class="g">Map</span>.<span class="f">addLayer</span>(firts_s2, visArgs_SENT, <span class="s">"sentinel 2 first image"</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(firts_s2, visArgs_SENT, <span class="s">"Primera imagen de Sentinel-2"</span>);
 <span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">10</span>);
 
 <span class="c">// Exportar la imagen a Google Drive</span>

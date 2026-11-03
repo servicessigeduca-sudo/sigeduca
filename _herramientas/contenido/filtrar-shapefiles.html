@@ -67,19 +67,19 @@
 
     <h2 id="paso-1">Paso 1: Filtrar con filter <a class="anchor" href="#paso-1" aria-label="Enlace a esta sección">#</a></h2>
     <p>Con <code>filter</code> nos quedamos solo con Colombia dentro de la colección de países.</p>
-    <div class="codebox"><pre><span class="c">// Cargar la Feature Collection de países</span>
+    <div class="codebox"><pre><span class="c">// Cargar la colección de países</span>
 <span class="k">var</span> Countries = ee.FeatureCollection("FAO/GAUL/2015/level0");
 
-<span class="c">// Filtrar la Feature Collection para obtener solo Colombia</span>
+<span class="c">// Filtrar la colección para obtener solo Colombia</span>
 <span class="k">var</span> Colombia = Countries.filter(ee.Filter.eq("ADM0_NAME", "Colombia"));</pre></div>
     <p>La condición de igualdad se aplica al atributo <code>ADM0_NAME</code> (nombre del país), que debe ser igual a "Colombia", y el resultado es una nueva colección que contiene solo ese país.</p>
 
     <h2 id="paso-2">Paso 2: Filtrar con filterMetadata <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>Con <code>filterMetadata</code> hacemos lo mismo con la colección de ciudades para quedarnos con Bogotá.</p>
-    <div class="codebox"><pre><span class="c">// Cargar la Feature Collection de ciudades</span>
+    <div class="codebox"><pre><span class="c">// Cargar la colección de ciudades</span>
 <span class="k">var</span> cities = ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level2");
 
-<span class="c">// Filtrar la Feature Collection para obtener solo Bogotá</span>
+<span class="c">// Filtrar la colección para obtener solo Bogotá</span>
 <span class="k">var</span> Bogota = cities.filterMetadata("ADM2_NAME", "equals", "Santafe De Bogota D.c.");</pre></div>
     <p>La condición se aplica al metadato <code>ADM2_NAME</code> (nombre de la ciudad), que debe ser igual a "Santafe De Bogota D.c.", así que el resultado contiene solo Bogotá.</p>
 
@@ -105,39 +105,39 @@ Map.addLayer(Bogota, {color: "white"}, "Bogotá", <span class="k">true</span>);<
 
     <h2 id="codigo">Código completo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Este es el script completo del tutorial. Cópialo, pégalo en el Code Editor y presiona <kbd>Run</kbd>.</p>
-    <div class="codebox"><pre><span class="c">// see this web link for countries --&gt; https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_2015_level0</span>
-<span class="c">// see this web link for cities  --&gt; https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_2015_level2</span>
+    <div class="codebox"><pre><span class="c">// Colección de países (FAO GAUL nivel 0) --&gt; https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_2015_level0</span>
+<span class="c">// Colección de ciudades (FAO GAUL nivel 2) --&gt; https://developers.google.com/earth-engine/datasets/catalog/FAO_GAUL_2015_level2</span>
 <span class="c">
-// More shapefiles: https://developers.google.com/earth-engine/datasets/tags/borders </span>
+// Más límites administrativos: https://developers.google.com/earth-engine/datasets/tags/borders </span>
 <span class="c">
 ///////////////////////////////////////////////////////////////////////////////////</span>
-<span class="c">// PROCESS</span>
+<span class="c">// PROCESO</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">
-// 1 --&gt; Filter Feature collections with filter</span>
-<span class="c">// 1.1 --&gt; Visualization of feauture collections on map</span>
-<span class="c">// 2 --&gt; Filter Feature collections with filterMetadata</span>
-<span class="c">// 2.1 --&gt; Visualization of feauture collections on map</span>
+// 1 --&gt; Filtrar colecciones con filter()</span>
+<span class="c">// 1.1 --&gt; Visualizar las colecciones en el mapa</span>
+<span class="c">// 2 --&gt; Filtrar colecciones con filterMetadata()</span>
+<span class="c">// 2.1 --&gt; Visualizar las colecciones en el mapa</span>
 <span class="c">//throw("stop");</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
-<span class="c">// 1 --&gt; Filter Feature collections with filter</span>
+<span class="c">// 1 --&gt; Filtrar colecciones con filter()</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
-<span class="c">//// Load countries  feature collections </span>
+<span class="c">//// Cargar la colección de países </span>
 <span class="k">var</span> Countries = ee.FeatureCollection("FAO/GAUL/2015/level0");
 print("paises: ", Countries.limit(10));
 
 <span class="k">var</span> Colombia=Countries.filter(ee.Filter.eq("ADM0_NAME","Colombia"));
 <span class="c">
 ///////////////////////////////////////////////////////////////////////////////////</span>
-<span class="c">// 2 --&gt; Visualization of feature collections on map</span>
+<span class="c">// 2 --&gt; Visualizar las colecciones en el mapa</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 Map.centerObject(Colombia,5);
 Map.addLayer(Colombia,{color:"red"},"Colombia", true);
 <span class="c">
 ///////////////////////////////////////////////////////////////////////////////////</span>
-<span class="c">// 1 --&gt; Filter Feature collections with filterMetadata</span>
+<span class="c">// 1 --&gt; Filtrar colecciones con filterMetadata()</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
-<span class="c">//// Load cities feature collections </span>
+<span class="c">//// Cargar la colección de ciudades </span>
 <span class="k">var</span> cities =ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level2");
 print("Ciudades: ", cities.limit(10));
 
@@ -145,7 +145,7 @@ print("Ciudades: ", cities.limit(10));
 <span class="k">var</span> Bogota=cities.filterMetadata("ADM2_NAME", "equals", "Santafe De Bogota D.c.");
 <span class="c">
 ///////////////////////////////////////////////////////////////////////////////////</span>
-<span class="c">// 2 --&gt; Visualization of feature collections on map</span>
+<span class="c">// 2 --&gt; Visualizar las colecciones en el mapa</span>
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
 Map.addLayer(Bogota,{color:"white"},"Bogotá", true);</pre></div>

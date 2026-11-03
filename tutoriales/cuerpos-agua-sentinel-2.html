@@ -170,7 +170,7 @@
   .<span class="f">first</span>()
   .<span class="f">clip</span>(AOI);
 <span class="g">print</span>(s2_image);</pre></div>
-    <div class="codebox"><pre><span class="c">// Falso color NIR-Red edge-Verde</span>
+    <div class="codebox"><pre><span class="c">// Falso color NIR-Borde rojo-Verde</span>
 <span class="g">Map</span>.<span class="f">addLayer</span>(s2_image, {bands: <span class="s">"B8,B5,B3"</span>, min: <span class="n">0</span>, max: <span class="n">0.4</span>, gamma: <span class="n">1</span>}, <span class="s">"Sentinel-2"</span>);
 <span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">12</span>);</pre></div>
     <div class="codebox"><pre><span class="c">// Índices para detectar agua con bandas de Sentinel-2</span>
@@ -256,7 +256,7 @@
   .<span class="f">clip</span>(AOI);
 <span class="g">print</span>(s2_image);
 
-<span class="c">// Falso color NIR-Red edge-Verde</span>
+<span class="c">// Falso color NIR-Borde rojo-Verde</span>
 <span class="g">Map</span>.<span class="f">addLayer</span>(s2_image, {bands: <span class="s">"B8,B5,B3"</span>, min: <span class="n">0</span>, max: <span class="n">0.4</span>, gamma: <span class="n">1</span>}, <span class="s">"Sentinel-2"</span>);
 <span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">12</span>);
 

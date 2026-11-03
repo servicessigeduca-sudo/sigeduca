@@ -38,7 +38,7 @@
   .first()
   .clip(AOI);
 print(s2_image);</pre></div>
-    <div class="codebox"><pre><span class="c">// Falso color NIR-Red edge-Verde</span>
+    <div class="codebox"><pre><span class="c">// Falso color NIR-Borde rojo-Verde</span>
 Map.addLayer(s2_image, {bands: "B8,B5,B3", min: 0, max: 0.4, gamma: 1}, "Sentinel-2");
 Map.centerObject(AOI, 12);</pre></div>
     <div class="codebox"><pre><span class="c">// Índices para detectar agua con bandas de Sentinel-2</span>
@@ -124,7 +124,7 @@ Export.table.toDrive({
   .clip(AOI);
 print(s2_image);
 
-<span class="c">// Falso color NIR-Red edge-Verde</span>
+<span class="c">// Falso color NIR-Borde rojo-Verde</span>
 Map.addLayer(s2_image, {bands: "B8,B5,B3", min: 0, max: 0.4, gamma: 1}, "Sentinel-2");
 Map.centerObject(AOI, 12);
 

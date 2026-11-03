@@ -1,14 +1,13 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//// Main references 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+// MÓDULO JONES_2019R: AGUA SUPERFICIAL CON DSWE PARA LANDSAT COLECCIÓN 2, NIVEL 2
+///////////////////////////////////////////////////////////////////////////////////
 
-//[3] * Jones, J. W. (2019). Improved automated detection of subpixel-scale inundation—Revised dynamic surface water extent (DSWE) partial surface water tests. Remote Sensing, 11(4), 374.
+// Referencia principal:
+// Jones, J. W. (2019). Improved automated detection of subpixel-scale inundation—Revised
+// dynamic surface water extent (DSWE) partial surface water tests. Remote Sensing, 11(4), 374.
 
-
-/*This code is code was retrieved from 
+/* Código tomado de RivWidthCloud (Yang et al., 2020):
 github.com/seanyx/RivWidthCloudPaper/blob/master/RivWidthCloud_JavaScript/functions_Landsat578/functions_waterClassification_Jones2019.js
-
-water test functions for determing DSWE
 
 ADAPTACIÓN A LANDSAT COLECCIÓN 2:
 El original usaba Landsat Colección 1 SR, guardada x 10 000, por eso los umbrales de las
@@ -19,7 +18,7 @@ Además, las bandas negativas se llevan a 0 al inicio de Dswe(), porque normaliz
 enmascara los píxeles negativos y el agua oscura de las costas quedaba sin clasificar.
 */
 
-// water test functions for determing DSWE
+// Funciones de las pruebas espectrales de DSWE
 var Mndwi = function(image) {
   return(image.normalizedDifference(['Green', 'Swir1']).rename('mndwi'));
 };
@@ -61,14 +60,14 @@ var Dswe = function(i) {
   var t2 = mbsrv.gt(mbsrn);
   var t3 = awesh.gt(0);
   var t4 = mndwi.gt(-0.44)
-  .and(swir1.lt(0.09))   // original: 900
-  .and(nir.lt(0.15))     // original: 1500
+  .and(swir1.lt(0.09))   // Colección 1: 900
+  .and(nir.lt(0.15))     // Colección 1: 1500
   .and(ndvi.lt(0.7));
   var t5 = mndwi.gt(-0.5)
-  .and(blue.lt(0.1))     // original: 1000
-  .and(swir1.lt(0.3))    // original: 3000
-  .and(swir2.lt(0.1))    // original: 1000
-  .and(nir.lt(0.25));    // original: 2500
+  .and(blue.lt(0.1))     // Colección 1: 1000
+  .and(swir1.lt(0.3))    // Colección 1: 3000
+  .and(swir2.lt(0.1))    // Colección 1: 1000
+  .and(nir.lt(0.25));    // Colección 1: 2500
   
   var t = t1.add(t2.multiply(10)).add(t3.multiply(100)).add(t4.multiply(1000)).add(t5.multiply(10000));
   
@@ -114,6 +113,7 @@ var Dswe = function(i) {
   return(iDswe.rename('dswe'));
 };
 
+// Máscara de agua: clases 1 (confianza alta) y 2 (confianza moderada)
 exports.ClassifyWaterJones2019 = function(img) {
   var dswe = Dswe(img);
   var waterMask = dswe.eq(1).or(dswe.eq(2)).rename(['waterMask']);

@@ -207,14 +207,14 @@
 <span class="c">// Visualización de la imagen en el mapa</span>
 <span class="k">var</span> visparam = {bands: <span class="s">"SR_B4,SR_B3,SR_B2"</span>, min: <span class="n">7600</span>, max: <span class="n">22000</span>, gamma: <span class="n">1</span>};
 <span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">8</span>);
-<span class="g">Map</span>.<span class="f">addLayer</span>(ls9.<span class="f">first</span>().<span class="f">clip</span>(AOI), visparam, <span class="s">"First image Landsat 9"</span>);</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9.<span class="f">first</span>().<span class="f">clip</span>(AOI), visparam, <span class="s">"Primera imagen de Landsat 9"</span>);</pre></div>
     <figure class="shot"><img src="../assets/img/descargar-landsat-9/aoi.jpg" alt="Región de interés sobre el área de Dallas y Fort Worth con la primera imagen recortada" loading="lazy" width="1032" height="627"><figcaption>Región de interés y primera imagen de Landsat 9.</figcaption></figure>
 
     <h2 id="paso-2">Paso 2: Agregar el polígono de Path y Row <a class="anchor" href="#paso-2" aria-label="Enlace a esta sección">#</a></h2>
     <p>Añadimos al mapa los polígonos de Path y Row que tocan el AOI para ver qué escenas lo cubren.</p>
     <div class="codebox"><pre><span class="c">// Agregar polígono Path y Row al mapa</span>
 <span class="k">var</span> ls9_path = path_row.<span class="f">filterBounds</span>(AOI);
-<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_path, {color: <span class="s">"#0000"</span>}, <span class="s">"PATH AND ROW SHAPEFILE"</span>, <span class="n">0</span>);</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_path, {color: <span class="s">"#0000"</span>}, <span class="s">"SHAPEFILE DE PATH Y ROW"</span>, <span class="n">0</span>);</pre></div>
     <figure class="shot"><img src="../assets/img/descargar-landsat-9/path-row.jpg" alt="Polígonos de Path y Row superpuestos sobre la región de interés" loading="lazy" width="825" height="562"><figcaption>Escenas de Landsat (Path y Row) que cubren la región de interés.</figcaption></figure>
 
     <h2 id="paso-3">Paso 3: Filtrar por Path y Row <a class="anchor" href="#paso-3" aria-label="Enlace a esta sección">#</a></h2>
@@ -228,7 +228,7 @@
 <span class="k">var</span> image_ls9 = ls9_path_row.<span class="f">first</span>().<span class="f">select</span>([<span class="s">"SR_B[1-7]"</span>]);
 
 <span class="c">// Cargar imagen filtrada al mapa</span>
-<span class="g">Map</span>.<span class="f">addLayer</span>(image_ls9.<span class="f">clip</span>(AOI), visparam, <span class="s">"PATH AND ROW FILTER"</span>, <span class="n">0</span>);</pre></div>
+<span class="g">Map</span>.<span class="f">addLayer</span>(image_ls9.<span class="f">clip</span>(AOI), visparam, <span class="s">"FILTRO POR PATH Y ROW"</span>, <span class="n">0</span>);</pre></div>
     <figure class="shot"><img src="../assets/img/descargar-landsat-9/resultado.jpg" alt="Imagen de Landsat 9 recortada a la región de interés" loading="lazy" width="793" height="530"><figcaption>Imagen de Landsat 9 filtrada por Path y Row y recortada.</figcaption></figure>
 
     <h2 id="paso-4">Paso 4: Exportar la imagen a Google Drive <a class="anchor" href="#paso-4" aria-label="Enlace a esta sección">#</a></h2>
@@ -262,11 +262,11 @@
 <span class="c">// Visualización de la imagen en el mapa</span>
 <span class="k">var</span> visparam = {bands: <span class="s">"SR_B4,SR_B3,SR_B2"</span>, min: <span class="n">7600</span>, max: <span class="n">22000</span>, gamma: <span class="n">1</span>};
 <span class="g">Map</span>.<span class="f">centerObject</span>(AOI, <span class="n">8</span>);
-<span class="g">Map</span>.<span class="f">addLayer</span>(ls9.<span class="f">first</span>().<span class="f">clip</span>(AOI), visparam, <span class="s">"First image Landsat 9"</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9.<span class="f">first</span>().<span class="f">clip</span>(AOI), visparam, <span class="s">"Primera imagen de Landsat 9"</span>);
 
 <span class="c">// Agregar polígono Path y Row al mapa</span>
 <span class="k">var</span> ls9_path = path_row.<span class="f">filterBounds</span>(AOI);
-<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_path, {color: <span class="s">"#0000"</span>}, <span class="s">"PATH AND ROW SHAPEFILE"</span>, <span class="n">0</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(ls9_path, {color: <span class="s">"#0000"</span>}, <span class="s">"SHAPEFILE DE PATH Y ROW"</span>, <span class="n">0</span>);
 
 <span class="c">// Filtro de Path y Row en la colección de imágenes</span>
 <span class="k">var</span> ls9_path_row = ls9.<span class="f">filter</span>(<span class="g">ee</span>.Filter.<span class="f">eq</span>(<span class="s">"WRS_PATH"</span>, <span class="n">27</span>))
@@ -274,7 +274,7 @@
 <span class="k">var</span> image_ls9 = ls9_path_row.<span class="f">first</span>().<span class="f">select</span>([<span class="s">"SR_B[1-7]"</span>]);
 
 <span class="c">// Cargar imagen filtrada al mapa</span>
-<span class="g">Map</span>.<span class="f">addLayer</span>(image_ls9.<span class="f">clip</span>(AOI), visparam, <span class="s">"PATH AND ROW FILTER"</span>, <span class="n">0</span>);
+<span class="g">Map</span>.<span class="f">addLayer</span>(image_ls9.<span class="f">clip</span>(AOI), visparam, <span class="s">"FILTRO POR PATH Y ROW"</span>, <span class="n">0</span>);
 
 <span class="c">// Exportar la imagen a Google Drive</span>
 <span class="g">Export</span>.image.<span class="f">toDrive</span>({

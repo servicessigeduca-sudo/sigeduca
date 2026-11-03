@@ -169,17 +169,16 @@ print("Lista de años", años);</pre></div>
     <h2 id="modulo">El módulo Jones_2019R <a class="anchor" href="#modulo" aria-label="Enlace a esta sección">#</a></h2>
     <p>Las pruebas y la tabla de clases están en el módulo público <code>users/sigeduca/routines:Indexes/Jones_2019R</code>, que el script carga con <code>require()</code>. No tienes que copiarlo; lo mostramos para que veas cómo funciona, y también está en la página <a href="../modulos/jones-2019r.html">Jones_2019R</a>. La R indica la versión revisada para Landsat Colección 2, nivel 2. Cada prueba devuelve una imagen de ceros y unos. Al multiplicarlas por 1, 10, 100, 1000 y 10 000 y sumarlas obtenemos el código de cinco cifras de cada píxel; los ceros a la izquierda desaparecen, así que 00111 queda como 111. Después, cada grupo de códigos se convierte en su clase.</p>
     <div class="callout"><p><strong>Agua oscura y valores negativos.</strong> El factor de escala de la Colección 2 resta 0,2, así que en el mar o en lagos profundos algunas bandas quedan un poco por debajo de 0. <code>normalizedDifference()</code> enmascara cualquier píxel con un valor negativo, y sin corrección esas zonas quedarían sin clasificar, sobre todo en las costas. Por eso, al inicio de <code>Dswe()</code>, llevamos a 0 las bandas negativas con <code>max(0)</code>.</p></div>
-    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////</span>
-<span class="c">//// Main references </span>
-<span class="c">///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////</span>
+    <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
+<span class="c">// MÓDULO JONES_2019R: AGUA SUPERFICIAL CON DSWE PARA LANDSAT COLECCIÓN 2, NIVEL 2</span>
+<span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
-<span class="c">//[3] * Jones, J. W. (2019). Improved automated detection of subpixel-scale inundation—Revised dynamic surface water extent (DSWE) partial surface water tests. Remote Sensing, 11(4), 374.</span>
+<span class="c">// Referencia principal:</span>
+<span class="c">// Jones, J. W. (2019). Improved automated detection of subpixel-scale inundation—Revised</span>
+<span class="c">// dynamic surface water extent (DSWE) partial surface water tests. Remote Sensing, 11(4), 374.</span>
 
-
-/*This code is code was retrieved from 
+/* Código tomado de RivWidthCloud (Yang et al., 2020):
 github.com/seanyx/RivWidthCloudPaper/blob/master/RivWidthCloud_JavaScript/functions_Landsat578/functions_waterClassification_Jones2019.js
-
-water test functions for determing DSWE
 
 ADAPTACIÓN A LANDSAT COLECCIÓN 2:
 El original usaba Landsat Colección 1 SR, guardada x 10 000, por eso los umbrales de las
@@ -190,7 +189,7 @@ Además, las bandas negativas se llevan a 0 al inicio de Dswe(), porque normaliz
 enmascara los píxeles negativos y el agua oscura de las costas quedaba sin clasificar.
 */
 
-<span class="c">// water test functions for determing DSWE</span>
+<span class="c">// Funciones de las pruebas espectrales de DSWE</span>
 <span class="k">var</span> Mndwi = <span class="k">function</span>(image) {
   <span class="k">return</span>(image.normalizedDifference(['Green', 'Swir1']).rename('mndwi'));
 };
@@ -232,14 +231,14 @@ enmascara los píxeles negativos y el agua oscura de las costas quedaba sin clas
   <span class="k">var</span> t2 = mbsrv.gt(mbsrn);
   <span class="k">var</span> t3 = awesh.gt(0);
   <span class="k">var</span> t4 = mndwi.gt(-0.44)
-  .and(swir1.lt(0.09))<span class="c">   // original: 900</span>
-  .and(nir.lt(0.15))<span class="c">     // original: 1500</span>
+  .and(swir1.lt(0.09))<span class="c">   // Colección 1: 900</span>
+  .and(nir.lt(0.15))<span class="c">     // Colección 1: 1500</span>
   .and(ndvi.lt(0.7));
   <span class="k">var</span> t5 = mndwi.gt(-0.5)
-  .and(blue.lt(0.1))<span class="c">     // original: 1000</span>
-  .and(swir1.lt(0.3))<span class="c">    // original: 3000</span>
-  .and(swir2.lt(0.1))<span class="c">    // original: 1000</span>
-  .and(nir.lt(0.25));<span class="c">    // original: 2500</span>
+  .and(blue.lt(0.1))<span class="c">     // Colección 1: 1000</span>
+  .and(swir1.lt(0.3))<span class="c">    // Colección 1: 3000</span>
+  .and(swir2.lt(0.1))<span class="c">    // Colección 1: 1000</span>
+  .and(nir.lt(0.25));<span class="c">    // Colección 1: 2500</span>
   
   <span class="k">var</span> t = t1.add(t2.multiply(10)).add(t3.multiply(100)).add(t4.multiply(1000)).add(t5.multiply(10000));
   
@@ -285,6 +284,7 @@ enmascara los píxeles negativos y el agua oscura de las costas quedaba sin clas
   <span class="k">return</span>(iDswe.rename('dswe'));
 };
 
+<span class="c">// Máscara de agua: clases 1 (confianza alta) y 2 (confianza moderada)</span>
 exports.ClassifyWaterJones2019 = <span class="k">function</span>(img) {
   <span class="k">var</span> dswe = Dswe(img);
   <span class="k">var</span> waterMask = dswe.eq(1).or(dswe.eq(2)).rename(['waterMask']);
@@ -340,10 +340,10 @@ print("Máscara de agua, Jones (2019)", masked);</pre></div>
 <span class="c">// Gráfico del cambio de área en la consola</span>
 <span class="k">var</span> chart_W = ui.Chart.array.values({array: wa_y, axis: 0, xLabels: year_si})
   .setOptions({
-    title: 'WATER AREA EVOLUTION',
+    title: 'EVOLUCIÓN DEL ÁREA DE AGUA',
     colors: ['cf513e'],
-    hAxis: {title: 'Years', titleTextStyle: {italic: <span class="k">false</span>, bold: <span class="k">true</span>}},
-    vAxis: {title: 'AREA (Km^2)', titleTextStyle: {italic: <span class="k">false</span>, bold: <span class="k">true</span>}},
+    hAxis: {title: 'Años', titleTextStyle: {italic: <span class="k">false</span>, bold: <span class="k">true</span>}},
+    vAxis: {title: 'Área (km²)', titleTextStyle: {italic: <span class="k">false</span>, bold: <span class="k">true</span>}},
     lineSize: 3,
     pointSize: 3,
     dataOpacity: 0.4,
@@ -380,7 +380,7 @@ len_w.evaluate(<span class="k">function</span>(l) {
 len_masked.evaluate(<span class="k">function</span>(l) {
   for (<span class="k">var</span> i = 0; i &lt; l; i++) {
     <span class="k">var</span> img = ee.Image(list_masked.get(i));
-    Map.addLayer(img, {}, 'mascara jones -' + i.toString(), <span class="k">false</span>);
+    Map.addLayer(img, {}, 'Máscara Jones - ' + i.toString(), <span class="k">false</span>);
   }
 });</pre></div>
 
@@ -393,7 +393,7 @@ len_masked.evaluate(<span class="k">function</span>(l) {
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
 <span class="c">// Parámetros:</span>
-<span class="c">//   collection → ImageCollection a animar</span>
+<span class="c">//   collection → colección de imágenes a animar</span>
 <span class="c">//   visArgs    → argumentos de visualización (bandas, min, max, palette, etc.)</span>
 <span class="c">//   label      → nombre para identificar la animación en la consola</span>
 
@@ -433,7 +433,7 @@ len_masked.evaluate(<span class="k">function</span>(l) {
   <span class="k">var</span> basicAnimation = animated.merge(animated.sort('año', <span class="k">false</span>));
 
 <span class="c">  // Mostrar en la consola</span>
-  print('GIF URL → ' + label, basicAnimation.getVideoThumbURL(gifParams));
+  print('Enlace del GIF → ' + label, basicAnimation.getVideoThumbURL(gifParams));
   print('Animación → ' + label, ui.Thumbnail(basicAnimation, gifParams));
 
   <span class="k">return</span> basicAnimation;
@@ -441,11 +441,11 @@ len_masked.evaluate(<span class="k">function</span>(l) {
 
 <span class="c">// Animación en falso color (Swir1, Nir, Red)</span>
 <span class="k">var</span> visArgs_RGB = {bands: 'Swir1,Nir,Red', min: 0.0125, max: 0.41448, gamma: 1};
-<span class="k">var</span> anim_RGB = makeGifAnimation(ee.ImageCollection(img_medians), visArgs_RGB, 'RGB Landsat');
+<span class="k">var</span> anim_RGB = makeGifAnimation(ee.ImageCollection(img_medians), visArgs_RGB, 'Landsat falso color');
 
 <span class="c">// Animación de la máscara de agua (Jones, 2019)</span>
 <span class="k">var</span> visArgs_WATER = {bands: 'waterMask', opacity: 1, palette: ['0c0c0c', '0400ff']};
-<span class="k">var</span> anim_WATER = makeGifAnimation(masked, visArgs_WATER, 'Water Mask Jones 2019');</pre></div>
+<span class="k">var</span> anim_WATER = makeGifAnimation(masked, visArgs_WATER, 'Máscara de agua Jones (2019)');</pre></div>
     <div class="callout"><p><strong>Para descargar el GIF</strong>, haz clic en el enlace que aparece en la consola y guárdalo desde el navegador. Si Earth Engine responde que la animación es demasiado grande, reduce <code>dimensions</code> o el tamaño del AOI.</p></div>
 
     <h2 id="paso-11">Sección 11: Exportar las máscaras <a class="anchor" href="#paso-11" aria-label="Enlace a esta sección">#</a></h2>
@@ -635,10 +635,10 @@ print("Máscara de agua, Jones (2019)", masked);
 <span class="c">// Gráfico del cambio de área en la consola</span>
 <span class="k">var</span> chart_W = ui.Chart.array.values({array: wa_y, axis: 0, xLabels: year_si})
   .setOptions({
-    title: 'WATER AREA EVOLUTION',
+    title: 'EVOLUCIÓN DEL ÁREA DE AGUA',
     colors: ['cf513e'],
-    hAxis: {title: 'Years', titleTextStyle: {italic: <span class="k">false</span>, bold: <span class="k">true</span>}},
-    vAxis: {title: 'AREA (Km^2)', titleTextStyle: {italic: <span class="k">false</span>, bold: <span class="k">true</span>}},
+    hAxis: {title: 'Años', titleTextStyle: {italic: <span class="k">false</span>, bold: <span class="k">true</span>}},
+    vAxis: {title: 'Área (km²)', titleTextStyle: {italic: <span class="k">false</span>, bold: <span class="k">true</span>}},
     lineSize: 3,
     pointSize: 3,
     dataOpacity: 0.4,
@@ -672,7 +672,7 @@ len_w.evaluate(<span class="k">function</span>(l) {
 len_masked.evaluate(<span class="k">function</span>(l) {
   for (<span class="k">var</span> i = 0; i &lt; l; i++) {
     <span class="k">var</span> img = ee.Image(list_masked.get(i));
-    Map.addLayer(img, {}, 'mascara jones -' + i.toString(), <span class="k">false</span>);
+    Map.addLayer(img, {}, 'Máscara Jones - ' + i.toString(), <span class="k">false</span>);
   }
 });
 
@@ -681,7 +681,7 @@ len_masked.evaluate(<span class="k">function</span>(l) {
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 
 <span class="c">// Parámetros:</span>
-<span class="c">//   collection → ImageCollection a animar</span>
+<span class="c">//   collection → colección de imágenes a animar</span>
 <span class="c">//   visArgs    → argumentos de visualización (bandas, min, max, palette, etc.)</span>
 <span class="c">//   label      → nombre para identificar la animación en la consola</span>
 
@@ -721,7 +721,7 @@ len_masked.evaluate(<span class="k">function</span>(l) {
   <span class="k">var</span> basicAnimation = animated.merge(animated.sort('año', <span class="k">false</span>));
 
 <span class="c">  // Mostrar en la consola</span>
-  print('GIF URL → ' + label, basicAnimation.getVideoThumbURL(gifParams));
+  print('Enlace del GIF → ' + label, basicAnimation.getVideoThumbURL(gifParams));
   print('Animación → ' + label, ui.Thumbnail(basicAnimation, gifParams));
 
   <span class="k">return</span> basicAnimation;
@@ -729,11 +729,11 @@ len_masked.evaluate(<span class="k">function</span>(l) {
 
 <span class="c">// Animación en falso color (Swir1, Nir, Red)</span>
 <span class="k">var</span> visArgs_RGB = {bands: 'Swir1,Nir,Red', min: 0.0125, max: 0.41448, gamma: 1};
-<span class="k">var</span> anim_RGB = makeGifAnimation(ee.ImageCollection(img_medians), visArgs_RGB, 'RGB Landsat');
+<span class="k">var</span> anim_RGB = makeGifAnimation(ee.ImageCollection(img_medians), visArgs_RGB, 'Landsat falso color');
 
 <span class="c">// Animación de la máscara de agua (Jones, 2019)</span>
 <span class="k">var</span> visArgs_WATER = {bands: 'waterMask', opacity: 1, palette: ['0c0c0c', '0400ff']};
-<span class="k">var</span> anim_WATER = makeGifAnimation(masked, visArgs_WATER, 'Water Mask Jones 2019');
+<span class="k">var</span> anim_WATER = makeGifAnimation(masked, visArgs_WATER, 'Máscara de agua Jones (2019)');
 
 <span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">// 11 → EXPORTACIÓN OPCIONAL A GOOGLE DRIVE</span>

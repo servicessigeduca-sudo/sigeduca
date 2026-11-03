@@ -1,10 +1,10 @@
 ///////////////////////////////////////////////////////////////////////////////////
-// UNIVERSAL LANDSAT SPECTRAL INDICES MODULE
-// Compatible with Landsat 4–9 Surface Reflectance collections
+// MÓDULO UNIVERSAL DE ÍNDICES ESPECTRALES PARA LANDSAT
+// Compatible con la reflectancia de superficie de Landsat 4 a 9 (Colección 2, nivel 2)
 // Autor: Cristian Carrascal - Canal SIG Educa
 ///////////////////////////////////////////////////////////////////////////////////
 
-// --- BASE INDEX FUNCTIONS ------------------------------------------------------
+// --- FUNCIONES DE CADA ÍNDICE ---------------------------------------------------
 
 exports.MBSRV = function (image){
   return image.select(['Green']).add(image.select(['Red']))
@@ -99,7 +99,7 @@ exports.NBR2 = function(image){
   }).rename('nbr2').toFloat();
 };
 
-// --- MASTER FUNCTION -----------------------------------------------------------
+// --- FUNCIÓN PRINCIPAL: TODOS LOS ÍNDICES A LA VEZ ------------------------------
 
 exports.calcAllIndices = function(image){
   var indices = [

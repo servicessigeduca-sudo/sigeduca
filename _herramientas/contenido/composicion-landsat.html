@@ -90,7 +90,7 @@ Map.addLayer(ls9_cc, visSR, "Landsat 9 mediana sin nubes y con filtro");</pre></
 Export.image.toDrive({
   image: ls9_cc.select(["SR_B[1-7]"]),
   description: "landsat_9_cloud_free_composite",
-  folder: "landsat collection cloud free",
+  folder: "landsat composicion sin nubes",
   region: AOI,
   scale: 30,
   maxPixels: 1e13,
@@ -147,7 +147,7 @@ Map.addLayer(ls9_cc, visSR, "Landsat 9 mediana sin nubes y con filtro");
 Export.image.toDrive({
   image: ls9_cc.select(["SR_B[1-7]"]),
   description: "landsat_9_cloud_free_composite",
-  folder: "landsat collection cloud free",
+  folder: "landsat composicion sin nubes",
   region: AOI,
   scale: 30,
   maxPixels: 1e13,

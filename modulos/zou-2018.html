@@ -220,16 +220,16 @@
 
     <h2 id="codigo">Código del módulo <a class="anchor" href="#codigo" aria-label="Enlace a esta sección">#</a></h2>
     <p>No necesitas copiarlo para usarlo. Si quieres modificarlo, créalo en tu propio repositorio y cambia la ruta de <code>require()</code>.</p>
-    <div class="codebox"><pre><span class="c">// Calculate water mask according to Zou et al., 2018</span>
+    <div class="codebox"><pre><span class="c">// Máscara de agua según Zou et al. (2018)</span>
 <span class="c">// https://www.pnas.org/content/pnas/suppl/2018/03/20/1719275115.DCSupplemental/pnas.1719275115.sapp.pdf</span>
 
 <span class="k">var</span> Ndvi = <span class="k">function</span>(image) {
-  <span class="c">// calculate normalized difference vegetation index</span>
+  <span class="c">// índice de vegetación de diferencia normalizada (NDVI)</span>
   <span class="k">var</span> ndvi = image.<span class="f">normalizedDifference</span>([<span class="s">'Nir'</span>, <span class="s">'Red'</span>]).<span class="f">rename</span>(<span class="s">'ndvi'</span>);
   <span class="k">return</span>(ndvi);
 };
 <span class="k">var</span> Evi = <span class="k">function</span>(image) {
-  <span class="c">// calculate the enhanced vegetation index</span>
+  <span class="c">// índice de vegetación mejorado (EVI)</span>
   <span class="k">var</span> evi = image.<span class="f">expression</span>(<span class="s">'2.5 * (Nir - Red) / (1 + Nir + 6 * Red - 7.5 * Blue)'</span>, {
     <span class="s">'Nir'</span>: image.<span class="f">select</span>([<span class="s">'Nir'</span>]),
     <span class="s">'Red'</span>: image.<span class="f">select</span>([<span class="s">'Red'</span>]),
@@ -238,10 +238,11 @@
   <span class="k">return</span>(evi.<span class="f">rename</span>([<span class="s">'evi'</span>]));
 };
 <span class="k">var</span> Mndwi = <span class="k">function</span>(image) {
-  <span class="c">// calculate modified normalized difference water index</span>
+  <span class="c">// índice de agua de diferencia normalizada modificado (MNDWI)</span>
   <span class="k">var</span> mndwi = image.<span class="f">normalizedDifference</span>([<span class="s">'Green'</span>, <span class="s">'Swir1'</span>]).<span class="f">rename</span>(<span class="s">'mndwi'</span>);
   <span class="k">return</span>(mndwi);
 };
+<span class="c">// Agua: MNDWI mayor que NDVI o que EVI, y EVI menor que 0,1</span>
 exports.ClassifyWaterZou2018 = <span class="k">function</span>(image) {
   
   <span class="k">var</span> mndwi = <span class="f">Mndwi</span>(image);
