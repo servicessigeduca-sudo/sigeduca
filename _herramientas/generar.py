@@ -158,7 +158,7 @@ Map.addLayer(water.selfMask(), {palette: ['0000ff']}, 'Agua (DSWE)');""",
      "referencias": ["Jones, J. W. (2019). Improved automated detection of subpixel-scale inundation—Revised Dynamic Surface Water Extent (DSWE) partial surface water tests. <em>Remote Sensing</em>, 11(4), 374.",
                      "Yang, X., Pavelsky, T. M., Allen, G. H. y Donchyts, G. (2020). RivWidthCloud: An automated Google Earth Engine algorithm for river width extraction from remotely sensed imagery. <em>IEEE Geoscience and Remote Sensing Letters</em>, 17(2), 217–221."]},
     {"id": "list-educaindex",
-     "pendiente": True,  # se publica cuando MBSRV quede corregido en el repositorio
+     "var": "x",
      "nombre": "LIST_EDUCAINDEX",
      "ruta": "users/sigeduca/routines:Indexes/LIST_EDUCAINDEX",
      "archivo": "LIST_EDUCAINDEX.js",

@@ -116,6 +116,7 @@
         <summary>Módulos</summary>
         <ul>
           <li><a href="../modulos/jones-2019r.html">Jones_2019R</a></li>
+          <li><a href="../modulos/list-educaindex.html">LIST_EDUCAINDEX</a></li>
           <li><a href="../modulos/zou-2018.html">Zou_2018</a></li>
         </ul>
       </details></li>
@@ -260,7 +261,7 @@ img_medians = img_medians.<span class="f">removeAll</span>([<span class="n">0</s
 <span class="g">print</span>(<span class="s">"Lista de años"</span>, años);</pre></div>
 
     <h2 id="paso-6">Sección 6: Calcular el índice de cada año <a class="anchor" href="#paso-6" aria-label="Enlace a esta sección">#</a></h2>
-    <p>El módulo <code>LIST_EDUCAINDEX</code> guarda la función <code>EVI</code>. La exporta con <code>exports</code>, y nuestro script la carga con <code>require()</code> en la variable <code>x</code>. Este es el fragmento del módulo que usamos:</p>
+    <p>El EVI viene del módulo público <a href="../modulos/list-educaindex.html">LIST_EDUCAINDEX</a>, que reúne trece índices de vegetación, agua y fuego. Cada índice es una función que el módulo exporta con <code>exports</code>, y nuestro script carga el módulo con <code>require()</code> en la variable <code>x</code>. Esta es la función que usamos:</p>
     <div class="codebox"><pre><span class="c">// Módulo LIST_EDUCAINDEX (fragmento): función EVI</span>
 exports.EVI = <span class="k">function</span>(image){
   <span class="k">return</span> image.<span class="f">expression</span>(
@@ -270,7 +271,7 @@ exports.EVI = <span class="k">function</span>(image){
       <span class="s">'BLUE'</span>: image.<span class="f">select</span>([<span class="s">'Blue'</span>])
     }).<span class="f">rename</span>(<span class="s">'evi'</span>).<span class="f">toFloat</span>();
 };</pre></div>
-    <div class="callout"><p><strong>Sobre el módulo.</strong> <code>require()</code> carga funciones guardadas en otro script del Code Editor, en este caso <code>users/sigeduca/routines:Indexes/LIST_EDUCAINDEX</code>. Es un módulo público, así que funciona sin copiar nada. Si quieres modificarlo, crea un script en tu propio repositorio, pega el código que mostramos aquí, guárdalo como <code>LIST_EDUCAINDEX</code> y cambia la ruta de <code>require()</code> por la tuya.</p></div>
+    <div class="callout"><p><strong>Otros índices con la misma línea.</strong> Cambia <code>x.EVI(image)</code> por <code>x.NDVI(image)</code>, <code>x.NDMI(image)</code> o cualquier otra función del módulo. Con <code>x.calcAllIndices(image)</code> obtienes los trece índices como bandas de una sola imagen. En la <a href="../modulos/list-educaindex.html">página del módulo</a> está la lista completa, con lo que recibe y devuelve cada función.</p></div>
     <p><code>XIndex()</code> calcula el EVI de una imagen y le copia sus propiedades con <code>copyProperties()</code>, para que cada resultado conserve su año. <code>copyProperties()</code> devuelve un objeto genérico, por eso lo envolvemos en <code>ee.Image()</code>. Después aplicamos la función a toda la colección con <code>map()</code>.</p>
     <div class="codebox"><pre><span class="c">///////////////////////////////////////////////////////////////////////////////////</span>
 <span class="c">// 6 → CÁLCULO DE ÍNDICES ESPECTRALES</span>
